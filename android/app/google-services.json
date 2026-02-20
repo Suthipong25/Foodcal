@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "686491556501",
+    "project_id": "foodcal-b63fc",
+    "storage_bucket": "foodcal-b63fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686491556501:android:920330f1b88e08b214999c",
+        "android_client_info": {
+          "package_name": "com.company.foodcal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqjlecc0VfwFVdEdOmn59aXSSkl68K7EE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686491556501:android:5566934458b9f14814999c",
+        "android_client_info": {
+          "package_name": "com.example.foodcal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqjlecc0VfwFVdEdOmn59aXSSkl68K7EE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

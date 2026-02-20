@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // กฎที่ปลอดภัยที่สุดสำหรับแอป Foodcal
+    // ข้อมูลของผู้ใช้แต่ละคนจะถูกแยกออกจากกันอย่างเด็ดขาด
+    
+    match /users/{userId} {
+      // อนุญาตเฉพาะเจ้าของ UID เท่าที่เข้าถึง (อ่าน/เขียน) ข้อมูลของตัวเองได้เท่านั้น
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // รวมไปถึงข้อมูล Sub-collections ทั้งหมดภายใต้โฟลเดอร์ของผู้ใช้ (เช่น daily_logs)
+      match /{allPaths=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ปิดการเข้าถึงข้อมูลอื่นๆ ทั้งหมด (เช่น คอลเลกชันระบบหรือข้อมูลที่ไม่ต้องการให้คนทั่วไปเห็น)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
