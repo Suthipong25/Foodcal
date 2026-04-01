@@ -2,12 +2,48 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
 import '../models/daily_log.dart';
+import '../utils/health_profile_stats.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static const int _maxSingleFoodCalories = 5000;
+  static const int _maxSingleMacroGrams = 500;
+  static const int _maxDailyCaloriesIn = 20000;
+  static const int _maxDailyCaloriesOut = 10000;
+  static const int _maxWaterGlasses = 40;
 
   // --- Collection References ---
   CollectionReference get _usersRef => _db.collection('users');
+
+  void _validateFoodItem(FoodItem food) {
+    if (food.name.trim().isEmpty) {
+      throw ArgumentError('Food name is required.');
+    }
+
+    final values = [food.calories, food.protein, food.carbs, food.fat];
+    if (values.any((value) => value < 0)) {
+      throw ArgumentError('Food values must be non-negative.');
+    }
+
+    if (food.calories > _maxSingleFoodCalories ||
+        food.protein > _maxSingleMacroGrams ||
+        food.carbs > _maxSingleMacroGrams ||
+        food.fat > _maxSingleMacroGrams) {
+      throw ArgumentError('Food values exceed safe limits.');
+    }
+  }
+
+  void _validateWorkout(WorkoutItem workout) {
+    if (workout.id <= 0) {
+      throw ArgumentError('Workout id is invalid.');
+    }
+    if (workout.title.trim().isEmpty) {
+      throw ArgumentError('Workout title is required.');
+    }
+    if (workout.minutes < 1 || workout.minutes > 180) {
+      throw ArgumentError('Workout duration is out of range.');
+    }
+  }
 
   // --- Profile Operations ---
 
@@ -24,102 +60,45 @@ class FirestoreService {
 
   // Create/Update Profile
   Future<void> saveUserProfile(String uid, UserProfile profile) async {
-    await _usersRef.doc(uid).set(profile.toMap(), SetOptions(merge: true));
+    await _usersRef.doc(uid).set(profile.toEditableMap(), SetOptions(merge: true));
   }
 
   // Update Login Streak
   Future<void> updateLoginStreak(String uid, UserProfile profile) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
-    bool shouldUpdate = false;
-    
-    if (profile.lastLoginDate != null) {
-      final lastLogin = DateTime(
-        profile.lastLoginDate!.year, 
-        profile.lastLoginDate!.month, 
-        profile.lastLoginDate!.day
-      );
-      final difference = today.difference(lastLogin).inDays;
-      
-      if (difference == 0) return; // Already logged in today
-      
-      if (difference == 1) {
-        // Logged in yesterday
-        profile.streak += 1;
-      } else {
-        // Missed one or more days
-        profile.streak = 1;
-      }
-      shouldUpdate = true;
-    } else {
-      // First time logging in
-      profile.streak = 1;
-      shouldUpdate = true;
-    }
-    
-    if (shouldUpdate) {
-      profile.lastLoginDate = now;
-      await saveUserProfile(uid, profile);
-      print('Streak updated for $uid: ${profile.streak}');
-    }
+    // Streak updates must be handled by a trusted backend to avoid spoofing client time.
+    return;
   }
   
   // TDEE Calculation Helper (Static)
   static Map<String, int> calculateStats(double weight, double height, int age, String gender, String activityLevel, String goal) {
-     // Mifflin-St Jeor Equation
-    double bmr = (10 * weight) + (6.25 * height) - (5 * age);
-    bmr += (gender == 'male' ? 5 : -161);
-    
-    final activityMultipliers = {
-      'sedentary': 1.2,
-      'light': 1.375,
-      'moderate': 1.55,
-      'active': 1.725
-    };
-    
-    double tdeeDouble = bmr * (activityMultipliers[activityLevel] ?? 1.2);
-    int tdee = tdeeDouble.round();
-    
-    // Adjust for Goal
-    int targetCalories = tdee;
-    if (goal == 'lose') {
-      targetCalories = tdee - 500;
-    } else if (goal == 'gain') {
-      targetCalories = tdee + 300;
-    }
-
-    // Ensure safe minimum
-    if (targetCalories < 1200) targetCalories = 1200;
-
-    // Macros (approximate split)
-    int targetProtein = (weight * 2).round();
-    int targetFat = ((targetCalories * 0.25) / 9).round();
-    int remainingCals = targetCalories - (targetProtein * 4) - (targetFat * 9);
-    int targetCarbs = (remainingCals / 4).round();
-    
-    if (targetCarbs < 0) targetCarbs = 0;
-    
-    // Water goal (approx 30ml per kg)
-    int targetWaterGlasses = ((weight * 30) / 250).round();
-    if (targetWaterGlasses < 6) targetWaterGlasses = 6;
-    
+    final stats = HealthProfileStats.calculate(
+      weight: weight,
+      height: height,
+      age: age,
+      gender: gender,
+      activityLevel: activityLevel,
+      goal: goal,
+    );
     return {
-      'tdee': tdee,
-      'targetCalories': targetCalories,
-      'targetProtein': targetProtein,
-      'targetCarbs': targetCarbs,
-      'targetFat': targetFat,
-      'targetWaterGlasses': targetWaterGlasses,
+      'tdee': stats.tdee,
+      'targetCalories': stats.targetCalories,
+      'targetProtein': stats.targetProtein,
+      'targetCarbs': stats.targetCarbs,
+      'targetFat': stats.targetFat,
+      'targetWaterGlasses': stats.targetWaterGlasses,
     };
   }
 
   // --- Daily Log Operations ---
   // New Structure: /users/{uid}/daily_logs/{YYYY-MM-DD}
 
+  static String utcDateKey([DateTime? dateTime]) {
+    final now = (dateTime ?? DateTime.now()).toUtc();
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
   DocumentReference _getTodayLogRef(String uid) {
-    String todayStr = DateTime.now().toIso8601String().split('T')[0];
-    return _usersRef.doc(uid).collection('daily_logs').doc(todayStr);
+    return _usersRef.doc(uid).collection('daily_logs').doc(utcDateKey());
   }
 
   Stream<DailyLog?> streamDailyLog(String uid) {
@@ -133,6 +112,7 @@ class FirestoreService {
   }
 
   Future<void> addFood(String uid, FoodItem food) async {
+    _validateFoodItem(food);
     DocumentReference logRef = _getTodayLogRef(uid);
     
     await _db.runTransaction((transaction) async {
@@ -149,27 +129,37 @@ class FirestoreService {
           workouts: [],
           lastUpdated: DateTime.now(),
         );
-        transaction.set(logRef, newLog.toMap());
+        final logData = newLog.toMap();
+        logData['lastUpdated'] = FieldValue.serverTimestamp();
+        transaction.set(logRef, logData);
       } else {
         Map data = snapshot.data() as Map;
         int currentCals = data['caloriesIn'] ?? 0;
         int currentProtein = data['protein'] ?? 0;
         int currentCarbs = data['carbs'] ?? 0;
         int currentFat = data['fat'] ?? 0;
+        final newCalories = currentCals + food.calories;
+        if (newCalories > _maxDailyCaloriesIn) {
+          throw StateError('Daily calories exceed the allowed limit.');
+        }
 
         transaction.update(logRef, {
-          'caloriesIn': currentCals + food.calories,
+          'caloriesIn': newCalories,
           'protein': currentProtein + food.protein,
           'carbs': currentCarbs + food.carbs,
           'fat': currentFat + food.fat,
           'foods': FieldValue.arrayUnion([food.toMap()]),
-          'lastUpdated': DateTime.now().toIso8601String(),
+          'lastUpdated': FieldValue.serverTimestamp(),
         });
       }
     });
   }
 
   Future<void> updateWater(String uid, int delta) async {
+    if (![1, 2, 6, -1].contains(delta)) {
+      throw ArgumentError('Unsupported water delta.');
+    }
+
     DocumentReference logRef = _getTodayLogRef(uid);
 
     await _db.runTransaction((transaction) async {
@@ -184,41 +174,76 @@ class FirestoreService {
             workouts: [],
             lastUpdated: DateTime.now(),
           );
-          transaction.set(logRef, newLog.toMap());
+          final logData = newLog.toMap();
+          logData['lastUpdated'] = FieldValue.serverTimestamp();
+          transaction.set(logRef, logData);
         }
       } else {
         int currentWater = (snapshot.data() as Map)['waterGlasses'] ?? 0;
         int newValue = currentWater + delta;
         if(newValue < 0) newValue = 0;
+        if (newValue > _maxWaterGlasses) {
+          throw StateError('Daily water exceeds the allowed limit.');
+        }
         
         transaction.update(logRef, {
           'waterGlasses': newValue,
-          'lastUpdated': DateTime.now().toIso8601String(),
+          'lastUpdated': FieldValue.serverTimestamp(),
         });
       }
     });
   }
 
   Future<void> finishWorkout(String uid, WorkoutItem workout) async {
+    _validateWorkout(workout);
     DocumentReference logRef = _getTodayLogRef(uid);
+    
+    // Estimate calories burned based on duration and level
+    int minutes = workout.minutes;
+    int calPerMin = 5; // Beginner
+    if (workout.level == 'Intermediate') calPerMin = 7;
+    if (workout.level == 'Expert') calPerMin = 10;
+    int burned = minutes * calPerMin;
 
-    final snapshot = await logRef.get();
-    if (!snapshot.exists) {
-      final newLog = DailyLog(
-          date: logRef.id,
-          caloriesIn: 0,
-          waterGlasses: 0,
-          foods: [],
-          workouts: [workout],
-          lastUpdated: DateTime.now(),
-        );
-      await logRef.set(newLog.toMap());
-    } else {
-      await logRef.update({
-        'workouts': FieldValue.arrayUnion([workout.toMap()]),
-        'lastUpdated': DateTime.now().toIso8601String(),
-      });
-    }
+    await _db.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(logRef);
+      if (!snapshot.exists) {
+        final newLog = DailyLog(
+            date: logRef.id,
+            caloriesIn: 0,
+            caloriesOut: burned,
+            waterGlasses: 0,
+            foods: [],
+            workouts: [workout],
+            lastUpdated: DateTime.now(),
+          );
+        final logData = newLog.toMap();
+        logData['lastUpdated'] = FieldValue.serverTimestamp();
+        transaction.set(logRef, logData);
+      } else {
+        Map data = snapshot.data() as Map;
+        int currentOut = data['caloriesOut'] ?? 0;
+        final existingWorkouts = (data['workouts'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map((item) => WorkoutItem.fromMap(Map<String, dynamic>.from(item)))
+            .toList();
+
+        if (existingWorkouts.any((item) => item.id == workout.id)) {
+          return;
+        }
+
+        final newCaloriesOut = currentOut + burned;
+        if (newCaloriesOut > _maxDailyCaloriesOut) {
+          throw StateError('Daily workout calories exceed the allowed limit.');
+        }
+
+        transaction.update(logRef, {
+          'caloriesOut': newCaloriesOut,
+          'workouts': FieldValue.arrayUnion([workout.toMap()]),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+    });
   }
 
   // Stream All Daily Logs (History)

@@ -1,16 +1,14 @@
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../models/user_profile.dart';
-import '../models/daily_log.dart';
 import 'dart:math' as math;
-import '../widgets/tube_progress_bar.dart';
-import '../app_theme.dart';
+
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../services/ai_service.dart'; // For scanning from home if needed later
-import 'package:image_picker/image_picker.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+
+import '../app_theme.dart';
+import '../models/daily_log.dart';
+import '../models/user_profile.dart';
+import '../widgets/tube_progress_bar.dart';
 
 class TipItem {
   final String text;
@@ -21,31 +19,15 @@ class TipItem {
 }
 
 final List<TipItem> _tips = [
-  // Nutrition
-  TipItem("ดื่มน้ำก่อนอาหาร 30 นาที ช่วยลดความอยากอาหารได้ 15%", LucideIcons.droplet, Colors.blue),
-  TipItem("ข้าวมันไก่ (ไม่หนัง) แคลอรี่ลดลงกว่า 100 kcal", LucideIcons.utensils, Colors.orange),
-  TipItem("การเคี้ยวอาหารช้าๆ ช่วยให้อิ่มเร็วขึ้นและย่อยง่าย", LucideIcons.smile, Colors.green),
-  TipItem("โปรตีนช่วยซ่อมแซมกล้ามเนื้อ ควรทานหลังออกกำลังกาย", LucideIcons.beef, Colors.red),
-  TipItem("ลดน้ำตาลในเครื่องดื่ม ช่วยลดไขมันสะสมหน้าท้องได้", LucideIcons.cupSoda, Colors.brown),
-  TipItem("ไฟเบอร์จากผักช่วยชะลอการดูดซึมน้ำตาลเข้ากระแสเลือด", LucideIcons.carrot, Colors.green),
-  // Exercise
-  TipItem("เดินเร็ว 30 นาที เผาผลาญได้ประมาณ 150 kcal", LucideIcons.footprints, Colors.purple),
-  TipItem("การเวทเทรนนิ่งช่วยเพิ่มอัตราการเผาผลาญระยะยาว", LucideIcons.dumbbell, Colors.blueGrey),
-  TipItem("คาดิโอตอนเช้าขณะท้องว่าง อาจช่วยดึงไขมันมาใช้ได้ดี", LucideIcons.sun, Colors.orange),
-  TipItem("ยืดเหยียดกล้ามเนื้อหลังออกกำลังกาย ลดอาการบาดเจ็บ", LucideIcons.activity, Colors.pink),
-  // Health & Lifestyle
-  TipItem("การนอนหลับ 7-8 ชั่วโมง ช่วยควบคุมฮอร์โมนความหิว", LucideIcons.moon, Colors.indigo),
-  TipItem("ความเครียดทำให้ร่างกายสะสมไขมันมากขึ้น", LucideIcons.frown, Colors.grey),
-  TipItem("การจดบันทึกอาหาร ช่วยให้ลดน้ำหนักสำเร็จเพิ่มขึ้น 2 เท่า", LucideIcons.bookOpen, Colors.teal),
-  TipItem("ชั่งน้ำหนักสัปดาห์ละ 1 ครั้ง เพียงพอแล้ว", LucideIcons.scale, Colors.cyan),
-  TipItem("ดื่มกาแฟดำไม่ใส่น้ำตาล ช่วยกระตุ้นการเผาผลาญ", LucideIcons.coffee, Colors.brown),
-  TipItem("แอปเปิ้ลเขียวมีน้ำตาลน้อยกว่าแอปเปิ้ลแดง", LucideIcons.apple, Colors.lightGreen),
-  TipItem("ไข่ต้ม 1 ฟอง ให้โปรตีนประมาณ 6-7 กรัม", LucideIcons.egg, Colors.yellow),
-  TipItem("การดื่มน้ำเย็น ร่างกายต้องใช้พลังงานปรับอุณหภูมิเล็กน้อย", LucideIcons.snowflake, Colors.lightBlue),
-  TipItem("ควรขยับร่างกายทุกๆ 1 ชั่วโมง หากนั่งทำงานนาน", LucideIcons.clock, Colors.deepPurple),
-  TipItem("ลดของทอดของมันเพียงวันละมื้อ ช่วยลดแคลอรี่ได้มหาศาล", LucideIcons.ban, Colors.red),
+  TipItem("ดื่มน้ำก่อนอาหาร 30 นาที ช่วยลดความอยากอาหารได้",
+      LucideIcons.droplet, AppTheme.waterColor),
+  TipItem("โปรตีนช่วยให้อิ่มนานและซ่อมแซมกล้ามเนื้อได้ดี", LucideIcons.beef,
+      AppTheme.proteinColor),
+  TipItem("จดอาหารทุกวันช่วยให้คุมแคลอรี่ได้แม่นขึ้น", LucideIcons.bookOpen,
+      AppTheme.primaryColor),
+  TipItem("นอนให้พอ 7-8 ชั่วโมง ช่วยคุมฮอร์โมนความหิว", LucideIcons.moon,
+      AppTheme.fatColor),
 ];
-
 
 class DashboardScreen extends StatelessWidget {
   final UserProfile profile;
@@ -63,280 +45,365 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int caloriesIn = log?.caloriesIn ?? 0;
-    int target = profile.targetCalories;
-    double percentage = (caloriesIn / target).clamp(0.0, 1.0);
-    int remaining = target - caloriesIn;
-    bool isOver = caloriesIn > target;
+    final caloriesIn = log?.caloriesIn ?? 0;
+    final target = profile.targetCalories;
+    final percentage = target > 0 ? (caloriesIn / target).clamp(0.0, 1.0) : 0.0;
+    final remaining = target - caloriesIn;
+    final isOver = caloriesIn > target;
+    final currentProtein = log?.protein ?? 0;
+    final currentCarbs = log?.carbs ?? 0;
+    final currentFat = log?.fat ?? 0;
+    final currentWater = log?.waterGlasses ?? 0;
+    final todayTip = _tips[DateTime.now().day % _tips.length];
 
-    // Actual macros from log
-    int currentProtein = log?.protein ?? 0;
-    int currentCarbs = log?.carbs ?? 0;
-    int currentFat = log?.fat ?? 0;
-
-    Color progressColor = isOver ? AppTheme.error : AppTheme.calorieColor;
-    if (!isOver && percentage > 0.8) progressColor = AppTheme.calorieColor.withOpacity(0.8);
-    if (!isOver && percentage >= 1.0) progressColor = AppTheme.calorieColor;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Calorie Over Limit Alert
-          if (isOver) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.red[100]!),
-              ),
-              child: Row(
-                children: [
-                   const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 20),
-                   const SizedBox(width: 12),
-                   Expanded(
-                     child: Text(
-                       'แคลอรี่วันนี้เกินกำหนดไป ${caloriesIn - target} kcal แล้วนะ!',
-                       style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13),
-                     ),
-                   ),
-                ],
-              ),
+    return Container(
+      decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.pagePadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeroCard(
+              caloriesIn: caloriesIn,
+              target: target,
+              remaining: remaining,
+              isOver: isOver,
+              percentage: percentage,
             ),
-          ],
-
-          // Next Meal Budget Card (New)
-          if (!isOver && remaining > 0) _buildNextMealBudget(remaining, target),
-          
-          if (isOver) const SizedBox(height: 16),
-
-          // Circular Progress Card (Compact)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: AppTheme.cardRadius,
-              border: Border.all(color: (isOver ? AppTheme.error : AppTheme.calorieColor).withOpacity(0.1)),
-              boxShadow: AppTheme.softShadow(isOver ? AppTheme.error : AppTheme.calorieColor),
-            ),
-            child: Stack(
+            const SizedBox(height: AppTheme.sectionGap),
+            _buildSectionTitle(
+                'ภาพรวมสารอาหาร', 'ดูว่ามื้อวันนี้ไปถึงเป้าหมายแค่ไหน'),
+            const SizedBox(height: 12),
+            Row(
               children: [
-                Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: Text('แคลอรี่วันนี้', style: TextStyle(color: Colors.blueGrey[400], fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(isOver ? '+${caloriesIn - target}' : '$remaining', 
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: isOver ? Colors.redAccent : Colors.blue[600])),
-                            Text(isOver ? 'เกิน (kcal)' : 'เหลือ (kcal)', style: TextStyle(fontSize: 10, color: isOver ? Colors.red[300] : Colors.blueGrey[200])),
-                          ],
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 150,
-                      width: 150,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          CircularProgressIndicator(
-                            value: 1.0,
-                            valueColor: AlwaysStoppedAnimation(isOver ? Colors.red[50] : Colors.blue[50]),
-                            strokeWidth: 14,
-                          ),
-                          CircularProgressIndicator(
-                            value: percentage,
-                            valueColor: AlwaysStoppedAnimation(progressColor),
-                            strokeWidth: 14,
-                            strokeCap: StrokeCap.round,
-                          ),
-                          Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(isOver ? LucideIcons.frown : LucideIcons.zap, color: progressColor, size: 24),
-                                Text('$caloriesIn', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: -1)),
-                                Text('/ $target kcal', style: TextStyle(fontSize: 10, color: Colors.blueGrey[300], fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMacro(
-                          'โปรตีน', 
-                          currentProtein, 
-                          profile.targetProtein, 
-                          AppTheme.proteinColor
-                        ),
-                        _buildMacro(
-                          'คาร์บ', 
-                          currentCarbs, 
-                          profile.targetCarbs, 
-                          AppTheme.carbsColor
-                        ),
-                        _buildMacro(
-                          'ไขมัน', 
-                          currentFat, 
-                          profile.targetFat, 
-                          AppTheme.fatColor
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Positioned(
-                  top: -40, right: -40, 
-                  child: Container(
-                    width: 140, height: 140,
-                    decoration: BoxDecoration(color: (isOver ? Colors.red : Colors.blue).withOpacity(0.03), shape: BoxShape.circle),
-                  )
-                )
+                _buildMacroCard('โปรตีน', currentProtein, profile.targetProtein,
+                    AppTheme.proteinColor, LucideIcons.beef),
+                const SizedBox(width: 12),
+                _buildMacroCard('คาร์บ', currentCarbs, profile.targetCarbs,
+                    AppTheme.carbsColor, LucideIcons.sun),
+                const SizedBox(width: 12),
+                _buildMacroCard('ไขมัน', currentFat, profile.targetFat,
+                    AppTheme.fatColor, LucideIcons.moon),
               ],
             ),
-          ),
-          
-          const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.sectionGap),
+            _buildSectionTitle(
+                'ทางลัดประจำวัน', 'เข้าถึงสิ่งที่ใช้บ่อยให้เร็วขึ้น'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton(
+                    icon: LucideIcons.plus,
+                    label: 'เพิ่มอาหาร',
+                    subtitle: 'บันทึกมื้อใหม่',
+                    color: AppTheme.primaryColor,
+                    textColor: Colors.white,
+                    onTap: () => onSwitchTab(1),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildActionButton(
+                    icon: LucideIcons.play,
+                    label: 'ออกกำลังกาย',
+                    subtitle: 'เปิดคลังวิดีโอ',
+                    color: Colors.white,
+                    textColor: AppTheme.ink,
+                    iconColor: Colors.pinkAccent,
+                    onTap: () => onSwitchTab(2),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppTheme.sectionGap),
+            _buildWeeklyChart(),
+            const SizedBox(height: AppTheme.sectionGap),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildWaterCard(currentWater),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildInsightCard(todayTip),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Weekly Summary Chart
-          _buildWeeklyChart(),
-          
-          const SizedBox(height: 16),
+  Widget _buildHeroCard({
+    required int caloriesIn,
+    required int target,
+    required int remaining,
+    required bool isOver,
+    required double percentage,
+  }) {
+    final emphasisColor = isOver ? AppTheme.error : AppTheme.primaryColor;
+    final ringBackground =
+        isOver ? AppTheme.error.withOpacity(0.12) : AppTheme.pageTintStrong;
 
-          // Quick Actions
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: AppTheme.tintedCard(emphasisColor),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             children: [
               Expanded(
-                child: _buildActionButton(
-                  icon: LucideIcons.plus,
-                  label: 'จดอาหาร',
-                  color: Colors.green,
-                  textColor: Colors.white,
-                  onTap: () => onSwitchTab(1), // Index for Track
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'แดชบอร์ดวันนี้',
+                      style: TextStyle(
+                        fontSize: AppTheme.largeTitle,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isOver
+                          ? 'วันนี้เกินเป้าหมายแล้ว ลองบาลานซ์มื้อถัดไป'
+                          : 'ยังเหลือพลังงานสำหรับการกินอย่างสมดุล',
+                      style: const TextStyle(
+                        fontSize: AppTheme.body,
+                        color: AppTheme.mutedText,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildActionButton(
-                  icon: LucideIcons.play,
-                  label: 'ออกกำลังกาย',
-                  color: Colors.white,
-                  textColor: Colors.grey[800]!,
-                  iconColor: Colors.pink,
-                  onTap: () => onSwitchTab(2), // Index for Content
+              const SizedBox(width: 18),
+              SizedBox(
+                width: 144,
+                height: 144,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: 1,
+                      strokeWidth: 14,
+                      valueColor: AlwaysStoppedAnimation(ringBackground),
+                    ),
+                    CircularProgressIndicator(
+                      value: percentage,
+                      strokeWidth: 14,
+                      strokeCap: StrokeCap.round,
+                      valueColor: AlwaysStoppedAnimation(emphasisColor),
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                              isOver
+                                  ? LucideIcons.alertTriangle
+                                  : LucideIcons.zap,
+                              color: emphasisColor,
+                              size: 22),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$caloriesIn',
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.ink),
+                          ),
+                          Text(
+                            '/ $target kcal',
+                            style: const TextStyle(
+                                fontSize: AppTheme.meta,
+                                color: AppTheme.mutedText),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 16),
-          
-          // Water Progress Card (Dashboard)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: AppTheme.cardRadius,
-              border: Border.all(color: AppTheme.waterColor.withOpacity(0.1)),
-              boxShadow: AppTheme.softShadow(AppTheme.waterColor),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.droplet, color: Colors.blue, size: 20),
-                          SizedBox(width: 8),
-                          Expanded(child: Text('ดื่มน้ำวันนี้', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('${log?.waterGlasses ?? 0} / ${profile.targetWaterGlasses} แก้ว', 
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-                  ],
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatChip(
+                  label: isOver ? 'เกินเป้า' : 'เหลืออีก',
+                  value: '${remaining.abs()} kcal',
+                  icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
+                  color: emphasisColor,
                 ),
-                const SizedBox(height: 16),
-                TubeProgressBar(
-                  progress: (profile.targetWaterGlasses > 0 
-                    ? (log?.waterGlasses ?? 0) / profile.targetWaterGlasses 
-                    : 0.0).clamp(0.0, 1.0),
-                  colors: [Colors.blue[300]!, Colors.blue[500]!],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatChip(
+                  label: 'ดื่มน้ำเป้าหมาย',
+                  value: '${profile.targetWaterGlasses} แก้ว',
+                  icon: LucideIcons.droplet,
+                  color: AppTheme.waterColor,
                 ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Insight Card (Dynamic)
-          Builder(
-            builder: (context) {
-              // Random selection based on timestamp to change periodically or simple random
-              // Using simple random will change on every rebuild.
-              // To make it change "when changing pages" but stable within the view, 
-              // we rely on the fact that switching tabs in some setups rebuilds.
-              // If IndexedStack preserves state, this might be static.
-              // Let's use Random from current time microsecond to ensure variety.
-              final tip = _tips[math.Random().nextInt(_tips.length)];
-              
-              return Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: tip.color.withOpacity(0.8),
-                  borderRadius: AppTheme.cardRadius,
-                  boxShadow: AppTheme.softShadow(tip.color),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatChip(
+                  label: 'Streak',
+                  value: '${profile.streak} วัน',
+                  icon: LucideIcons.flame,
+                  color: AppTheme.warning,
                 ),
-                child: Stack(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(LucideIcons.lightbulb, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text('รู้หรือไม่?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(tip.text, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.4)),
-                      ],
-                    ),
-                    Positioned(
-                      right: -10, bottom: -10,
-                      child: Icon(tip.icon, size: 80, color: Colors.white.withOpacity(0.2)),
-                    )
-                  ],
-                ),
-              );
-            }
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildStatChip({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.86),
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(color: color.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: AppTheme.meta, color: AppTheme.mutedText)),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: AppTheme.body,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                fontSize: AppTheme.title,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.ink)),
+        const SizedBox(height: 4),
+        Text(subtitle,
+            style: const TextStyle(
+                fontSize: AppTheme.body, color: AppTheme.mutedText)),
+      ],
+    );
+  }
+
+  Widget _buildMacroCard(
+      String title, int current, int target, Color color, IconData icon) {
+    final progress = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
+    final remaining = target - current;
+    final isOver = remaining < 0;
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: AppTheme.elevatedCard(
+          color: Colors.white,
+          borderColor: color.withOpacity(0.12),
+          boxShadow: AppTheme.softShadow(color),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                        fontSize: AppTheme.body,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text('$current / $target g',
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.ink)),
+            const SizedBox(height: 10),
+            TubeProgressBar(
+              progress: progress,
+              colors: [color.withOpacity(0.55), color],
+              backgroundColor: color.withOpacity(0.10),
+              height: 8,
+              borderRadius: 999,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isOver ? 'เกิน ${remaining.abs()} g' : 'เหลือ ${remaining} g',
+              style: TextStyle(
+                fontSize: AppTheme.meta,
+                fontWeight: FontWeight.w700,
+                color: isOver ? AppTheme.error : AppTheme.mutedText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWeeklyChart() {
-    // Prepare data for the last 7 days
     final now = DateTime.now();
-    final List<BarChartGroupData> barGroups = [];
-    final List<String> weekDays = [];
+    final barGroups = <BarChartGroupData>[];
+    final weekDays = <String>[];
 
     for (int i = 6; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
@@ -344,21 +411,20 @@ class DashboardScreen extends StatelessWidget {
       final dayName = i == 0 ? 'วันนี้' : DateFormat('E', 'th').format(date);
       weekDays.add(dayName);
 
-      // Find log for this date
-      final log = weeklyLogs.firstWhere(
-        (l) => l.date == dateStr, 
+      final logItem = weeklyLogs.firstWhere(
+        (l) => l.date == dateStr,
         orElse: () => DailyLog(
-          date: dateStr, 
-          caloriesIn: 0, 
-          waterGlasses: 0, 
-          foods: [], 
-          workouts: [], 
-          lastUpdated: date
-        )
+          date: dateStr,
+          caloriesIn: 0,
+          waterGlasses: 0,
+          foods: [],
+          workouts: [],
+          lastUpdated: date,
+        ),
       );
 
-      final double val = log.caloriesIn.toDouble();
-      final bool isOver = log.caloriesIn > profile.targetCalories;
+      final val = logItem.caloriesIn.toDouble();
+      final isOver = logItem.caloriesIn > profile.targetCalories;
 
       barGroups.add(
         BarChartGroupData(
@@ -366,155 +432,123 @@ class DashboardScreen extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: val,
+              width: 16,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(8)),
               gradient: LinearGradient(
-                colors: isOver 
-                  ? [Colors.redAccent.withOpacity(0.7), Colors.redAccent] 
-                  : [AppTheme.calorieColor.withOpacity(0.7), AppTheme.calorieColor],
+                colors: isOver
+                    ? [AppTheme.error.withOpacity(0.6), AppTheme.error]
+                    : [AppTheme.secondaryColor, AppTheme.primaryColor],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
               ),
-              width: 14,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
               backDrawRodData: BackgroundBarChartRodData(
                 show: true,
                 toY: profile.targetCalories.toDouble(),
-                color: Colors.blue[50]!.withOpacity(0.5),
+                color: AppTheme.pageTintStrong,
               ),
             ),
           ],
-          showingTooltipIndicators: val > 0 ? [0] : [],
         ),
       );
     }
 
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: AppTheme.cardRadius,
-          border: Border.all(color: Colors.blue[50]!),
-          boxShadow: AppTheme.softShadow(Colors.blueGrey),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('สรุปรายสัปดาห์ (แคลอรี่)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Icon(LucideIcons.barChart2, color: Colors.blueGrey[300], size: 18),
-              ],
-            ),
-            const SizedBox(height: 32), // More space for top labels
-            AspectRatio(
-              aspectRatio: 2.0, // More compact
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: (weeklyLogs.isEmpty ? profile.targetCalories : 
-                         weeklyLogs.map((e) => e.caloriesIn).reduce(math.max).toDouble()) * 1.3,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => Colors.transparent,
-                      tooltipPadding: EdgeInsets.zero,
-                      tooltipMargin: 4,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          rod.toY.round().toString(),
-                          TextStyle(
-                            color: rod.toY > profile.targetCalories ? Colors.redAccent : Colors.blueGrey[700],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              weekDays[value.toInt()],
-                              style: TextStyle(color: Colors.blueGrey[300], fontSize: 9, fontWeight: FontWeight.bold),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  gridData: const FlGridData(show: false),
-                  borderData: FlBorderData(show: false),
-                  barGroups: barGroups,
-                  extraLinesData: ExtraLinesData(
-                    horizontalLines: [
-                      HorizontalLine(
-                        y: profile.targetCalories.toDouble(),
-                        color: Colors.orange.withOpacity(0.4),
-                        strokeWidth: 1,
-                        dashArray: [5, 5],
-                        label: HorizontalLineLabel(
-                          show: true,
-                          alignment: Alignment.topRight,
-                          style: TextStyle(color: Colors.orange.withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.bold),
-                          labelResolver: (_) => 'เป้าหมาย',
-                        ),
-                      ),
-                    ],
-                  ),
+    final maxLog = weeklyLogs.isEmpty
+        ? profile.targetCalories.toDouble()
+        : weeklyLogs.map((e) => e.caloriesIn).reduce(math.max).toDouble();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.elevatedCard(
+        color: Colors.white,
+        borderColor: const Color(0xFFE3ECFA),
+        boxShadow: AppTheme.softShadow(const Color(0xFF7CA7E9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'แนวโน้มแคลอรี่ 7 วัน',
+                  style: TextStyle(
+                      fontSize: AppTheme.title,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.ink),
                 ),
               ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.pageTintStrong,
+                  borderRadius: AppTheme.pillRadius,
+                ),
+                child: const Text('เป้าหมายรายวัน',
+                    style: TextStyle(
+                        fontSize: AppTheme.meta,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primaryColor)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          AspectRatio(
+            aspectRatio: 1.85,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: (math.max(maxLog, profile.targetCalories.toDouble())) *
+                    1.25,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: profile.targetCalories / 2,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: AppTheme.pageTintStrong,
+                    strokeWidth: 1,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) => Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          weekDays[value.toInt()],
+                          style: const TextStyle(
+                              fontSize: AppTheme.meta,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.mutedText),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: profile.targetCalories.toDouble(),
+                      color: AppTheme.warning.withOpacity(0.45),
+                      strokeWidth: 1.2,
+                      dashArray: [5, 4],
+                    ),
+                  ],
+                ),
+                barGroups: barGroups,
+              ),
             ),
-          ],
-        ),
-      );
-  }
-
-  Widget _buildMacro(String label, int current, int target, Color color) {
-    int remaining = target - current;
-    bool isOver = remaining < 0;
-    double progress = (target > 0 ? current / target : 0.0).clamp(0.0, 1.0);
-
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.macroBg(color), 
-          borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: AppTheme.macroBorder(color)),
-        ),
-        child: Column(
-          children: [
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color.withOpacity(0.8))),
-            const SizedBox(height: 8),
-            // Minimalist Linear Progress Bar (Tube)
-            TubeProgressBar(
-              progress: progress,
-              colors: [isOver ? AppTheme.error : color.withOpacity(0.6), isOver ? AppTheme.error : color],
-              backgroundColor: color.withOpacity(0.1),
-              height: 6,
-              borderRadius: 4,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isOver ? '+${remaining.abs()}g' : '${remaining}g', 
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isOver ? AppTheme.error : color)
-            ),
-            Text(
-              isOver ? 'เกิน' : 'เหลือ', 
-              style: TextStyle(fontSize: 9, color: isOver ? AppTheme.error.withOpacity(0.6) : color.withOpacity(0.4), fontWeight: FontWeight.w500)
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -522,90 +556,181 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
+    required String subtitle,
     required Color color,
     required Color textColor,
     Color? iconColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: iconColor ?? textColor),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-          ],
-        ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.95, end: 1),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              height: 118,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: AppTheme.cardRadius,
+                border: Border.all(
+                    color: color == Colors.white
+                        ? const Color(0xFFE2EBF8)
+                        : color.withOpacity(0.2)),
+                boxShadow: AppTheme.softShadow(
+                    color == Colors.white ? AppTheme.primaryColor : color),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color == Colors.white
+                          ? AppTheme.pageTintStrong
+                          : Colors.white.withOpacity(0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: iconColor ?? textColor, size: 20),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: textColor)),
+                      const SizedBox(height: 4),
+                      Text(subtitle,
+                          style: TextStyle(
+                              fontSize: AppTheme.meta,
+                              color: textColor.withOpacity(0.75))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWaterCard(int currentWater) {
+    final progress = profile.targetWaterGlasses > 0
+        ? (currentWater / profile.targetWaterGlasses).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.elevatedCard(
+        color: Colors.white,
+        borderColor: AppTheme.waterColor.withOpacity(0.14),
+        boxShadow: AppTheme.softShadow(AppTheme.waterColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppTheme.waterColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.droplet,
+                    color: AppTheme.waterColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text('น้ำดื่มวันนี้',
+                    style: TextStyle(
+                        fontSize: AppTheme.title,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text('$currentWater / ${profile.targetWaterGlasses} แก้ว',
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink)),
+          const SizedBox(height: 12),
+          TubeProgressBar(
+            progress: progress,
+            colors: const [AppTheme.secondaryColor, AppTheme.waterColor],
+            backgroundColor: AppTheme.waterColor.withOpacity(0.08),
+            height: 10,
+            borderRadius: 999,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            progress >= 1
+                ? 'ครบเป้าหมายแล้ว เยี่ยมมาก'
+                : 'อีก ${profile.targetWaterGlasses - currentWater} แก้วจะครบเป้าหมาย',
+            style: const TextStyle(
+                fontSize: AppTheme.meta, color: AppTheme.mutedText),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNextMealBudget(int remaining, int target) {
-    final now = DateTime.now();
-    final hour = now.hour;
-    String mealName = 'มื้อถัดไป';
-    int budget = 0;
-    IconData icon = LucideIcons.utensils;
-
-    if (hour >= 5 && hour < 10) {
-      mealName = 'มื้อเช้า';
-      budget = (target * 0.25).round();
-      icon = LucideIcons.sunrise;
-    } else if (hour >= 10 && hour < 15) {
-      mealName = 'มื้อกลางวัน';
-      budget = (target * 0.35).round();
-      icon = LucideIcons.sun;
-    } else if (hour >= 15 && hour < 21) {
-      mealName = 'มื้อเย็น';
-      budget = (target * 0.30).round();
-      icon = LucideIcons.sunset;
-    } else {
-      mealName = 'มื้อว่าง/มื้อดึก';
-      budget = (target * 0.10).round();
-      icon = LucideIcons.moon;
-    }
-
-    // Ensure budget doesn't exceed remaining
-    if (budget > remaining) budget = remaining;
-    if (budget < 0) budget = 0;
-
+  Widget _buildInsightCard(TipItem tip) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.blueAccent.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.1)),
+        gradient: LinearGradient(
+          colors: [tip.color.withOpacity(0.88), tip.color.withOpacity(0.68)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppTheme.cardRadius,
+        boxShadow: AppTheme.softShadow(tip.color),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.blueAccent, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('งบประมาณสำหรับ $mealName', style: TextStyle(color: Colors.blueGrey[400], fontSize: 11, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 2),
-                Text('แนะนำให้ทานไม่เกิน $budget kcal', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14)),
-              ],
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.18),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(LucideIcons.lightbulb,
+                color: Colors.white, size: 18),
           ),
-          Text('${((budget / target) * 100).round()}%', style: TextStyle(color: Colors.blueAccent.withOpacity(0.3), fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 18),
+          const Text('Tip วันนี้',
+              style: TextStyle(
+                  fontSize: AppTheme.meta,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white70)),
+          const SizedBox(height: 6),
+          Text(tip.text,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.45)),
+          const SizedBox(height: 18),
+          Align(
+            alignment: Alignment.bottomRight,
+            child:
+                Icon(tip.icon, color: Colors.white.withOpacity(0.28), size: 44),
+          ),
         ],
       ),
     );

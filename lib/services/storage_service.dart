@@ -10,7 +10,10 @@ class StorageService {
       final ref = _storage.ref().child('users').child(uid).child('profile.jpg');
       final uploadTask = await ref.putData(
         data,
-        SettableMetadata(contentType: 'image/jpeg'),
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=3600',
+        ),
       );
       final downloadUrl = await uploadTask.ref.getDownloadURL();
       print('Profile picture uploaded: $downloadUrl');

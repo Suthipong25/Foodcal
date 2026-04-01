@@ -108,13 +108,13 @@ class HistoryScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              _buildMacroInfo('โปรตีน', '${log.protein}g', AppTheme.proteinColor),
+              _buildMacroInfo('🥩', '${log.protein}g', AppTheme.proteinColor),
               const SizedBox(width: 12),
-              _buildMacroInfo('คาร์บ', '${log.carbs}g', AppTheme.carbsColor),
+              _buildMacroInfo('🌾', '${log.carbs}g', AppTheme.carbsColor),
               const SizedBox(width: 12),
-              _buildMacroInfo('ไขมัน', '${log.fat}g', AppTheme.fatColor),
+              _buildMacroInfo('🥑', '${log.fat}g', AppTheme.fatColor),
               const SizedBox(width: 12),
-              _buildMacroInfo('น้ำ', '${log.waterGlasses} แก้ว', AppTheme.waterColor),
+              _buildMacroInfo('💧', '${log.waterGlasses} แก้ว', AppTheme.waterColor),
             ],
           ),
         ],

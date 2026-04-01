@@ -1,21 +1,269 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // กฎที่ปลอดภัยที่สุดสำหรับแอป Foodcal
-    // ข้อมูลของผู้ใช้แต่ละคนจะถูกแยกออกจากกันอย่างเด็ดขาด
-    
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isNonNegativeInt(field) {
+      return field is int && field >= 0;
+    }
+
+    function isIsoString(field) {
+      return field is string && field.size() >= 10;
+    }
+
+    function hasOnlyProfileCreateKeys() {
+      return request.resource.data.keys().hasOnly([
+        'name',
+        'gender',
+        'age',
+        'height',
+        'weight',
+        'activityLevel',
+        'goal',
+        'joinedDate',
+        'photoUrl'
+      ]);
+    }
+
+    function hasOnlyProfileUpdateKeys() {
+      return request.resource.data.keys().hasOnly([
+        'name',
+        'gender',
+        'age',
+        'height',
+        'weight',
+        'activityLevel',
+        'goal',
+        'joinedDate',
+        'photoUrl',
+        'tdee',
+        'targetCalories',
+        'targetProtein',
+        'targetCarbs',
+        'targetFat',
+        'targetWaterGlasses',
+        'streak',
+        'lastLoginDate'
+      ]);
+    }
+
+    function profileBaseValid() {
+      return request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.gender in ['male', 'female']
+        && request.resource.data.age is int
+        && request.resource.data.age >= 13
+        && request.resource.data.age <= 120
+        && request.resource.data.height is number
+        && request.resource.data.height >= 100
+        && request.resource.data.height <= 260
+        && request.resource.data.weight is number
+        && request.resource.data.weight >= 20
+        && request.resource.data.weight <= 400
+        && request.resource.data.activityLevel in ['sedentary', 'light', 'moderate', 'active']
+        && request.resource.data.goal in ['lose', 'maintain', 'gain']
+        && isIsoString(request.resource.data.joinedDate)
+        && (!('photoUrl' in request.resource.data)
+          || request.resource.data.photoUrl == null
+          || (request.resource.data.photoUrl is string
+            && !request.resource.data.photoUrl.matches('^data:')));
+    }
+
+    function legacyProfileFieldsUnchanged() {
+      return (!('tdee' in resource.data) ? !('tdee' in request.resource.data) : request.resource.data.tdee == resource.data.tdee)
+        && (!('targetCalories' in resource.data) ? !('targetCalories' in request.resource.data) : request.resource.data.targetCalories == resource.data.targetCalories)
+        && (!('targetProtein' in resource.data) ? !('targetProtein' in request.resource.data) : request.resource.data.targetProtein == resource.data.targetProtein)
+        && (!('targetCarbs' in resource.data) ? !('targetCarbs' in request.resource.data) : request.resource.data.targetCarbs == resource.data.targetCarbs)
+        && (!('targetFat' in resource.data) ? !('targetFat' in request.resource.data) : request.resource.data.targetFat == resource.data.targetFat)
+        && (!('targetWaterGlasses' in resource.data) ? !('targetWaterGlasses' in request.resource.data) : request.resource.data.targetWaterGlasses == resource.data.targetWaterGlasses)
+        && (!('streak' in resource.data) ? !('streak' in request.resource.data) : request.resource.data.streak == resource.data.streak)
+        && (!('lastLoginDate' in resource.data) ? !('lastLoginDate' in request.resource.data) : request.resource.data.lastLoginDate == resource.data.lastLoginDate)
+        && request.resource.data.joinedDate == resource.data.joinedDate;
+    }
+
+    function validFoodEntry(food) {
+      return food is map
+        && food.keys().hasOnly(['name', 'calories', 'protein', 'carbs', 'fat', 'time', 'mealType'])
+        && food.name is string
+        && food.name.size() > 0
+        && food.name.size() <= 120
+        && isNonNegativeInt(food.calories)
+        && isNonNegativeInt(food.protein)
+        && isNonNegativeInt(food.carbs)
+        && isNonNegativeInt(food.fat)
+        && food.calories <= 5000
+        && food.protein <= 500
+        && food.carbs <= 500
+        && food.fat <= 500
+        && isIsoString(food.time)
+        && food.mealType in ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+    }
+
+    function validWorkoutEntry(workout) {
+      return workout is map
+        && workout.keys().hasOnly(['id', 'title', 'level', 'duration', 'minutes', 'type', 'completedAt'])
+        && workout.id is int
+        && workout.id > 0
+        && workout.title is string
+        && workout.title.size() > 0
+        && workout.title.size() <= 160
+        && workout.level in ['Beginner', 'Intermediate', 'Expert']
+        && workout.duration is string
+        && workout.duration.matches('^\\d{1,3}\\smin$')
+        && workout.minutes is int
+        && workout.minutes >= 1
+        && workout.minutes <= 180
+        && workout.type is string
+        && workout.type.size() > 0
+        && workout.type.size() <= 80
+        && isIsoString(workout.completedAt);
+    }
+
+    function logEnvelopeValid(logId) {
+      return request.resource.data.keys().hasOnly([
+          'date',
+          'caloriesIn',
+          'caloriesOut',
+          'protein',
+          'carbs',
+          'fat',
+          'waterGlasses',
+          'foods',
+          'workouts',
+          'lastUpdated'
+        ])
+        && logId.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && request.resource.data.date == logId
+        && isNonNegativeInt(request.resource.data.caloriesIn)
+        && isNonNegativeInt(request.resource.data.caloriesOut)
+        && isNonNegativeInt(request.resource.data.protein)
+        && isNonNegativeInt(request.resource.data.carbs)
+        && isNonNegativeInt(request.resource.data.fat)
+        && isNonNegativeInt(request.resource.data.waterGlasses)
+        && request.resource.data.caloriesIn <= 20000
+        && request.resource.data.caloriesOut <= 10000
+        && request.resource.data.protein <= 2000
+        && request.resource.data.carbs <= 2000
+        && request.resource.data.fat <= 1000
+        && request.resource.data.waterGlasses <= 40
+        && request.resource.data.foods is list
+        && request.resource.data.workouts is list
+        && request.resource.data.foods.size() <= 200
+        && request.resource.data.workouts.size() <= 50
+        && request.resource.data.lastUpdated is timestamp;
+    }
+
+    function validFoodCreate(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.foods.size() == 1
+        && request.resource.data.workouts.size() == 0
+        && validFoodEntry(request.resource.data.foods[0])
+        && request.resource.data.caloriesIn == request.resource.data.foods[0].calories
+        && request.resource.data.protein == request.resource.data.foods[0].protein
+        && request.resource.data.carbs == request.resource.data.foods[0].carbs
+        && request.resource.data.fat == request.resource.data.foods[0].fat
+        && request.resource.data.caloriesOut == 0
+        && request.resource.data.waterGlasses == 0;
+    }
+
+    function workoutBurnMatches(workout, caloriesOut) {
+      return (workout.level == 'Beginner' && caloriesOut == workout.minutes * 5)
+        || (workout.level == 'Intermediate' && caloriesOut == workout.minutes * 7)
+        || (workout.level == 'Expert' && caloriesOut == workout.minutes * 10);
+    }
+
+    function validWorkoutCreate(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.foods.size() == 0
+        && request.resource.data.workouts.size() == 1
+        && validWorkoutEntry(request.resource.data.workouts[0])
+        && request.resource.data.caloriesIn == 0
+        && request.resource.data.protein == 0
+        && request.resource.data.carbs == 0
+        && request.resource.data.fat == 0
+        && request.resource.data.waterGlasses == 0
+        && workoutBurnMatches(request.resource.data.workouts[0], request.resource.data.caloriesOut);
+    }
+
+    function validWaterCreate(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.foods.size() == 0
+        && request.resource.data.workouts.size() == 0
+        && request.resource.data.caloriesIn == 0
+        && request.resource.data.caloriesOut == 0
+        && request.resource.data.protein == 0
+        && request.resource.data.carbs == 0
+        && request.resource.data.fat == 0
+        && request.resource.data.waterGlasses in [1, 2, 6];
+    }
+
+    function validWaterUpdate(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.foods == resource.data.foods
+        && request.resource.data.workouts == resource.data.workouts
+        && request.resource.data.caloriesIn == resource.data.caloriesIn
+        && request.resource.data.caloriesOut == resource.data.caloriesOut
+        && request.resource.data.protein == resource.data.protein
+        && request.resource.data.carbs == resource.data.carbs
+        && request.resource.data.fat == resource.data.fat
+        && request.resource.data.waterGlasses >= 0
+        && request.resource.data.waterGlasses <= 40;
+    }
+
+    function validFoodAppend(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.workouts == resource.data.workouts
+        && request.resource.data.waterGlasses == resource.data.waterGlasses
+        && request.resource.data.foods.size() == resource.data.foods.size() + 1
+        && validFoodEntry(request.resource.data.foods[request.resource.data.foods.size() - 1])
+        && request.resource.data.caloriesIn
+          == resource.data.caloriesIn + request.resource.data.foods[request.resource.data.foods.size() - 1].calories
+        && request.resource.data.protein
+          == resource.data.protein + request.resource.data.foods[request.resource.data.foods.size() - 1].protein
+        && request.resource.data.carbs
+          == resource.data.carbs + request.resource.data.foods[request.resource.data.foods.size() - 1].carbs
+        && request.resource.data.fat
+          == resource.data.fat + request.resource.data.foods[request.resource.data.foods.size() - 1].fat
+        && request.resource.data.caloriesOut == resource.data.caloriesOut;
+    }
+
+    function validWorkoutAppend(logId) {
+      return logEnvelopeValid(logId)
+        && request.resource.data.foods == resource.data.foods
+        && request.resource.data.waterGlasses == resource.data.waterGlasses
+        && request.resource.data.caloriesIn == resource.data.caloriesIn
+        && request.resource.data.protein == resource.data.protein
+        && request.resource.data.carbs == resource.data.carbs
+        && request.resource.data.fat == resource.data.fat
+        && request.resource.data.workouts.size() == resource.data.workouts.size() + 1
+        && validWorkoutEntry(request.resource.data.workouts[request.resource.data.workouts.size() - 1])
+        && request.resource.data.caloriesOut > resource.data.caloriesOut
+        && workoutBurnMatches(
+          request.resource.data.workouts[request.resource.data.workouts.size() - 1],
+          request.resource.data.caloriesOut - resource.data.caloriesOut
+        );
+    }
+
     match /users/{userId} {
-      // อนุญาตเฉพาะเจ้าของ UID เท่าที่เข้าถึง (อ่าน/เขียน) ข้อมูลของตัวเองได้เท่านั้น
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // รวมไปถึงข้อมูล Sub-collections ทั้งหมดภายใต้โฟลเดอร์ของผู้ใช้ (เช่น daily_logs)
-      match /{allPaths=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && hasOnlyProfileCreateKeys() && profileBaseValid();
+      allow update: if isOwner(userId)
+        && hasOnlyProfileUpdateKeys()
+        && profileBaseValid()
+        && legacyProfileFieldsUnchanged();
+
+      match /daily_logs/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && (validFoodCreate(logId) || validWorkoutCreate(logId) || validWaterCreate(logId));
+        allow update: if isOwner(userId)
+          && (validWaterUpdate(logId) || validFoodAppend(logId) || validWorkoutAppend(logId));
       }
     }
 
-    // ปิดการเข้าถึงข้อมูลอื่นๆ ทั้งหมด (เช่น คอลเลกชันระบบหรือข้อมูลที่ไม่ต้องการให้คนทั่วไปเห็น)
     match /{document=**} {
       allow read, write: if false;
     }

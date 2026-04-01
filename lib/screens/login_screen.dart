@@ -72,6 +72,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
       await _saveCredentials();
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         error = AuthService.handleAuthError(e.code);

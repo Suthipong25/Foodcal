@@ -24,7 +24,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  bool _streakUpdated = false;
 
   @override
   Widget build(BuildContext context) {
@@ -82,19 +81,13 @@ class _MainScreenState extends State<MainScreen> {
         }
 
         final userProfile = snapshot.data!;
-        
-        if (!_streakUpdated) {
-          _streakUpdated = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            firestoreService.updateLoginStreak(user.uid, userProfile);
-          });
-        }
 
         return StreamBuilder<List<DailyLog>>(
           stream: firestoreService.streamDailyLogs(user.uid, limit: 7),
           builder: (context, logsSnap) {
             final weeklyLogs = logsSnap.data ?? [];
-            final dailyLog = weeklyLogs.isNotEmpty && weeklyLogs.first.date == DateTime.now().toIso8601String().split('T')[0] 
+            final dailyLog = weeklyLogs.isNotEmpty &&
+                    weeklyLogs.first.date == FirestoreService.utcDateKey()
                 ? weeklyLogs.first 
                 : null;
             

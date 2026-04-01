@@ -41,3 +41,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# 🔐 Secret / Environment files (API Keys must NEVER be committed)
+.env
+*.env
+assets/.env
+google-services.json
+GoogleService-Info.plist

@@ -1,36 +1,37 @@
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'dart:math';
-import '../models/user_profile.dart'; 
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
+
+import '../app_theme.dart';
 import '../models/daily_log.dart';
+import '../models/user_profile.dart';
+import '../services/ai_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import '../services/ai_service.dart';
-import 'dart:convert';
 import '../widgets/tube_progress_bar.dart';
-import '../app_theme.dart';
 
 class TrackingScreen extends StatefulWidget {
   final DailyLog? log;
   final UserProfile profile;
-  
-  const TrackingScreen({Key? key, required this.log, required this.profile}) : super(key: key);
+
+  const TrackingScreen({Key? key, required this.log, required this.profile})
+      : super(key: key);
 
   @override
   State<TrackingScreen> createState() => _TrackingScreenState();
 }
 
 class _TrackingScreenState extends State<TrackingScreen> {
+  static const int _maxCalories = 5000;
+  static const int _maxMacro = 500;
+
   final _foodController = TextEditingController();
   final _calController = TextEditingController();
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
   final _fatController = TextEditingController();
-  String _selectedMeal = 'Breakfast'; // Default to Breakfast
+  String _selectedMeal = 'Breakfast';
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
   List<FoodItem> _recentFoods = [];
@@ -44,7 +45,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Future<void> _loadRecentFoods() async {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
-      final foods = await Provider.of<FirestoreService>(context, listen: false).getRecentUniqueFoods(user.uid);
+      final foods = await Provider.of<FirestoreService>(context, listen: false)
+          .getRecentUniqueFoods(user.uid);
       if (mounted) setState(() => _recentFoods = foods);
     }
   }
@@ -56,16 +58,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
       _proteinController.text = food.protein.toString();
       _carbsController.text = food.carbs.toString();
       _fatController.text = food.fat.toString();
-      _selectedMeal = _getCurrentMealType(); // Update to current meal type naturally
+      _selectedMeal = _getCurrentMealType();
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('เลือก: ${food.name} เรียบร้อย'),
         duration: const Duration(seconds: 1),
         backgroundColor: Colors.blueAccent,
         behavior: SnackBarBehavior.floating,
-      )
+      ),
     );
   }
 
@@ -94,14 +96,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final protein = int.tryParse(_proteinController.text.trim()) ?? 0;
     final carbs = int.tryParse(_carbsController.text.trim()) ?? 0;
     final fat = int.tryParse(_fatController.text.trim()) ?? 0;
-    
+
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('กรุณากรอกชื่ออาหาร'),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
-        )
+        ),
       );
       return;
     }
@@ -112,19 +114,44 @@ class _TrackingScreenState extends State<TrackingScreen> {
           content: Text('กรุณากรอกจำนวนแคลอรี่ให้ถูกต้อง'),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
-        )
+        ),
       );
       return;
     }
-    
+
+    if ([cal, protein, carbs, fat].any((value) => value < 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณากรอกค่าที่ไม่ติดลบ'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (cal > _maxCalories ||
+        protein > _maxMacro ||
+        carbs > _maxMacro ||
+        fat > _maxMacro) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ค่าที่กรอกสูงเกินช่วงที่ระบบยอมรับ'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
       try {
         await Provider.of<FirestoreService>(context, listen: false).addFood(
           user.uid,
           FoodItem(
-            name: name, 
-            calories: cal, 
+            name: name,
+            calories: cal,
             protein: protein,
             carbs: carbs,
             fat: fat,
@@ -137,21 +164,24 @@ class _TrackingScreenState extends State<TrackingScreen> {
         _proteinController.clear();
         _carbsController.clear();
         _fatController.clear();
-        FocusScope.of(context).unfocus(); // Close keyboard
-        
+        FocusScope.of(context).unfocus();
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('บันทึกข้อมูลเรียบร้อยแล้ว'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
-            )
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('เกิดข้อผิดพลาด: $e'), backgroundColor: Colors.red)
+            SnackBar(
+              content: Text('เกิดข้อผิดพลาด: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -161,14 +191,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Future<void> _updateWater(int delta) async {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
-      await Provider.of<FirestoreService>(context, listen: false).updateWater(
-        user.uid,
-        delta,
-      );
+      await Provider.of<FirestoreService>(context, listen: false)
+          .updateWater(user.uid, delta);
     }
   }
 
   Future<void> _scanFood() async {
+    if (!AIService.isConfigured) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน จนกว่าจะตั้งค่า backend'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
@@ -178,12 +216,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
       if (photo != null) {
         setState(() => _isAnalyzing = true);
-        
+
         final bytes = await photo.readAsBytes();
         debugPrint('Analyzing image (${bytes.length} bytes)...');
         final result = await AIService.analyzeFoodImage(bytes);
         debugPrint('AI Result: $result');
-        
+
         if (mounted) {
           if (result != null && result.containsKey('name')) {
             setState(() {
@@ -194,21 +232,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
               _fatController.text = (result['fat'] ?? '').toString();
               _isAnalyzing = false;
             });
-            
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('AI วิเคราะห์: ${result['name']} (${result['calories']} kcal)'),
+                content: Text(
+                  'AI วิเคราะห์: ${result['name']} (${result['calories']} kcal)',
+                ),
                 backgroundColor: Colors.blueAccent,
                 behavior: SnackBarBehavior.floating,
-              )
+              ),
             );
           } else {
             setState(() => _isAnalyzing = false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('AI ไม่สามารถระบุอาหารได้ กรุณาลองใหม่อีกครั้ง'),
+                content: Text(
+                  'AI ไม่สามารถระบุอาหารได้ กรุณาลองใหม่อีกครั้ง',
+                ),
                 backgroundColor: Colors.orange,
-              )
+              ),
             );
           }
         }
@@ -218,7 +260,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         setState(() => _isAnalyzing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ไม่สามารถวิเคราะห์รูปภาพได้: $e'), backgroundColor: Colors.red)
+          SnackBar(
+            content: Text('ไม่สามารถวิเคราะห์รูปภาพได้: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -228,7 +273,20 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final name = _foodController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณาพิมพ์ชื่ออาหารก่อน'), backgroundColor: Colors.orange)
+        const SnackBar(
+          content: Text('กรุณาพิมพ์ชื่ออาหารก่อน'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (!AIService.isConfigured) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน จนกว่าจะตั้งค่า backend'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -251,7 +309,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
         } else {
           setState(() => _isAnalyzing = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('AI ไม่สามารถระบุข้อมูลพลังงานได้'), backgroundColor: Colors.orange)
+            const SnackBar(
+              content: Text('AI ไม่สามารถระบุข้อมูลพลังงานได้'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
       }
@@ -260,7 +321,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) {
         setState(() => _isAnalyzing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('เกิดข้อผิดพลาดในการคำนวณ: $e'), backgroundColor: Colors.red)
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการคำนวณ: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -269,19 +333,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Food Entry Card
+          _buildHeader(),
+          const SizedBox(height: AppTheme.sectionGap),
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
+            decoration: AppTheme.elevatedCard(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.blue[50]!),
-              boxShadow: [
-                BoxShadow(color: Colors.blue.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 8))
-              ],
+              borderColor: const Color(0xFFE4EEFB),
+              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,42 +355,70 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     Expanded(
                       child: Row(
                         children: [
-                          Icon(LucideIcons.utensils, color: Colors.blue[400], size: 20),
+                          Icon(LucideIcons.utensils,
+                              color: Colors.blue[400], size: 20),
                           const SizedBox(width: 8),
-                          const Expanded(child: Text('บันทึกอาหาร', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis)),
+                          const Expanded(
+                            child: Text(
+                              'บันทึกอาหาร',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 4),
                     TextButton.icon(
                       onPressed: _isAnalyzing ? null : _scanFood,
-                      icon: _isAnalyzing 
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(LucideIcons.camera, size: 18),
+                      icon: _isAnalyzing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(LucideIcons.camera, size: 18),
                       label: Text(_isAnalyzing ? 'วิเคราะห์...' : 'สแกน'),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.blue[600],
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                    )
+                    ),
                   ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'กรอกเองหรือใช้ AI ช่วยประเมินค่าโภชนาการก็ได้',
+                  style: TextStyle(
+                      fontSize: AppTheme.body, color: AppTheme.mutedText),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _foodController,
                   decoration: InputDecoration(
                     hintText: 'ชื่ออาหาร (เช่น ข้าวมันไก่)',
-                    filled: true, fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-                    border: OutlineInputBorder(borderRadius: AppTheme.innerRadius, borderSide: BorderSide.none),
+                    filled: true,
+                    fillColor: AppTheme.macroBg(AppTheme.calorieColor),
+                    border: OutlineInputBorder(
+                      borderRadius: AppTheme.innerRadius,
+                      borderSide: BorderSide.none,
+                    ),
                     suffixIcon: IconButton(
-                      icon: const Icon(LucideIcons.sparkles, color: Colors.amber, size: 20),
+                      icon: const Icon(LucideIcons.sparkles,
+                          color: Colors.amber, size: 20),
                       onPressed: _estimateCaloriesText,
                     ),
                   ),
                 ),
                 if (_recentFoods.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text('อาหารที่จดบ่อย', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                  const Text(
+                    'อาหารที่ใช้บ่อย',
+                    style: TextStyle(
+                        fontSize: AppTheme.meta,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.mutedText),
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 40,
@@ -339,12 +430,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: ActionChip(
-                            label: Text(food.name, style: const TextStyle(fontSize: 11)),
+                            label: Text(food.name,
+                                style: const TextStyle(fontSize: 11)),
                             avatar: const Icon(LucideIcons.history, size: 14),
                             onPressed: () => _useRecentFood(food),
-                            backgroundColor: Colors.blue[50],
-                            side: BorderSide(color: Colors.blue[100]!),
-                            labelStyle: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                            backgroundColor: AppTheme.pageTintStrong,
+                            side: BorderSide(
+                                color: AppTheme.primaryColor.withOpacity(0.12)),
+                            labelStyle: const TextStyle(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.bold),
                           ),
                         );
                       },
@@ -352,6 +447,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                 ],
                 const SizedBox(height: 12),
+                const Text(
+                  'โภชนาการโดยประมาณ',
+                  style: TextStyle(
+                      fontSize: AppTheme.meta,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.mutedText),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -361,17 +464,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           hintText: 'แคลอรี่ (kcal)',
-                          filled: true, fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-                          border: OutlineInputBorder(borderRadius: AppTheme.innerRadius, borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: AppTheme.macroBg(AppTheme.calorieColor),
+                          border: OutlineInputBorder(
+                            borderRadius: AppTheme.innerRadius,
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                
-                // Meal Selector
-                const Text('เลือกมื้ออาหาร', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                const Text(
+                  'เลือกมื้ออาหาร',
+                  style: TextStyle(
+                      fontSize: AppTheme.meta,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.mutedText),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -384,13 +495,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 ),
                 const SizedBox(height: 16),
                 Row(
-                   children: [
-                     _buildMacroField(_proteinController, 'โปรตีน(g)'),
-                     const SizedBox(width: 8),
-                     _buildMacroField(_carbsController, 'คาร์บ(g)'),
-                     const SizedBox(width: 8),
-                     _buildMacroField(_fatController, 'ไขมัน(g)'),
-                   ],
+                  children: [
+                    _buildMacroField(_proteinController, 'โปรตีน (g)'),
+                    const SizedBox(width: 8),
+                    _buildMacroField(_carbsController, 'คาร์บ (g)'),
+                    const SizedBox(width: 8),
+                    _buildMacroField(_fatController, 'ไขมัน (g)'),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -401,77 +512,96 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: AppTheme.innerRadius),
+                      minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: AppTheme.innerRadius),
                     ),
-                    child: const Text('เพิ่มรายการอาหาร', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'เพิ่มรายการอาหาร',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                
-                // Food List Grouped by Meal
                 if (widget.log != null && widget.log!.foods.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   const Divider(),
-                  const SizedBox(height: 12),
-                  ...['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((meal) {
-                    final mealFoods = widget.log!.foods.where((f) => f.mealType == meal).toList();
-                    if (mealFoods.isEmpty) return const SizedBox();
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(_getMealLabel(meal), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-                        ),
-                        ...mealFoods.reversed.map((food) => Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.blue[50]!))),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+                  const Text(
+                    'มื้อวันนี้',
+                    style: TextStyle(
+                        fontSize: AppTheme.title,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'รายการล่าสุดที่บันทึกไว้ในวันนี้',
+                    style: TextStyle(
+                        fontSize: AppTheme.body, color: AppTheme.mutedText),
+                  ),
+                  const SizedBox(height: 14),
+                  ...widget.log!.foods.reversed.take(5).map(
+                        (food) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.pageTint,
+                            borderRadius: AppTheme.innerRadius,
+                            border: Border.all(color: const Color(0xFFDCE8FA)),
+                          ),
+                          child: Row(
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(child: Text(food.name, style: TextStyle(color: Colors.blueGrey[800], fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-                                  Text('${food.calories} kcal', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[700])),
-                                ],
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppTheme.primaryColor.withOpacity(0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(LucideIcons.utensils,
+                                    color: AppTheme.primaryColor, size: 18),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g',
-                                style: TextStyle(fontSize: 10, color: Colors.blueGrey[300]),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(food.name,
+                                        style: const TextStyle(
+                                            fontSize: AppTheme.body,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.ink)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${food.mealType} • P ${food.protein} / C ${food.carbs} / F ${food.fat}',
+                                      style: const TextStyle(
+                                          fontSize: AppTheme.meta,
+                                          color: AppTheme.mutedText),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              Text('${food.calories} kcal',
+                                  style: const TextStyle(
+                                      fontSize: AppTheme.body,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryColor)),
                             ],
                           ),
-                        )).toList(),
-                        const SizedBox(height: 8),
-                      ],
-                    );
-                  }).toList(),
-                ] else
-                   Center(child: Padding(
-                     padding: const EdgeInsets.all(16.0),
-                     child: Text('ยังไม่มีรายการอาหารวันนี้', style: TextStyle(color: Colors.blueGrey[200])),
-                   )),
+                        ),
+                      ),
+                ],
               ],
             ),
           ),
-          
           const SizedBox(height: 16),
-
-          // Water Tracking Card
-          // Water Tracking Card
           Container(
-             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
+            decoration: AppTheme.elevatedCard(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.blue[50]!),
-              boxShadow: [
-                BoxShadow(color: Colors.blue.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 8))
-              ],
+              borderColor: AppTheme.waterColor.withOpacity(0.12),
+              boxShadow: AppTheme.softShadow(AppTheme.waterColor),
             ),
             child: Column(
               children: [
@@ -480,20 +610,45 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   children: [
                     Row(
                       children: [
-                         const Icon(LucideIcons.droplet, color: AppTheme.waterColor, size: 20),
-                         const SizedBox(width: 8),
-                         Text('ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blueGrey[800])),
+                        const Icon(LucideIcons.droplet,
+                            color: AppTheme.waterColor, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: AppTheme.title,
+                            color: AppTheme.ink,
+                          ),
+                        ),
                       ],
                     ),
-                    Text('${widget.log?.waterGlasses ?? 0}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.waterColor)),
+                    Text(
+                      '${widget.log?.waterGlasses ?? 0}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.waterColor,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Water Progress Bar (Tube style)
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'อัปเดตเป็นช่วง ๆ เพื่อให้ dashboard สรุปแม่นขึ้น',
+                    style: TextStyle(
+                        fontSize: AppTheme.body, color: AppTheme.mutedText),
+                  ),
+                ),
+                const SizedBox(height: 14),
                 TubeProgressBar(
-                  progress: (widget.profile.targetWaterGlasses > 0 
-                    ? (widget.log?.waterGlasses ?? 0) / widget.profile.targetWaterGlasses 
-                    : 0.0).clamp(0.0, 1.0),
+                  progress: (widget.profile.targetWaterGlasses > 0
+                          ? (widget.log?.waterGlasses ?? 0) /
+                              widget.profile.targetWaterGlasses
+                          : 0.0)
+                      .clamp(0.0, 1.0),
                   colors: const [AppTheme.waterColor, AppTheme.waterColor],
                   height: 16,
                 ),
@@ -503,26 +658,77 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildWaterBtn('-', Colors.blue[50]!, Colors.blue[600]!, () => _updateWater(-1), label: '1'),
+                      _buildWaterBtn(
+                        '-',
+                        Colors.blue[50]!,
+                        Colors.blue[600]!,
+                        () => _updateWater(-1),
+                        label: '1',
+                      ),
                       const SizedBox(width: 12),
-                      _buildWaterBtn('+', Colors.blue[600]!, Colors.white, () => _updateWater(1), label: 'แก้ว'),
+                      _buildWaterBtn(
+                        '+',
+                        Colors.blue[600]!,
+                        Colors.white,
+                        () => _updateWater(1),
+                        label: 'แก้ว',
+                      ),
                       const SizedBox(width: 12),
-                      _buildWaterBtn('+', Colors.blue[600]!, Colors.white, () => _updateWater(2), label: '500มล'),
+                      _buildWaterBtn(
+                        '+',
+                        Colors.blue[600]!,
+                        Colors.white,
+                        () => _updateWater(2),
+                        label: '500 มล',
+                      ),
                       const SizedBox(width: 12),
-                      _buildWaterBtn('+', Colors.blue[600]!, Colors.white, () => _updateWater(6), label: '1.5ลิตร'),
+                      _buildWaterBtn(
+                        '+',
+                        Colors.blue[600]!,
+                        Colors.white,
+                        () => _updateWater(6),
+                        label: '1.5 ลิตร',
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
-  
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'บันทึกประจำวัน',
+            style: const TextStyle(
+                fontSize: AppTheme.largeTitle,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.ink),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'แยกเป็นบล็อกชัดเจนเพื่อให้เพิ่มอาหาร น้ำ และติดตามรายการของวันนี้ได้ง่ายขึ้น',
+            style: TextStyle(
+                fontSize: AppTheme.body,
+                color: AppTheme.mutedText,
+                height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMealChip(String label, String value, IconData icon) {
-    bool selected = _selectedMeal == value;
+    final selected = _selectedMeal == value;
     return GestureDetector(
       onTap: () => setState(() => _selectedMeal = value),
       child: AnimatedContainer(
@@ -534,27 +740,21 @@ class _TrackingScreenState extends State<TrackingScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? Colors.white : Colors.blueGrey, size: 14),
+            Icon(icon,
+                color: selected ? Colors.white : Colors.blueGrey, size: 14),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(
-              color: selected ? Colors.white : Colors.blueGrey, 
-              fontSize: 10, 
-              fontWeight: FontWeight.bold
-            )),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.blueGrey,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
     );
-  }
-
-  String _getMealLabel(String meal) {
-    switch (meal) {
-      case 'Breakfast': return 'มื้อเช้า';
-      case 'Lunch': return 'มื้อกลางวัน';
-      case 'Dinner': return 'มื้อเย็น';
-      case 'Snack': return 'มื้อว่าง';
-      default: return 'อื่นๆ';
-    }
   }
 
   Widget _buildMacroField(TextEditingController controller, String hint) {
@@ -565,15 +765,26 @@ class _TrackingScreenState extends State<TrackingScreen> {
         style: const TextStyle(fontSize: 12),
         decoration: InputDecoration(
           hintText: hint,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          filled: true, fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-          border: OutlineInputBorder(borderRadius: AppTheme.innerRadius, borderSide: BorderSide.none),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          filled: true,
+          fillColor: AppTheme.macroBg(AppTheme.calorieColor),
+          border: OutlineInputBorder(
+            borderRadius: AppTheme.innerRadius,
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildWaterBtn(String prefix, Color bg, Color text, VoidCallback onTap, {required String label}) {
+  Widget _buildWaterBtn(
+    String prefix,
+    Color bg,
+    Color text,
+    VoidCallback onTap, {
+    required String label,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -582,16 +793,30 @@ class _TrackingScreenState extends State<TrackingScreen> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: AppTheme.cardRadius,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(prefix, style: TextStyle(color: text, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                prefix,
+                style: TextStyle(
+                    color: text, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               if (label.isNotEmpty) ...[
                 const SizedBox(width: 4),
-                Text(label, style: TextStyle(color: text, fontSize: 13, fontWeight: FontWeight.bold)),
+                Text(
+                  label,
+                  style: TextStyle(
+                      color: text, fontSize: 13, fontWeight: FontWeight.bold),
+                ),
               ],
             ],
           ),

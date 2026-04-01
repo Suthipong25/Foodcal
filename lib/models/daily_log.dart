@@ -25,7 +25,7 @@ class FoodItem {
       protein: (map['protein'] ?? 0).toInt(),
       carbs: (map['carbs'] ?? 0).toInt(),
       fat: (map['fat'] ?? 0).toInt(),
-      time: DateTime.parse(map['time'] ?? DateTime.now().toIso8601String()),
+      time: _parseDate(map['time']) ?? DateTime.now(),
       mealType: map['mealType'] ?? 'Snack',
     );
   }
@@ -48,6 +48,7 @@ class WorkoutItem {
   String title;
   String level;
   String duration;
+  int minutes;
   String type;
   DateTime completedAt;
 
@@ -56,6 +57,7 @@ class WorkoutItem {
     required this.title,
     required this.level,
     required this.duration,
+    required this.minutes,
     required this.type,
     required this.completedAt,
   });
@@ -66,8 +68,12 @@ class WorkoutItem {
       title: map['title'] ?? '',
       level: map['level'] ?? '',
       duration: map['duration'] ?? '',
+      minutes: (map['minutes'] ??
+              int.tryParse((map['duration'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
+              0)
+          .toInt(),
       type: map['type'] ?? '',
-      completedAt: DateTime.parse(map['completedAt'] ?? DateTime.now().toIso8601String()),
+      completedAt: _parseDate(map['completedAt']) ?? DateTime.now(),
     );
   }
 
@@ -77,6 +83,7 @@ class WorkoutItem {
       'title': title,
       'level': level,
       'duration': duration,
+      'minutes': minutes,
       'type': type,
       'completedAt': completedAt.toIso8601String(),
     };
@@ -86,6 +93,7 @@ class WorkoutItem {
 class DailyLog {
   String date; // YYYY-MM-DD
   int caloriesIn;
+  int caloriesOut;
   int protein;
   int carbs;
   int fat;
@@ -97,6 +105,7 @@ class DailyLog {
   DailyLog({
     required this.date,
     required this.caloriesIn,
+    this.caloriesOut = 0,
     this.protein = 0,
     this.carbs = 0,
     this.fat = 0,
@@ -110,13 +119,14 @@ class DailyLog {
     return DailyLog(
       date: map['date'] ?? '',
       caloriesIn: (map['caloriesIn'] ?? 0).toInt(),
+      caloriesOut: (map['caloriesOut'] ?? 0).toInt(),
       protein: (map['protein'] ?? 0).toInt(),
       carbs: (map['carbs'] ?? 0).toInt(),
       fat: (map['fat'] ?? 0).toInt(),
       waterGlasses: (map['waterGlasses'] ?? 0).toInt(),
       foods: (map['foods'] as List<dynamic>? ?? []).map((e) => FoodItem.fromMap(e)).toList(),
       workouts: (map['workouts'] as List<dynamic>? ?? []).map((e) => WorkoutItem.fromMap(e)).toList(),
-      lastUpdated: DateTime.parse(map['lastUpdated'] ?? DateTime.now().toIso8601String()),
+      lastUpdated: _parseDate(map['lastUpdated']) ?? DateTime.now(),
     );
   }
 
@@ -124,6 +134,7 @@ class DailyLog {
     return {
       'date': date,
       'caloriesIn': caloriesIn,
+      'caloriesOut': caloriesOut,
       'protein': protein,
       'carbs': carbs,
       'fat': fat,
@@ -133,4 +144,15 @@ class DailyLog {
       'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
+}
+
+DateTime? _parseDate(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is DateTime) return raw;
+  if (raw is String && raw.isNotEmpty) return DateTime.tryParse(raw);
+  try {
+    final dynamic dateTime = raw.toDate();
+    if (dateTime is DateTime) return dateTime;
+  } catch (_) {}
+  return null;
 }

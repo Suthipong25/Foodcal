@@ -50,7 +50,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      // Success: AuthWrapper in main.dart will react and show MainScreen/Onboarding
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         error = AuthService.handleAuthError(e.code);

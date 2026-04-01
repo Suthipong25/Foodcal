@@ -1,19 +1,18 @@
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
+
+import '../app_theme.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
-import '../app_theme.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
-import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   final UserProfile profile;
-  const ProfileScreen({Key? key, required this.profile}) : super(key: key);
+
+  const ProfileScreen({super.key, required this.profile});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -48,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
-  
+
   @override
   void dispose() {
     _weightCtrl.dispose();
@@ -56,42 +55,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _ageCtrl.dispose();
     super.dispose();
   }
-  
-  // Update init state if profile changes? 
-  // For now assume profile is key or won't change drastically without this widget rebuilding.
-  
+
   Future<void> _save() async {
     final w = double.tryParse(_weightCtrl.text);
     final h = double.tryParse(_heightCtrl.text);
     final a = int.tryParse(_ageCtrl.text);
-    
+
     if (w != null && h != null && a != null) {
       final user = Provider.of<AuthService>(context, listen: false).currentUser;
       if (user != null) {
-        // Recalculate stats
-         final stats = FirestoreService.calculateStats(w, h, a, widget.profile.gender, widget.profile.activityLevel, _selectedGoal);
-         
-         final newProfile = UserProfile(
-           uid: widget.profile.uid,
-           name: widget.profile.name,
-           gender: widget.profile.gender,
-           age: a,
-           height: h,
-           weight: w,
-           activityLevel: widget.profile.activityLevel,
-           goal: _selectedGoal,
-           tdee: stats['tdee']!,
-           targetCalories: stats['targetCalories']!,
-           targetProtein: stats['targetProtein']!,
-           targetCarbs: stats['targetCarbs']!,
-           targetFat: stats['targetFat']!,
-           targetWaterGlasses: stats['targetWaterGlasses']!,
-           joinedDate: widget.profile.joinedDate,
-           streak: widget.profile.streak,
-           photoUrl: widget.profile.photoUrl,
-         );
+        final stats = FirestoreService.calculateStats(
+          w,
+          h,
+          a,
+          widget.profile.gender,
+          widget.profile.activityLevel,
+          _selectedGoal,
+        );
 
-        await Provider.of<FirestoreService>(context, listen: false).saveUserProfile(user.uid, newProfile);
+        final newProfile = UserProfile(
+          uid: widget.profile.uid,
+          name: widget.profile.name,
+          gender: widget.profile.gender,
+          age: a,
+          height: h,
+          weight: w,
+          activityLevel: widget.profile.activityLevel,
+          goal: _selectedGoal,
+          tdee: stats['tdee']!,
+          targetCalories: stats['targetCalories']!,
+          targetProtein: stats['targetProtein']!,
+          targetCarbs: stats['targetCarbs']!,
+          targetFat: stats['targetFat']!,
+          targetWaterGlasses: stats['targetWaterGlasses']!,
+          joinedDate: widget.profile.joinedDate,
+          lastLoginDate: widget.profile.lastLoginDate,
+          streak: widget.profile.streak,
+          photoUrl: widget.profile.photoUrl,
+        );
+
+        await Provider.of<FirestoreService>(context, listen: false)
+            .saveUserProfile(user.uid, newProfile);
         setState(() {
           isEditing = false;
         });
@@ -100,29 +104,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 256, imageQuality: 50);
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 256,
+      imageQuality: 50,
+    );
     if (image != null) {
       setState(() => _isUploading = true);
       try {
         final firestore = Provider.of<FirestoreService>(context, listen: false);
+        final storage = Provider.of<StorageService>(context, listen: false);
         final bytes = await image.readAsBytes();
-        
-        // Encode to Base64
-        final String base64String = base64Encode(bytes);
-        final String dataUrl = 'data:image/jpeg;base64,$base64String';
-        
-        // Update Firestore
-        final updatedProfile = widget.profile;
-        updatedProfile.photoUrl = dataUrl;
+        final photoUrl = await storage.uploadProfilePicture(widget.profile.uid, bytes);
+
+        if (photoUrl == null) {
+          throw Exception('Profile picture upload failed.');
+        }
+
+        final updatedProfile = widget.profile.copyWith(photoUrl: photoUrl);
         await firestore.saveUserProfile(widget.profile.uid, updatedProfile);
-        
+
         if (mounted) {
           setState(() {
-            _localPhotoUrl = dataUrl;
+            _localPhotoUrl = photoUrl;
           });
         }
       } catch (e) {
-        print('Error saving profile picture: $e');
+        debugPrint('Error saving profile picture: $e');
       } finally {
         if (mounted) setState(() => _isUploading = false);
       }
@@ -132,198 +140,427 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          _buildHeroCard(),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildSectionHeader(
+            'ภาพรวมของคุณ',
+            'โปรไฟล์นี้สรุปเป้าหมายและค่าที่ใช้คำนวณแผนรายวันของแอป',
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.1,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _buildMetricCard(
+                'เป้าหมายแคลอรี่',
+                '${widget.profile.targetCalories}',
+                'kcal ต่อวัน',
+                LucideIcons.target,
+                AppTheme.primaryColor,
               ),
-              borderRadius: AppTheme.cardRadius,
-              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-            ),
-            child: Column(
-              children: [
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.end,
-                   children: [
-                     GestureDetector(
-                       onTap: () {
-                         if (isEditing) {
-                            setState(() => isEditing = false);
-                         } else {
-                            // Reset values on edit start
-                            _weightCtrl.text = widget.profile.weight.toString();
-                            _heightCtrl.text = widget.profile.height.toString();
-                            _ageCtrl.text = widget.profile.age.toString();
-                            setState(() {
-                              _selectedGoal = widget.profile.goal;
-                              isEditing = true;
-                            });
-                         }
-                       },
-                       child: Container(
-                         padding: const EdgeInsets.all(8),
-                         decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
-                         child: Icon(isEditing ? LucideIcons.x : LucideIcons.edit2, color: Colors.white, size: 20),
-                       ),
-                     )
-                   ],
-                 ),
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 100, height: 100,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 4),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-                            image: _localPhotoUrl != null 
-                              ? DecorationImage(
-                                  image: _localPhotoUrl!.startsWith('data:') 
-                                    ? MemoryImage(base64Decode(_localPhotoUrl!.split(',')[1])) as ImageProvider
-                                    : NetworkImage(_localPhotoUrl!),
-                                  fit: BoxFit.cover
-                                )
-                              : null,
-                          ),
-                          child: _localPhotoUrl == null 
-                            ? Center(
-                                child: Text(
-                                  widget.profile.name.isNotEmpty ? widget.profile.name[0].toUpperCase() : '?',
-                                  style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppTheme.primaryColor.withOpacity(0.5)),
-                                ),
+              _buildMetricCard(
+                'อัตราเผาผลาญ',
+                '${widget.profile.tdee}',
+                'kcal โดยประมาณ',
+                LucideIcons.flame,
+                AppTheme.warning,
+              ),
+              _buildMetricCard(
+                'ดื่มน้ำ',
+                '${widget.profile.targetWaterGlasses}',
+                'แก้วต่อวัน',
+                LucideIcons.droplets,
+                AppTheme.waterColor,
+              ),
+              _buildMetricCard(
+                'สตรีก',
+                '${widget.profile.streak}',
+                'วันต่อเนื่อง',
+                LucideIcons.badgeCheck,
+                AppTheme.success,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildEditPanel(),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildLogoutCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              _buildEditButton(),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        image: _localPhotoUrl != null
+                            ? DecorationImage(
+                                image: NetworkImage(_localPhotoUrl!),
+                                fit: BoxFit.cover,
                               )
                             : null,
+                        boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+                      ),
+                      child: _localPhotoUrl == null
+                          ? Center(
+                              child: Text(
+                                widget.profile.name.isNotEmpty
+                                    ? widget.profile.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                    if (_isUploading)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
-                        if (_isUploading)
-                          const Positioned.fill(child: CircularProgressIndicator(color: Colors.white)),
-                        Positioned(
-                          right: 0, bottom: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: const Icon(LucideIcons.camera, size: 14, color: AppTheme.primaryColor),
+                      ),
+                    Positioned(
+                      right: 2,
+                      bottom: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.camera,
+                          size: 14,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'My Profile',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: AppTheme.meta,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.profile.name,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.ink,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'เป้าหมาย: ${_getGoalLabel(isEditing ? _selectedGoal : widget.profile.goal)}',
+                      style: const TextStyle(
+                        color: AppTheme.mutedText,
+                        fontSize: AppTheme.body,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.85),
+                        borderRadius: AppTheme.innerRadius,
+                        border: Border.all(color: Colors.white),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.sparkles,
+                            size: 16,
+                            color: AppTheme.primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _goalSummary(isEditing ? _selectedGoal : widget.profile.goal),
+                              style: const TextStyle(
+                                color: AppTheme.ink,
+                                fontSize: AppTheme.body,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditButton() {
+    return GestureDetector(
+      onTap: () {
+        if (isEditing) {
+          setState(() => isEditing = false);
+        } else {
+          _weightCtrl.text = widget.profile.weight.toString();
+          _heightCtrl.text = widget.profile.height.toString();
+          _ageCtrl.text = widget.profile.age.toString();
+          setState(() {
+            _selectedGoal = widget.profile.goal;
+            isEditing = true;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: AppTheme.pillRadius,
+          border: Border.all(color: Colors.white),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isEditing ? LucideIcons.x : LucideIcons.pencil,
+              color: AppTheme.primaryColor,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isEditing ? 'ยกเลิก' : 'แก้ไขข้อมูล',
+              style: const TextStyle(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: AppTheme.title,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.ink,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: AppTheme.mutedText,
+            fontSize: AppTheme.body,
+            height: 1.45,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(
+    String label,
+    String value,
+    String hint,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.elevatedCard(
+        borderColor: color.withOpacity(0.14),
+        boxShadow: AppTheme.softShadow(color),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.macroBg(color),
+              borderRadius: AppTheme.innerRadius,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const Spacer(),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: AppTheme.meta,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hint,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: AppTheme.meta,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditPanel() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.elevatedCard(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'ข้อมูลร่างกาย',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: AppTheme.title,
+                    color: AppTheme.ink,
+                  ),
+                ),
+              ),
+              if (isEditing)
+                GestureDetector(
+                  onTap: _save,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: AppTheme.pillRadius,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.save, size: 16, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          'บันทึก',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
                   ),
-                 const SizedBox(height: 12),
-                 Text(widget.profile.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                 
-                 if (isEditing)
-                   Container(
-                     margin: const EdgeInsets.only(top: 8),
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                     decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                     child: DropdownButton<String>(
-                       value: _selectedGoal,
-                        dropdownColor: Colors.blue[600],
-                       icon: const Icon(LucideIcons.chevronDown, color: Colors.white, size: 16),
-                       underline: const SizedBox(),
-                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                       onChanged: (v) {
-                         if (v != null) setState(() => _selectedGoal = v);
-                       },
-                       items: ['lose', 'maintain', 'gain'].map((g) {
-                         return DropdownMenuItem(value: g, child: Text(_getGoalLabel(g)));
-                       }).toList(),
-                     ),
-                   )
-                 else
-                   Text('เป้าหมาย: ${_getGoalLabel(widget.profile.goal)}', style: TextStyle(color: Colors.blue[50], fontSize: 13, fontWeight: FontWeight.w500)),
-                 
-                 const SizedBox(height: 12),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-
-          // Stats Card
-          Container(
-            padding: const EdgeInsets.all(24),
-             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: Colors.blue[50]!),
-              boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 6))],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     const Text('ข้อมูลร่างกาย', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                     if(isEditing)
-                       GestureDetector(
-                         onTap: _save,
-                          child: Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                             decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(12)),
-                             child: const Row(children: [Icon(LucideIcons.save, size: 14, color: Colors.white), SizedBox(width:4), Text('บันทึก', style: TextStyle(color:Colors.white, fontSize: 12, fontWeight: FontWeight.bold))]),
-                          ),
-                       )
-                   ],
                 ),
-                const SizedBox(height: 16),
-                
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.5,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  children: [
-                    _buildInfoCard('เป้าหมาย', '${widget.profile.targetCalories} kcal', LucideIcons.target),
-                    _buildInfoCard('อัตราเผาผลาญ', '${widget.profile.tdee} kcal', LucideIcons.flame),
-                    isEditing 
-                      ? _buildEditCard('น้ำหนัก (kg)', _weightCtrl)
-                      : _buildInfoCard('น้ำหนัก', '${widget.profile.weight} kg', LucideIcons.activity),
-                    isEditing 
-                      ? _buildEditCard('ส่วนสูง (cm)', _heightCtrl)
-                      : _buildInfoCard('ส่วนสูง', '${widget.profile.height} cm', LucideIcons.activity),
-                    isEditing 
-                      ? _buildEditCard('อายุ (ปี)', _ageCtrl)
-                      : _buildInfoCard('อายุ', '${widget.profile.age} ปี', LucideIcons.calendar),
-                  ],
-                )
-              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'ปรับค่านี้เพื่อให้ระบบคำนวณแคลอรี่และเป้าหมายรายวันได้แม่นยำขึ้น',
+            style: TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: AppTheme.body,
+              height: 1.45,
             ),
           ),
-
-          const SizedBox(height: 24),
-          
-          // Menu
-          GestureDetector(
-            onTap: () async {
-               await Provider.of<AuthService>(context, listen: false).signOut();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red[50], 
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                children: [
-                  Icon(LucideIcons.logOut, color: Colors.red),
-                  SizedBox(width: 16),
-                  Text('ออกจากระบบ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                ],
-              )
-            ),
-          )
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              isEditing
+                  ? _buildEditCard('น้ำหนัก (kg)', _weightCtrl)
+                  : _buildInfoCard('น้ำหนัก', '${widget.profile.weight} kg', LucideIcons.scale),
+              isEditing
+                  ? _buildEditCard('ส่วนสูง (cm)', _heightCtrl)
+                  : _buildInfoCard(
+                      'ส่วนสูง',
+                      '${widget.profile.height} cm',
+                      LucideIcons.ruler,
+                    ),
+              isEditing
+                  ? _buildEditCard('อายุ (ปี)', _ageCtrl)
+                  : _buildInfoCard('อายุ', '${widget.profile.age} ปี', LucideIcons.calendar),
+              _buildGoalCard(),
+            ],
+          ),
         ],
       ),
     );
@@ -331,43 +568,182 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildInfoCard(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.3)),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 6)],
+        color: AppTheme.pageTint,
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(color: AppTheme.pageTintStrong),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppTheme.primaryColor, size: 24),
-          const SizedBox(height: 8),
-          Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 10, fontWeight: FontWeight.bold)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: AppTheme.innerRadius,
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 18),
+          ),
+          const Spacer(),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: AppTheme.meta,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 20,
+              color: AppTheme.ink,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildEditCard(String label, TextEditingController ctrl) {
-      return Container(
-      padding: const EdgeInsets.all(12),
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.macroBg(AppTheme.primaryColor), borderRadius: AppTheme.innerRadius,
+        color: AppTheme.macroBg(AppTheme.primaryColor),
+        borderRadius: AppTheme.innerRadius,
         border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
-           TextField(
-             controller: ctrl,
-             textAlign: TextAlign.center,
-             keyboardType: TextInputType.number,
-             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-             decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-           )
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.primaryColor,
+              fontSize: AppTheme.meta,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          TextField(
+            controller: ctrl,
+            textAlign: TextAlign.left,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              color: AppTheme.ink,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              hintText: 'กรอกข้อมูล',
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGoalCard() {
+    if (isEditing) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.macroBg(AppTheme.secondaryColor),
+          borderRadius: AppTheme.innerRadius,
+          border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'เป้าหมาย',
+              style: TextStyle(
+                color: AppTheme.primaryColor,
+                fontSize: AppTheme.meta,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            DropdownButton<String>(
+              value: _selectedGoal,
+              isExpanded: true,
+              underline: const SizedBox(),
+              borderRadius: AppTheme.innerRadius,
+              items: ['lose', 'maintain', 'gain']
+                  .map(
+                    (g) => DropdownMenuItem(
+                      value: g,
+                      child: Text(
+                        _getGoalLabel(g),
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _selectedGoal = v);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _buildInfoCard(
+      'เป้าหมาย',
+      _getGoalLabel(widget.profile.goal),
+      LucideIcons.target,
+    );
+  }
+
+  Widget _buildLogoutCard() {
+    return GestureDetector(
+      onTap: () async {
+        await Provider.of<AuthService>(context, listen: false).signOut();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppTheme.macroBg(AppTheme.error),
+          borderRadius: AppTheme.innerRadius,
+          border: Border.all(color: AppTheme.error.withOpacity(0.18)),
+        ),
+        child: const Row(
+          children: [
+            Icon(LucideIcons.logOut, color: AppTheme.error),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ออกจากระบบ',
+                    style: TextStyle(
+                      color: AppTheme.error,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'ใช้เมื่อต้องการเปลี่ยนบัญชีหรือหยุดใช้งานชั่วคราว',
+                    style: TextStyle(
+                      color: AppTheme.mutedText,
+                      fontSize: AppTheme.meta,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -376,5 +752,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (g == 'lose') return 'ลดน้ำหนัก';
     if (g == 'gain') return 'เพิ่มกล้ามเนื้อ';
     return 'รักษาน้ำหนัก';
+  }
+
+  String _goalSummary(String goal) {
+    if (goal == 'lose') {
+      return 'โฟกัสขาดดุลพลังงานแบบพอดี เพื่อค่อยๆ ลดไขมันอย่างยั่งยืน';
+    }
+    if (goal == 'gain') {
+      return 'โฟกัสพลังงานและโปรตีนให้พอ เพื่อเสริมการสร้างกล้ามเนื้อ';
+    }
+    return 'โฟกัสสมดุลพลังงาน เพื่อคงรูปร่างและสุขภาพโดยรวม';
   }
 }
