@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
 import '../models/daily_log.dart';
+import '../models/feedback_log.dart';
 import '../utils/health_profile_stats.dart';
 
 class FirestoreService {
@@ -256,7 +257,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) => DailyLog.fromMap(doc.data() as Map<String, dynamic>))
+          .map((doc) => DailyLog.fromMap(doc.data()))
           .toList();
     });
   }
@@ -286,4 +287,22 @@ class FirestoreService {
     // Sort by name or keep original order (latest first)
     return recentFoods.take(10).toList();
   }
+
+  // --- Feedback Operations ---
+  Future<void> submitFeedback(FeedbackLog log) async {
+    await _db.collection('feedback').add(log.toMap());
+  }
+
+  Stream<List<FeedbackLog>> streamAllFeedback() {
+    return _db
+        .collection('feedback')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => FeedbackLog.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
 }
+

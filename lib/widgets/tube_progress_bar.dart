@@ -9,14 +9,14 @@ class TubeProgressBar extends StatelessWidget {
   final Duration duration;
 
   const TubeProgressBar({
-    Key? key,
+    super.key,
     required this.progress,
     required this.colors,
     this.backgroundColor = const Color(0xFFE3F2FD),
     this.height = 12.0,
     this.borderRadius = 12.0,
     this.duration = const Duration(milliseconds: 650),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

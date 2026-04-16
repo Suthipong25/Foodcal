@@ -1,5 +1,5 @@
 
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class StorageService {
@@ -16,10 +16,10 @@ class StorageService {
         ),
       );
       final downloadUrl = await uploadTask.ref.getDownloadURL();
-      print('Profile picture uploaded: $downloadUrl');
+      debugPrint('Profile picture uploaded: $downloadUrl');
       return downloadUrl;
     } catch (e) {
-      print('Error uploading profile picture: $e');
+      debugPrint('Error uploading profile picture: $e');
       return null;
     }
   }

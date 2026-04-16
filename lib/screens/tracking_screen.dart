@@ -14,9 +14,14 @@ import '../widgets/tube_progress_bar.dart';
 class TrackingScreen extends StatefulWidget {
   final DailyLog? log;
   final UserProfile profile;
+  final int scanRequestVersion;
 
-  const TrackingScreen({Key? key, required this.log, required this.profile})
-      : super(key: key);
+  const TrackingScreen({
+    super.key,
+    required this.log,
+    required this.profile,
+    this.scanRequestVersion = 0,
+  });
 
   @override
   State<TrackingScreen> createState() => _TrackingScreenState();
@@ -35,11 +40,27 @@ class _TrackingScreenState extends State<TrackingScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
   List<FoodItem> _recentFoods = [];
+  int _lastHandledScanRequestVersion = 0;
 
   @override
   void initState() {
     super.initState();
+    _lastHandledScanRequestVersion = widget.scanRequestVersion;
     _loadRecentFoods();
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.scanRequestVersion != oldWidget.scanRequestVersion &&
+        widget.scanRequestVersion != _lastHandledScanRequestVersion) {
+      _lastHandledScanRequestVersion = widget.scanRequestVersion;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scanFood();
+        }
+      });
+    }
   }
 
   Future<void> _loadRecentFoods() async {
@@ -147,6 +168,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
       try {
+        final messenger = ScaffoldMessenger.of(context);
+        final focusScope = FocusScope.of(context);
         await Provider.of<FirestoreService>(context, listen: false).addFood(
           user.uid,
           FoodItem(
@@ -164,10 +187,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
         _proteinController.clear();
         _carbsController.clear();
         _fatController.clear();
-        FocusScope.of(context).unfocus();
+        focusScope.unfocus();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(
               content: Text('บันทึกข้อมูลเรียบร้อยแล้ว'),
               backgroundColor: Colors.green,
@@ -200,7 +223,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (!AIService.isConfigured) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน จนกว่าจะตั้งค่า backend'),
+          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -284,7 +307,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (!AIService.isConfigured) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน จนกว่าจะตั้งค่า backend'),
+          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -332,370 +355,397 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppTheme.pagePadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: AppTheme.sectionGap),
-          Container(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            decoration: AppTheme.elevatedCard(
-              color: Colors.white,
-              borderColor: const Color(0xFFE4EEFB),
-              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = AppTheme.isCompactWidth(screenWidth);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: AppTheme.maxContentWidth(screenWidth),
+        ),
+        child: SingleChildScrollView(
+          padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: AppTheme.sectionGap),
+              Container(
+                padding: const EdgeInsets.all(AppTheme.cardPadding),
+                decoration: AppTheme.elevatedCard(
+                  color: Colors.white,
+                  borderColor: const Color(0xFFE4EEFB),
+                  boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.utensils,
-                              color: Colors.blue[400], size: 20),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'บันทึกอาหาร',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: _isAnalyzing ? null : _scanFood,
-                      icon: _isAnalyzing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(LucideIcons.camera, size: 18),
-                      label: Text(_isAnalyzing ? 'วิเคราะห์...' : 'สแกน'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.blue[600],
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'กรอกเองหรือใช้ AI ช่วยประเมินค่าโภชนาการก็ได้',
-                  style: TextStyle(
-                      fontSize: AppTheme.body, color: AppTheme.mutedText),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _foodController,
-                  decoration: InputDecoration(
-                    hintText: 'ชื่ออาหาร (เช่น ข้าวมันไก่)',
-                    filled: true,
-                    fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.innerRadius,
-                      borderSide: BorderSide.none,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(LucideIcons.sparkles,
-                          color: Colors.amber, size: 20),
-                      onPressed: _estimateCaloriesText,
-                    ),
-                  ),
-                ),
-                if (_recentFoods.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Text(
-                    'อาหารที่ใช้บ่อย',
-                    style: TextStyle(
-                        fontSize: AppTheme.meta,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.mutedText),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 40,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _recentFoods.length,
-                      itemBuilder: (context, index) {
-                        final food = _recentFoods[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ActionChip(
-                            label: Text(food.name,
-                                style: const TextStyle(fontSize: 11)),
-                            avatar: const Icon(LucideIcons.history, size: 14),
-                            onPressed: () => _useRecentFood(food),
-                            backgroundColor: AppTheme.pageTintStrong,
-                            side: BorderSide(
-                                color: AppTheme.primaryColor.withOpacity(0.12)),
-                            labelStyle: const TextStyle(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                const Text(
-                  'โภชนาการโดยประมาณ',
-                  style: TextStyle(
-                      fontSize: AppTheme.meta,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.mutedText),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _calController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          hintText: 'แคลอรี่ (kcal)',
-                          filled: true,
-                          fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-                          border: OutlineInputBorder(
-                            borderRadius: AppTheme.innerRadius,
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'เลือกมื้ออาหาร',
-                  style: TextStyle(
-                      fontSize: AppTheme.meta,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.mutedText),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildMealChip('เช้า', 'Breakfast', LucideIcons.sunrise),
-                    _buildMealChip('กลางวัน', 'Lunch', LucideIcons.sun),
-                    _buildMealChip('เย็น', 'Dinner', LucideIcons.sunset),
-                    _buildMealChip('ว่าง', 'Snack', LucideIcons.coffee),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _buildMacroField(_proteinController, 'โปรตีน (g)'),
-                    const SizedBox(width: 8),
-                    _buildMacroField(_carbsController, 'คาร์บ (g)'),
-                    const SizedBox(width: 8),
-                    _buildMacroField(_fatController, 'ไขมัน (g)'),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _addFood,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: AppTheme.innerRadius),
-                    ),
-                    child: const Text(
-                      'เพิ่มรายการอาหาร',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                if (widget.log != null && widget.log!.foods.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'มื้อวันนี้',
-                    style: TextStyle(
-                        fontSize: AppTheme.title,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.ink),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'รายการล่าสุดที่บันทึกไว้ในวันนี้',
-                    style: TextStyle(
-                        fontSize: AppTheme.body, color: AppTheme.mutedText),
-                  ),
-                  const SizedBox(height: 14),
-                  ...widget.log!.foods.reversed.take(5).map(
-                        (food) => Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppTheme.pageTint,
-                            borderRadius: AppTheme.innerRadius,
-                            border: Border.all(color: const Color(0xFFDCE8FA)),
-                          ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
                           child: Row(
                             children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color:
-                                      AppTheme.primaryColor.withOpacity(0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(LucideIcons.utensils,
-                                    color: AppTheme.primaryColor, size: 18),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(food.name,
-                                        style: const TextStyle(
-                                            fontSize: AppTheme.body,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppTheme.ink)),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${food.mealType} • P ${food.protein} / C ${food.carbs} / F ${food.fat}',
-                                      style: const TextStyle(
-                                          fontSize: AppTheme.meta,
-                                          color: AppTheme.mutedText),
-                                    ),
-                                  ],
+                              Icon(LucideIcons.utensils,
+                                  color: Colors.blue[400], size: 20),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'บันทึกอาหาร',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Text('${food.calories} kcal',
-                                  style: const TextStyle(
-                                      fontSize: AppTheme.body,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.primaryColor)),
                             ],
                           ),
                         ),
-                      ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            decoration: AppTheme.elevatedCard(
-              color: Colors.white,
-              borderColor: AppTheme.waterColor.withOpacity(0.12),
-              boxShadow: AppTheme.softShadow(AppTheme.waterColor),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(LucideIcons.droplet,
-                            color: AppTheme.waterColor, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: AppTheme.title,
-                            color: AppTheme.ink,
+                        TextButton.icon(
+                          onPressed: _isAnalyzing ? null : _scanFood,
+                          icon: _isAnalyzing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(LucideIcons.camera, size: 18),
+                          label: Text(_isAnalyzing ? 'วิเคราะห์...' : 'สแกน'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue[600],
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
                         ),
                       ],
                     ),
-                    Text(
-                      '${widget.log?.waterGlasses ?? 0}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.waterColor,
+                    const SizedBox(height: 6),
+                    const Text(
+                      'กรอกเองหรือใช้ AI ช่วยประเมินค่าโภชนาการก็ได้',
+                      style: TextStyle(
+                          fontSize: AppTheme.body, color: AppTheme.mutedText),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _foodController,
+                      decoration: InputDecoration(
+                        hintText: 'ชื่ออาหาร (เช่น ข้าวมันไก่)',
+                        filled: true,
+                        fillColor: AppTheme.macroBg(AppTheme.calorieColor),
+                        border: const OutlineInputBorder(
+                          borderRadius: AppTheme.innerRadius,
+                          borderSide: BorderSide.none,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(LucideIcons.sparkles,
+                              color: Colors.amber, size: 20),
+                          onPressed: _estimateCaloriesText,
+                        ),
                       ),
+                    ),
+                    if (_recentFoods.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'อาหารที่ใช้บ่อย',
+                        style: TextStyle(
+                            fontSize: AppTheme.meta,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.mutedText),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _recentFoods.length,
+                          itemBuilder: (context, index) {
+                            final food = _recentFoods[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ActionChip(
+                                label: Text(food.name,
+                                    style: const TextStyle(fontSize: 11)),
+                                avatar:
+                                    const Icon(LucideIcons.history, size: 14),
+                                onPressed: () => _useRecentFood(food),
+                                backgroundColor: AppTheme.pageTintStrong,
+                                side: BorderSide(
+                                    color: AppTheme.primaryColor
+                                        .withOpacity(0.12)),
+                                labelStyle: const TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'โภชนาการโดยประมาณ',
+                      style: TextStyle(
+                          fontSize: AppTheme.meta,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.mutedText),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: _calController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              hintText: 'แคลอรี่ (kcal)',
+                              filled: true,
+                              fillColor: Color(0x1A1F6FEB),
+                              border: OutlineInputBorder(
+                                borderRadius: AppTheme.innerRadius,
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'เลือกมื้ออาหาร',
+                      style: TextStyle(
+                          fontSize: AppTheme.meta,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.mutedText),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildMealChip(
+                            'เช้า', 'Breakfast', LucideIcons.sunrise),
+                        _buildMealChip('กลางวัน', 'Lunch', LucideIcons.sun),
+                        _buildMealChip('เย็น', 'Dinner', LucideIcons.sunset),
+                        _buildMealChip('ว่าง', 'Snack', LucideIcons.coffee),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildMacroField(
+                          _proteinController,
+                          'โปรตีน (g)',
+                          compact: isCompact,
+                        ),
+                        _buildMacroField(
+                          _carbsController,
+                          'คาร์บ (g)',
+                          compact: isCompact,
+                        ),
+                        _buildMacroField(
+                          _fatController,
+                          'ไขมัน (g)',
+                          compact: isCompact,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _addFood,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize:
+                              const Size.fromHeight(AppTheme.buttonHeight),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: AppTheme.innerRadius),
+                        ),
+                        child: const Text(
+                          'เพิ่มรายการอาหาร',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    if (widget.log != null && widget.log!.foods.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'มื้อวันนี้',
+                        style: TextStyle(
+                            fontSize: AppTheme.title,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.ink),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'รายการล่าสุดที่บันทึกไว้ในวันนี้',
+                        style: TextStyle(
+                            fontSize: AppTheme.body, color: AppTheme.mutedText),
+                      ),
+                      const SizedBox(height: 14),
+                      ...widget.log!.foods.reversed.take(5).map(
+                            (food) => Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppTheme.pageTint,
+                                borderRadius: AppTheme.innerRadius,
+                                border:
+                                    Border.all(color: const Color(0xFFDCE8FA)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor
+                                          .withOpacity(0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(LucideIcons.utensils,
+                                        color: AppTheme.primaryColor, size: 18),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(food.name,
+                                            style: const TextStyle(
+                                                fontSize: AppTheme.body,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppTheme.ink)),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${food.mealType} • P ${food.protein} / C ${food.carbs} / F ${food.fat}',
+                                          style: const TextStyle(
+                                              fontSize: AppTheme.meta,
+                                              color: AppTheme.mutedText),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text('${food.calories} kcal',
+                                      style: const TextStyle(
+                                          fontSize: AppTheme.body,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.primaryColor)),
+                                ],
+                              ),
+                            ),
+                          ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(AppTheme.cardPadding),
+                decoration: AppTheme.elevatedCard(
+                  color: Colors.white,
+                  borderColor: AppTheme.waterColor.withOpacity(0.12),
+                  boxShadow: AppTheme.softShadow(AppTheme.waterColor),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(LucideIcons.droplet,
+                                color: AppTheme.waterColor, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: AppTheme.title,
+                                color: AppTheme.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '${widget.log?.waterGlasses ?? 0}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.waterColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'อัปเดตเป็นช่วง ๆ เพื่อให้ dashboard สรุปแม่นขึ้น',
+                        style: TextStyle(
+                            fontSize: AppTheme.body, color: AppTheme.mutedText),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TubeProgressBar(
+                      progress: (widget.profile.targetWaterGlasses > 0
+                              ? (widget.log?.waterGlasses ?? 0) /
+                                  widget.profile.targetWaterGlasses
+                              : 0.0)
+                          .clamp(0.0, 1.0),
+                      colors: const [AppTheme.waterColor, AppTheme.waterColor],
+                      height: 16,
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _buildWaterBtn(
+                          '-',
+                          Colors.blue[50]!,
+                          Colors.blue[600]!,
+                          () => _updateWater(-1),
+                          label: '1',
+                        ),
+                        _buildWaterBtn(
+                          '+',
+                          Colors.blue[600]!,
+                          Colors.white,
+                          () => _updateWater(1),
+                          label: 'แก้ว',
+                        ),
+                        _buildWaterBtn(
+                          '+',
+                          Colors.blue[600]!,
+                          Colors.white,
+                          () => _updateWater(2),
+                          label: '500 มล',
+                        ),
+                        _buildWaterBtn(
+                          '+',
+                          Colors.blue[600]!,
+                          Colors.white,
+                          () => _updateWater(6),
+                          label: '1.5 ลิตร',
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'อัปเดตเป็นช่วง ๆ เพื่อให้ dashboard สรุปแม่นขึ้น',
-                    style: TextStyle(
-                        fontSize: AppTheme.body, color: AppTheme.mutedText),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TubeProgressBar(
-                  progress: (widget.profile.targetWaterGlasses > 0
-                          ? (widget.log?.waterGlasses ?? 0) /
-                              widget.profile.targetWaterGlasses
-                          : 0.0)
-                      .clamp(0.0, 1.0),
-                  colors: const [AppTheme.waterColor, AppTheme.waterColor],
-                  height: 16,
-                ),
-                const SizedBox(height: 24),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildWaterBtn(
-                        '-',
-                        Colors.blue[50]!,
-                        Colors.blue[600]!,
-                        () => _updateWater(-1),
-                        label: '1',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWaterBtn(
-                        '+',
-                        Colors.blue[600]!,
-                        Colors.white,
-                        () => _updateWater(1),
-                        label: 'แก้ว',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWaterBtn(
-                        '+',
-                        Colors.blue[600]!,
-                        Colors.white,
-                        () => _updateWater(2),
-                        label: '500 มล',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWaterBtn(
-                        '+',
-                        Colors.blue[600]!,
-                        Colors.white,
-                        () => _updateWater(6),
-                        label: '1.5 ลิตร',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -704,18 +754,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: AppTheme.tintedCard(AppTheme.primaryColor),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'บันทึกประจำวัน',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: AppTheme.largeTitle,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.ink),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'แยกเป็นบล็อกชัดเจนเพื่อให้เพิ่มอาหาร น้ำ และติดตามรายการของวันนี้ได้ง่ายขึ้น',
             style: TextStyle(
                 fontSize: AppTheme.body,
@@ -757,8 +807,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  Widget _buildMacroField(TextEditingController controller, String hint) {
-    return Expanded(
+  Widget _buildMacroField(
+    TextEditingController controller,
+    String hint, {
+    required bool compact,
+  }) {
+    return SizedBox(
+      width: compact ? 148 : 140,
       child: TextField(
         controller: controller,
         keyboardType: TextInputType.number,
@@ -769,7 +824,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           filled: true,
           fillColor: AppTheme.macroBg(AppTheme.calorieColor),
-          border: OutlineInputBorder(
+          border: const OutlineInputBorder(
             borderRadius: AppTheme.innerRadius,
             borderSide: BorderSide.none,
           ),

@@ -1,0 +1,54 @@
+Analyzing foodcal...                                            
+
+   info - Convert 'key' to a super parameter - lib\main.dart:62:9 - use_super_parameters
+   info - Convert 'key' to a super parameter - lib\main.dart:97:9 - use_super_parameters
+   info - Unnecessary 'const' keyword - lib\main.dart:119:17 - unnecessary_const
+   info - Convert 'key' to a super parameter - lib\main_screen.dart:19:9 - use_super_parameters
+   info - The constant name 'WORKOUT_VIDEOS' isn't a lowerCamelCase identifier - lib\models\content_model.dart:35:26 - constant_identifier_names
+   info - The constant name 'EDUCATION_ARTICLES' isn't a lowerCamelCase identifier - lib\models\content_model.dart:118:21 - constant_identifier_names
+   info - Unnecessary 'this.' qualifier - lib\models\user_profile.dart:220:31 - unnecessary_this
+  error - The getter 'pageBg' isn't defined for the type 'AppTheme' - lib\screens\admin_screen.dart:29:33 - undefined_getter
+   info - Unnecessary use of 'toList' in a spread - lib\screens\admin_screen.dart:69:61 - unnecessary_to_list_in_spreads
+  error - The getter 'pageBg' isn't defined for the type 'AppTheme' - lib\screens\ai_coach_screen.dart:59:33 - undefined_getter
+  error - The getter 'pageBg' isn't defined for the type 'AppTheme' - lib\screens\ai_coach_screen.dart:135:45 - undefined_getter
+   info - Use 'const' with the constructor to improve performance - lib\screens\content_screen.dart:149:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\content_screen.dart:241:45 - prefer_const_constructors
+warning - Unused import: 'package:lucide_icons/lucide_icons.dart' - lib\screens\feedback_screen.dart:3:8 - unused_import
+  error - The getter 'pageBg' isn't defined for the type 'AppTheme' - lib\screens\feedback_screen.dart:74:33 - undefined_getter
+warning - Unused import: '../models/user_profile.dart' - lib\screens\history_screen.dart:6:8 - unused_import
+   info - Convert 'key' to a super parameter - lib\screens\history_screen.dart:13:9 - use_super_parameters
+   info - Convert 'key' to a super parameter - lib\screens\home_screen.dart:39:9 - use_super_parameters
+  error - Expected to find ')' - lib\screens\home_screen.dart:117:15 - expected_token
+   info - Use 'const' with the constructor to improve performance - lib\screens\home_screen.dart:181:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\home_screen.dart:183:30 - prefer_const_constructors
+   info - Unnecessary braces in a string interpolation - lib\screens\home_screen.dart:408:61 - unnecessary_brace_in_string_interps
+   info - Use 'const' with the constructor to improve performance - lib\screens\home_screen.dart:502:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\home_screen.dart:526:52 - prefer_const_constructors
+   info - Convert 'key' to a super parameter - lib\screens\login_screen.dart:12:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:76:22 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\login_screen.dart:270:32 - prefer_const_constructors
+warning - Unused import: 'package:lucide_icons/lucide_icons.dart' - lib\screens\onboarding_screen.dart:5:8 - unused_import
+   info - Convert 'key' to a super parameter - lib\screens\onboarding_screen.dart:11:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps - lib\screens\profile_screen.dart:132:57 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\profile_screen.dart:133:53 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\profile_screen.dart:544:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\profile_screen.dart:623:25 - prefer_const_constructors
+   info - Convert 'key' to a super parameter - lib\screens\register_screen.dart:10:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\register_screen.dart:54:22 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\register_screen.dart:224:32 - prefer_const_constructors
+   info - Convert 'key' to a super parameter - lib\screens\tracking_screen.dart:18:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps - lib\screens\tracking_screen.dart:167:23 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:402:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:469:35 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:516:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:618:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:707:14 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\screens\tracking_screen.dart:709:19 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:710:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\tracking_screen.dart:772:19 - prefer_const_constructors
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\services\ai_service.dart:2:8 - unnecessary_import
+   info - Unnecessary cast - lib\services\firestore_service.dart:260:42 - unnecessary_cast
+   info - Don't invoke 'print' in production code - lib\services\storage_service.dart:19:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\storage_service.dart:22:7 - avoid_print
+   info - Convert 'key' to a super parameter - lib\widgets\tube_progress_bar.dart:11:9 - use_super_parameters
+

@@ -13,27 +13,44 @@ service cloud.firestore {
       return field is string && field.size() >= 10;
     }
 
+    // Fields a user may write on CREATE (role is intentionally excluded)
     function hasOnlyProfileCreateKeys() {
       return request.resource.data.keys().hasOnly([
         'name',
         'gender',
         'age',
+        'birthMonth',
+        'birthYear',
         'height',
         'weight',
+        'targetWeight',
         'activityLevel',
         'goal',
         'joinedDate',
-        'photoUrl'
+        'lastLoginDate',
+        'photoUrl',
+        'tdee',
+        'targetCalories',
+        'targetProtein',
+        'targetCarbs',
+        'targetFat',
+        'targetWaterGlasses',
+        'streak'
       ]);
     }
 
-    function hasOnlyProfileUpdateKeys() {
-      return request.resource.data.keys().hasOnly([
+    // Fields a user may write on UPDATE (role is intentionally excluded)
+    // Uses affectedKeys() to check only fields being changed, not the whole merged document
+    function hasOnlyAllowedUpdateKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
         'name',
         'gender',
         'age',
+        'birthMonth',
+        'birthYear',
         'height',
         'weight',
+        'targetWeight',
         'activityLevel',
         'goal',
         'joinedDate',
@@ -47,6 +64,12 @@ service cloud.firestore {
         'streak',
         'lastLoginDate'
       ]);
+    }
+
+    // Ensures the role field is never changed by the client
+    function roleUnchanged() {
+      return !('role' in request.resource.data)
+        || ('role' in resource.data && request.resource.data.role == resource.data.role);
     }
 
     function profileBaseValid() {
@@ -70,18 +93,6 @@ service cloud.firestore {
           || request.resource.data.photoUrl == null
           || (request.resource.data.photoUrl is string
             && !request.resource.data.photoUrl.matches('^data:')));
-    }
-
-    function legacyProfileFieldsUnchanged() {
-      return (!('tdee' in resource.data) ? !('tdee' in request.resource.data) : request.resource.data.tdee == resource.data.tdee)
-        && (!('targetCalories' in resource.data) ? !('targetCalories' in request.resource.data) : request.resource.data.targetCalories == resource.data.targetCalories)
-        && (!('targetProtein' in resource.data) ? !('targetProtein' in request.resource.data) : request.resource.data.targetProtein == resource.data.targetProtein)
-        && (!('targetCarbs' in resource.data) ? !('targetCarbs' in request.resource.data) : request.resource.data.targetCarbs == resource.data.targetCarbs)
-        && (!('targetFat' in resource.data) ? !('targetFat' in request.resource.data) : request.resource.data.targetFat == resource.data.targetFat)
-        && (!('targetWaterGlasses' in resource.data) ? !('targetWaterGlasses' in request.resource.data) : request.resource.data.targetWaterGlasses == resource.data.targetWaterGlasses)
-        && (!('streak' in resource.data) ? !('streak' in request.resource.data) : request.resource.data.streak == resource.data.streak)
-        && (!('lastLoginDate' in resource.data) ? !('lastLoginDate' in request.resource.data) : request.resource.data.lastLoginDate == resource.data.lastLoginDate)
-        && request.resource.data.joinedDate == resource.data.joinedDate;
     }
 
     function validFoodEntry(food) {
@@ -251,9 +262,9 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && hasOnlyProfileCreateKeys() && profileBaseValid();
       allow update: if isOwner(userId)
-        && hasOnlyProfileUpdateKeys()
+        && hasOnlyAllowedUpdateKeys()
         && profileBaseValid()
-        && legacyProfileFieldsUnchanged();
+        && roleUnchanged();
 
       match /daily_logs/{logId} {
         allow read: if isOwner(userId);
@@ -262,6 +273,22 @@ service cloud.firestore {
         allow update: if isOwner(userId)
           && (validWaterUpdate(logId) || validFoodAppend(logId) || validWorkoutAppend(logId));
       }
+    }
+
+    match /feedback/{feedbackId} {
+      // ผู้ใช้ที่ล็อกอินแล้วส่ง Feedback ได้
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+          'uid', 'rating', 'comment', 'favoriteFeature', 'createdAt'
+        ])
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.uid == request.auth.uid;
+
+      // อ่านได้เฉพาะ Admin (role == 'admin' ใน Firestore)
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /{document=**} {

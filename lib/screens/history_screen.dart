@@ -1,22 +1,22 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import '../models/user_profile.dart';
 import '../models/daily_log.dart';
 import '../services/firestore_service.dart';
 import '../services/auth_service.dart';
 import '../app_theme.dart';
 
 class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({Key? key}) : super(key: key);
+  const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    final firestoreService =
+        Provider.of<FirestoreService>(context, listen: false);
     final user = authService.currentUser;
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
     if (user == null) {
       return const Scaffold(body: Center(child: Text('กรุณาเข้าสู่ระบบ')));
@@ -25,7 +25,8 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('ประวัติการบันทึก', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('ประวัติการบันทึก',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -37,7 +38,8 @@ class HistoryScreen extends StatelessWidget {
         stream: firestoreService.streamDailyLogs(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.blueAccent));
           }
 
           if (snapshot.hasError) {
@@ -51,21 +53,31 @@ class HistoryScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(LucideIcons.clipboardList, size: 64, color: Colors.blueGrey[100]),
-                   const SizedBox(height: 16),
-                   Text('ยังไม่มีข้อมูลการบันทึก', style: TextStyle(color: Colors.blueGrey[300], fontSize: 16)),
+                  Icon(LucideIcons.clipboardList,
+                      size: 64, color: Colors.blueGrey[100]),
+                  const SizedBox(height: 16),
+                  Text('ยังไม่มีข้อมูลการบันทึก',
+                      style:
+                          TextStyle(color: Colors.blueGrey[300], fontSize: 16)),
                 ],
               ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: logs.length,
-            itemBuilder: (context, index) {
-              final log = logs[index];
-              return _buildHistoryCard(context, log);
-            },
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: AppTheme.maxContentWidth(screenWidth),
+              ),
+              child: ListView.builder(
+                padding: AppTheme.pageInsetsForWidth(screenWidth),
+                itemCount: logs.length,
+                itemBuilder: (context, index) {
+                  final log = logs[index];
+                  return _buildHistoryCard(context, log);
+                },
+              ),
+            ),
           );
         },
       ),
@@ -75,10 +87,10 @@ class HistoryScreen extends StatelessWidget {
   Widget _buildHistoryCard(BuildContext context, DailyLog log) {
     DateTime date = DateTime.parse(log.date);
     String formattedDate = DateFormat('EEEEที่ d MMMM', 'th').format(date);
-    
+
     // Quick macro targets from profile (simplified or passed down)
     // For now, let's just show absolute values as the profile targets might change daily.
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -94,14 +106,23 @@ class HistoryScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(formattedDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey)),
+              Text(formattedDate,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.blueGrey)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.macroBg(AppTheme.calorieColor),
                   borderRadius: AppTheme.innerRadius,
                 ),
-                child: Text('${log.caloriesIn} kcal', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Text('${log.caloriesIn} kcal',
+                    style: const TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
               ),
             ],
           ),
@@ -114,7 +135,8 @@ class HistoryScreen extends StatelessWidget {
               const SizedBox(width: 12),
               _buildMacroInfo('🥑', '${log.fat}g', AppTheme.fatColor),
               const SizedBox(width: 12),
-              _buildMacroInfo('💧', '${log.waterGlasses} แก้ว', AppTheme.waterColor),
+              _buildMacroInfo(
+                  '💧', '${log.waterGlasses} แก้ว', AppTheme.waterColor),
             ],
           ),
         ],
@@ -127,9 +149,12 @@ class HistoryScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.blueGrey[300])),
+          Text(label,
+              style: TextStyle(fontSize: 10, color: Colors.blueGrey[300])),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 13, color: color)),
         ],
       ),
     );
