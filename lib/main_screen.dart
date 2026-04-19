@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'models/daily_log.dart';
 import 'models/user_profile.dart';
+import 'screens/admin_screen.dart';
 import 'screens/content_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
@@ -26,14 +27,31 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   int _scanRequestVersion = 0;
+  String? _lastSyncedVisitKey;
+  bool _onboardingPushed = false;
+
+  Stream<UserProfile?>? _userProfileStream;
+  Stream<List<DailyLog>>? _dailyLogsStream;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_userProfileStream == null) {
+      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      if (user != null) {
+        final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+        _userProfileStream = firestoreService.streamUserProfile(user.uid);
+        _dailyLogsStream = firestoreService.streamDailyLogs(user.uid, limit: 7);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final user = authService.currentUser;
+    final user = Provider.of<AuthService>(context, listen: false).currentUser;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    if (user == null) {
+    if (user == null || _userProfileStream == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
@@ -45,7 +63,7 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     return StreamBuilder<UserProfile?>(
-      stream: firestoreService.streamUserProfile(user.uid),
+      stream: _userProfileStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -102,17 +120,44 @@ class _MainScreenState extends State<MainScreen> {
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
-          return const OnboardingScreen();
+          // Navigate ด้วย Navigator แทนการ return ตรงๆ
+          // เพื่อให้ OnboardingScreen มี state เป็นของตัวเอง ไม่ถูก reset เมื่อ StreamBuilder rebuild
+          if (!_onboardingPushed) {
+            _onboardingPushed = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const OnboardingScreen(),
+                  settings: const RouteSettings(name: '/onboarding'),
+                ),
+              );
+            });
+          }
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            ),
+          );
         }
+        // ถ้ามีข้อมูลโปรไฟล์แล้ว รีเซ็ต flag เผื่อออกจากระบบแล้วกลับมา
+        _onboardingPushed = false;
 
         final userProfile = snapshot.data!;
+        _syncDailyVisit(user.uid, firestoreService);
+
+        // ถ้ายูสเซอร์เป็น Admin ให้เข้าหน้า Admin ทันที โดยไม่สนหน้าแท็บหลัก
+        if (userProfile.role == 'admin') {
+          return AdminScreen(profile: userProfile);
+        }
 
         return StreamBuilder<List<DailyLog>>(
-          stream: firestoreService.streamDailyLogs(user.uid, limit: 7),
+          stream: _dailyLogsStream,
           builder: (context, logsSnap) {
             final weeklyLogs = logsSnap.data ?? [];
             final dailyLog = weeklyLogs.isNotEmpty &&
-                    weeklyLogs.first.date == FirestoreService.utcDateKey()
+                    weeklyLogs.first.date == FirestoreService.dateKey()
                 ? weeklyLogs.first
                 : null;
 
@@ -326,6 +371,24 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+
+  void _syncDailyVisit(
+    String uid,
+    FirestoreService firestoreService,
+  ) {
+    final todayKey = FirestoreService.dateKey();
+    if (_lastSyncedVisitKey == todayKey) return;
+
+    _lastSyncedVisitKey = todayKey;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await firestoreService.updateLoginStreak(uid);
+      } catch (error) {
+        debugPrint('Unable to sync daily visit: $error');
+        _lastSyncedVisitKey = null;
+      }
+    });
   }
 
   Widget _buildScanNavAction(bool compact) {

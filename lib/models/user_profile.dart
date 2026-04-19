@@ -179,7 +179,6 @@ class UserProfile {
       'gender': gender,
       'birthMonth': birthMonth,
       'birthYear': birthYear,
-      'age': age,
       'height': height,
       'weight': weight,
       'targetWeight': targetWeight,

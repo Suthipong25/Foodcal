@@ -213,9 +213,32 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Future<void> _updateWater(int delta) async {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
-    if (user != null) {
+    if (user == null) return;
+
+    try {
       await Provider.of<FirestoreService>(context, listen: false)
           .updateWater(user.uid, delta);
+      if (mounted) {
+        final label = delta > 0 ? '+$delta แก้ว' : '$delta แก้ว';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('บันทึกน้ำ $label เรียบร้อย'),
+            backgroundColor: AppTheme.waterColor,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาด: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

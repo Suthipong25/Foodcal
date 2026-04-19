@@ -162,6 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isUploading = true;
     });
 
+    if (!mounted) return;
+
     // Upload ใน background
     try {
       final firestore = Provider.of<FirestoreService>(context, listen: false);

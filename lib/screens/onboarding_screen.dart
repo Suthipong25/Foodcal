@@ -23,7 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   double weight = 60;
   double targetWeight = 60;
   String activityLevel = 'moderate';
-  String goal = 'maintain'; // Default goal
+  String goal = 'maintain';
   bool loading = false;
 
   @override
@@ -40,7 +40,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final user = auth.currentUser;
 
       if (user != null) {
-        // Calculate age for TDEE logic
         final now = DateTime.now();
         int currentAge = now.year - birthYear;
         if (now.month < birthMonth) currentAge--;
@@ -72,8 +71,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           streak: 1,
         );
 
+        final saveData = profile.toEditableMap();
+        debugPrint('[Onboarding] Saving UID=${user.uid}, data=$saveData');
         await firestore.saveUserProfile(user.uid, profile);
         debugPrint('Profile saved successfully for ${user.uid}');
+
+        // Pop กลับไปยัง MainScreen — stream จะอัปเดตและแสดงหน้าหลักเอง
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return;
       } else {
         throw Exception('User is null');
       }
@@ -105,7 +112,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _nextStep() {
     if (step < 4) {
-      // Increase total steps to 4
       setState(() => step++);
     } else {
       _handleSave();

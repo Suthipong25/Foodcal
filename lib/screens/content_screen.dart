@@ -368,6 +368,29 @@ class _ContentScreenState extends State<ContentScreen> {
         setState(() {
           _workoutStartedAt.putIfAbsent(video.id, DateTime.now);
         });
+        final user = Provider.of<AuthService>(context, listen: false).currentUser;
+        if (user != null) {
+          try {
+            await Provider.of<FirestoreService>(context, listen: false)
+                .startWorkoutSession(
+              user.uid,
+              WorkoutItem(
+                id: video.id,
+                title: video.title,
+                level: video.level,
+                duration: video.duration,
+                minutes: int.tryParse(
+                      video.duration.replaceAll(RegExp(r'[^0-9]'), ''),
+                    ) ??
+                    0,
+                type: video.type,
+                completedAt: DateTime.now(),
+              ),
+            );
+          } catch (error) {
+            debugPrint('Unable to start workout session: $error');
+          }
+        }
         final url = Uri.parse(video.youtubeUrl);
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
           debugPrint('Could not launch ${video.youtubeUrl}');
@@ -628,20 +651,40 @@ class _ContentScreenState extends State<ContentScreen> {
       onTap: isDone || isSubmitting
           ? null
           : () async {
+              final user =
+                  Provider.of<AuthService>(context, listen: false).currentUser;
+              if (user == null) return;
+
               if (!started) {
                 setState(() {
                   _workoutStartedAt[video.id] = DateTime.now();
                 });
+                try {
+                  await Provider.of<FirestoreService>(context, listen: false)
+                      .startWorkoutSession(
+                    user.uid,
+                    WorkoutItem(
+                      id: video.id,
+                      title: video.title,
+                      level: video.level,
+                      duration: video.duration,
+                      minutes: int.tryParse(
+                            video.duration.replaceAll(RegExp(r'[^0-9]'), ''),
+                          ) ??
+                          0,
+                      type: video.type,
+                      completedAt: DateTime.now(),
+                    ),
+                  );
+                } catch (error) {
+                  debugPrint('Unable to start workout session: $error');
+                }
                 final url = Uri.parse(video.youtubeUrl);
                 await launchUrl(url, mode: LaunchMode.externalApplication);
                 return;
               }
 
               if (!canFinish) return;
-
-              final user =
-                  Provider.of<AuthService>(context, listen: false).currentUser;
-              if (user == null) return;
 
               setState(() => _submittingWorkoutIds.add(video.id));
               try {
