@@ -299,13 +299,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     setState(() => _selectedFeature = feature);
                   }
                 },
-                selectedColor: AppTheme.primaryColor.withOpacity(0.14),
+                selectedColor: AppTheme.primaryColor.withValues(alpha: 0.14),
                 backgroundColor: AppTheme.pageTint,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
                   side: BorderSide(
                     color: isSelected
-                        ? AppTheme.primaryColor.withOpacity(0.3)
+                        ? AppTheme.primaryColor.withValues(alpha: 0.3)
                         : AppTheme.pageTintStrong,
                   ),
                 ),

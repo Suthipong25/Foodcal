@@ -5,6 +5,7 @@ import '../app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_profile.dart';
+import '../utils/health_profile_stats.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -33,6 +34,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _handleSave() async {
+    final validationError = HealthProfileValidator.validate(
+      name: _nameController.text.isEmpty ? 'User' : _nameController.text,
+      birthMonth: birthMonth,
+      birthYear: birthYear,
+      height: height,
+      weight: weight,
+      targetWeight: targetWeight,
+      goal: goal,
+    );
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
     setState(() => loading = true);
     try {
       final auth = Provider.of<AuthService>(context, listen: false);
@@ -346,7 +363,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           boxShadow: [
             if (selected)
               BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.2),
+                  color: Colors.blueAccent.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4))
           ],
@@ -403,7 +420,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           boxShadow: [
             if (selected)
               BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.15),
+                  color: Colors.blueAccent.withValues(alpha: 0.15),
                   blurRadius: 15,
                   offset: const Offset(0, 5))
           ],
@@ -420,7 +437,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     color: selected
-                        ? Colors.white.withOpacity(0.8)
+                        ? Colors.white.withValues(alpha: 0.8)
                         : Colors.blueGrey[200])),
           ],
         ),
@@ -445,7 +462,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           boxShadow: [
             if (selected)
               BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.15),
+                  color: Colors.blueAccent.withValues(alpha: 0.15),
                   blurRadius: 15,
                   offset: const Offset(0, 5))
           ],
@@ -462,7 +479,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     color: selected
-                        ? Colors.white.withOpacity(0.8)
+                        ? Colors.white.withValues(alpha: 0.8)
                         : Colors.blueGrey[200])),
           ],
         ),

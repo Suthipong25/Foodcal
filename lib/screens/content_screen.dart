@@ -24,7 +24,6 @@ class ContentScreen extends StatefulWidget {
 class _ContentScreenState extends State<ContentScreen> {
   String filter = 'All';
   final Set<int> _submittingWorkoutIds = <int>{};
-  final Map<int, DateTime> _workoutStartedAt = <int, DateTime>{};
   Timer? _refreshTimer;
 
   @override
@@ -43,6 +42,7 @@ class _ContentScreenState extends State<ContentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthService>(context, listen: false).currentUser;
     final width = MediaQuery.sizeOf(context).width;
     final isCompact = width < 560;
     final filteredVideos = filter == 'All'
@@ -50,40 +50,59 @@ class _ContentScreenState extends State<ContentScreen> {
         : workoutVideos.where((video) => video.level == filter).toList();
     final completedCount = widget.log?.workouts.length ?? 0;
 
+    if (user == null) {
+      return const Center(child: Text('กรุณาเข้าสู่ระบบ'));
+    }
+
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
-        child: SingleChildScrollView(
-          padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeroCard(filteredVideos.length, completedCount),
-              const SizedBox(height: AppTheme.sectionGap),
-              _buildSectionHeader(
-                'บทความน่าอ่าน',
-                'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
-              ),
-              const SizedBox(height: 12),
-              _buildArticleList(isCompact),
-              const SizedBox(height: AppTheme.sectionGap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+        child: StreamBuilder<Map<int, WorkoutSessionState>>(
+          stream: Provider.of<FirestoreService>(context, listen: false)
+              .streamTodayWorkoutSessions(user.uid),
+          builder: (context, snapshot) {
+            final workoutSessions =
+                snapshot.data ?? const <int, WorkoutSessionState>{};
+
+            return SingleChildScrollView(
+              padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _buildSectionHeader(
-                      'คลังวิดีโอ',
-                      'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
+                  _buildHeroCard(filteredVideos.length, completedCount),
+                  const SizedBox(height: AppTheme.sectionGap),
+                  _buildSectionHeader(
+                    'บทความน่าอ่าน',
+                    'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildArticleList(isCompact),
+                  const SizedBox(height: AppTheme.sectionGap),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: _buildSectionHeader(
+                          'คลังวิดีโอ',
+                          'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildFilterDropdown(),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...filteredVideos.map(
+                    (video) => _buildWorkoutCard(
+                      video,
+                      isCompact,
+                      session: workoutSessions[video.id],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _buildFilterDropdown(),
                 ],
               ),
-              const SizedBox(height: 16),
-              ...filteredVideos.map((video) => _buildWorkoutCard(video, isCompact)),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -216,10 +235,16 @@ class _ContentScreenState extends State<ContentScreen> {
     );
   }
 
-  Widget _buildWorkoutCard(WorkoutVideo video, bool isCompact) {
-    final isDone = widget.log?.workouts.any((item) => item.id == video.id) ?? false;
+  Widget _buildWorkoutCard(
+    WorkoutVideo video,
+    bool isCompact, {
+    WorkoutSessionState? session,
+  }) {
+    final completionCount =
+        widget.log?.workouts.where((item) => item.id == video.id).length ?? 0;
+    final hasCompletedToday = completionCount > 0;
     final isSubmitting = _submittingWorkoutIds.contains(video.id);
-    final canFinish = _canFinishWorkout(video);
+    final canFinish = _canFinishWorkout(video, session);
     final videoId = _extractYoutubeVideoId(video.youtubeUrl);
     final thumbUrl = 'https://img.youtube.com/vi/$videoId/mqdefault.jpg';
     final fallbackThumbUrl = 'https://img.youtube.com/vi/$videoId/default.jpg';
@@ -228,11 +253,11 @@ class _ContentScreenState extends State<ContentScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(AppTheme.cardPadding),
       decoration: AppTheme.elevatedCard(
-        borderColor: isDone
-            ? AppTheme.success.withOpacity(0.18)
+        borderColor: hasCompletedToday
+            ? AppTheme.success.withValues(alpha: 0.18)
             : AppTheme.pageTintStrong,
         boxShadow: AppTheme.softShadow(
-          isDone ? AppTheme.success : AppTheme.primaryColor,
+          hasCompletedToday ? AppTheme.success : AppTheme.primaryColor,
         ),
       ),
       child: isCompact
@@ -243,6 +268,7 @@ class _ContentScreenState extends State<ContentScreen> {
                   video: video,
                   thumbUrl: thumbUrl,
                   fallbackThumbUrl: fallbackThumbUrl,
+                  session: session,
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -285,9 +311,10 @@ class _ContentScreenState extends State<ContentScreen> {
                   width: double.infinity,
                   child: _buildWorkoutAction(
                     video,
-                    isDone,
+                    hasCompletedToday,
                     isSubmitting,
                     canFinish,
+                    session,
                   ),
                 ),
               ],
@@ -299,6 +326,7 @@ class _ContentScreenState extends State<ContentScreen> {
                   video: video,
                   thumbUrl: thumbUrl,
                   fallbackThumbUrl: fallbackThumbUrl,
+                  session: session,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -348,9 +376,10 @@ class _ContentScreenState extends State<ContentScreen> {
                   width: 104,
                   child: _buildWorkoutAction(
                     video,
-                    isDone,
+                    hasCompletedToday,
                     isSubmitting,
                     canFinish,
+                    session,
                   ),
                 ),
               ],
@@ -362,39 +391,15 @@ class _ContentScreenState extends State<ContentScreen> {
     required WorkoutVideo video,
     required String thumbUrl,
     required String fallbackThumbUrl,
+    WorkoutSessionState? session,
   }) {
     return GestureDetector(
       onTap: () async {
-        setState(() {
-          _workoutStartedAt.putIfAbsent(video.id, DateTime.now);
-        });
-        final user = Provider.of<AuthService>(context, listen: false).currentUser;
-        if (user != null) {
-          try {
-            await Provider.of<FirestoreService>(context, listen: false)
-                .startWorkoutSession(
-              user.uid,
-              WorkoutItem(
-                id: video.id,
-                title: video.title,
-                level: video.level,
-                duration: video.duration,
-                minutes: int.tryParse(
-                      video.duration.replaceAll(RegExp(r'[^0-9]'), ''),
-                    ) ??
-                    0,
-                type: video.type,
-                completedAt: DateTime.now(),
-              ),
-            );
-          } catch (error) {
-            debugPrint('Unable to start workout session: $error');
-          }
+        if (session != null && !session.completed) {
+          await _launchWorkoutVideo(video);
+          return;
         }
-        final url = Uri.parse(video.youtubeUrl);
-        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-          debugPrint('Could not launch ${video.youtubeUrl}');
-        }
+        await _startWorkout(video, openVideo: true);
       },
       child: Stack(
         alignment: Alignment.center,
@@ -430,7 +435,7 @@ class _ContentScreenState extends State<ContentScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.42),
+              color: Colors.black.withValues(alpha: 0.42),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -444,6 +449,45 @@ class _ContentScreenState extends State<ContentScreen> {
     );
   }
 
+  WorkoutItem _toWorkoutItem(WorkoutVideo video) {
+    return WorkoutItem(
+      id: video.id,
+      title: video.title,
+      level: video.level,
+      duration: video.duration,
+      minutes:
+          int.tryParse(video.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+      type: video.type,
+      completedAt: DateTime.now(),
+    );
+  }
+
+  Future<void> _launchWorkoutVideo(WorkoutVideo video) async {
+    final url = Uri.parse(video.youtubeUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch ${video.youtubeUrl}');
+    }
+  }
+
+  Future<void> _startWorkout(
+    WorkoutVideo video, {
+    bool openVideo = false,
+  }) async {
+    final user = Provider.of<AuthService>(context, listen: false).currentUser;
+    if (user == null) return;
+
+    try {
+      await Provider.of<FirestoreService>(context, listen: false)
+          .startWorkoutSession(user.uid, _toWorkoutItem(video));
+    } catch (error) {
+      debugPrint('Unable to start workout session: $error');
+    }
+
+    if (openVideo) {
+      await _launchWorkoutVideo(video);
+    }
+  }
+
   Widget _buildHeroCard(int filteredCount, int completedCount) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -454,7 +498,7 @@ class _ContentScreenState extends State<ContentScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: AppTheme.pillRadius,
             ),
             child: const Text(
@@ -513,7 +557,7 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.78),
+        color: Colors.white.withValues(alpha: 0.78),
         borderRadius: AppTheme.innerRadius,
         border: Border.all(color: Colors.white),
       ),
@@ -632,23 +676,24 @@ class _ContentScreenState extends State<ContentScreen> {
 
   Widget _buildWorkoutAction(
     WorkoutVideo video,
-    bool isDone,
+    bool hasCompletedToday,
     bool isSubmitting,
     bool canFinish,
+    WorkoutSessionState? session,
   ) {
-    final started = _workoutStartedAt.containsKey(video.id);
-    final label = isDone
-        ? 'บันทึกแล้ว'
-        : isSubmitting
-            ? 'กำลังบันทึก'
-            : canFinish
-                ? 'จบ workout'
-                : started
-                    ? 'รอให้ครบเวลา'
+    final started = session != null && !session.completed;
+    final label = isSubmitting
+        ? 'กำลังบันทึก'
+        : canFinish
+            ? 'จบ workout'
+            : started
+                ? 'รอให้ครบเวลา'
+                : hasCompletedToday
+                    ? 'ทำอีกครั้ง'
                     : 'เริ่มก่อน';
 
     return GestureDetector(
-      onTap: isDone || isSubmitting
+      onTap: isSubmitting
           ? null
           : () async {
               final user =
@@ -656,31 +701,7 @@ class _ContentScreenState extends State<ContentScreen> {
               if (user == null) return;
 
               if (!started) {
-                setState(() {
-                  _workoutStartedAt[video.id] = DateTime.now();
-                });
-                try {
-                  await Provider.of<FirestoreService>(context, listen: false)
-                      .startWorkoutSession(
-                    user.uid,
-                    WorkoutItem(
-                      id: video.id,
-                      title: video.title,
-                      level: video.level,
-                      duration: video.duration,
-                      minutes: int.tryParse(
-                            video.duration.replaceAll(RegExp(r'[^0-9]'), ''),
-                          ) ??
-                          0,
-                      type: video.type,
-                      completedAt: DateTime.now(),
-                    ),
-                  );
-                } catch (error) {
-                  debugPrint('Unable to start workout session: $error');
-                }
-                final url = Uri.parse(video.youtubeUrl);
-                await launchUrl(url, mode: LaunchMode.externalApplication);
+                await _startWorkout(video, openVideo: true);
                 return;
               }
 
@@ -689,21 +710,7 @@ class _ContentScreenState extends State<ContentScreen> {
               setState(() => _submittingWorkoutIds.add(video.id));
               try {
                 await Provider.of<FirestoreService>(context, listen: false)
-                    .finishWorkout(
-                  user.uid,
-                  WorkoutItem(
-                    id: video.id,
-                    title: video.title,
-                    level: video.level,
-                    duration: video.duration,
-                    minutes: int.tryParse(
-                          video.duration.replaceAll(RegExp(r'[^0-9]'), ''),
-                        ) ??
-                        0,
-                    type: video.type,
-                    completedAt: DateTime.now(),
-                  ),
-                );
+                    .finishWorkout(user.uid, _toWorkoutItem(video));
               } finally {
                 if (mounted) {
                   setState(() => _submittingWorkoutIds.remove(video.id));
@@ -714,38 +721,38 @@ class _ContentScreenState extends State<ContentScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: isDone
-              ? AppTheme.macroBg(AppTheme.success)
-              : canFinish || !started
-                  ? AppTheme.primaryColor
-                  : AppTheme.pageTintStrong,
+          color: started && !canFinish
+              ? AppTheme.pageTintStrong
+              : hasCompletedToday
+                  ? AppTheme.macroBg(AppTheme.success)
+                  : AppTheme.primaryColor,
           borderRadius: AppTheme.innerRadius,
           border: Border.all(
-            color: isDone
-                ? AppTheme.success.withOpacity(0.14)
-                : canFinish || !started
-                    ? AppTheme.primaryColor
-                    : AppTheme.pageTintStrong,
+            color: hasCompletedToday
+                ? AppTheme.success.withValues(alpha: 0.14)
+                : started && !canFinish
+                    ? AppTheme.pageTintStrong
+                    : AppTheme.primaryColor,
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              isDone
-                  ? LucideIcons.checkCircle2
-                  : isSubmitting
-                      ? LucideIcons.loader2
-                      : canFinish
-                          ? LucideIcons.dumbbell
-                          : started
-                              ? LucideIcons.clock3
+              isSubmitting
+                  ? LucideIcons.loader2
+                  : canFinish
+                      ? LucideIcons.dumbbell
+                      : started
+                          ? LucideIcons.clock3
+                          : hasCompletedToday
+                              ? LucideIcons.rotateCw
                               : LucideIcons.play,
-              color: isDone
-                  ? AppTheme.success
-                  : canFinish || !started
-                      ? Colors.white
-                      : AppTheme.primaryColor,
+              color: started && !canFinish
+                  ? AppTheme.primaryColor
+                  : hasCompletedToday
+                      ? AppTheme.success
+                      : Colors.white,
               size: 20,
             ),
             const SizedBox(height: 8),
@@ -753,11 +760,11 @@ class _ContentScreenState extends State<ContentScreen> {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDone
-                    ? AppTheme.success
-                    : canFinish || !started
-                        ? Colors.white
-                        : AppTheme.primaryColor,
+                color: started && !canFinish
+                    ? AppTheme.primaryColor
+                    : hasCompletedToday
+                        ? AppTheme.success
+                        : Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
@@ -779,16 +786,21 @@ class _ContentScreenState extends State<ContentScreen> {
     };
   }
 
-  bool _canFinishWorkout(WorkoutVideo video) {
-    final startedAt = _workoutStartedAt[video.id];
-    if (startedAt == null) return false;
+  bool _canFinishWorkout(
+    WorkoutVideo video,
+    WorkoutSessionState? session,
+  ) {
+    if (session == null || session.completed) return false;
 
     final totalMinutes =
         int.tryParse(video.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     if (totalMinutes <= 0) return false;
 
-    final requiredMinutes = (totalMinutes * 0.6).ceil().clamp(1, totalMinutes);
-    return DateTime.now().difference(startedAt).inMinutes >= requiredMinutes;
+    final requiredMinutes = FirestoreService.requiredWorkoutMinutes(
+      totalMinutes,
+    );
+    return DateTime.now().difference(session.startedAt).inMinutes >=
+        requiredMinutes;
   }
 
   String _extractYoutubeVideoId(String url) {

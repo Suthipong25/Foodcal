@@ -8,7 +8,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_theme.dart';
 import '../models/daily_log.dart';
 import '../models/user_profile.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
+import '../widgets/reminder_banner.dart';
 import '../widgets/tube_progress_bar.dart';
+import 'package:provider/provider.dart';
 import 'ai_coach_screen.dart';
 
 class TipItem {
@@ -72,6 +76,9 @@ class DashboardScreen extends StatelessWidget {
         : 0.0;
     final todayTip = _tips[DateTime.now().day % _tips.length];
 
+    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid ?? '';
+    final fs = Provider.of<FirestoreService>(context, listen: false);
+
     return Container(
       decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
       child: Center(
@@ -83,6 +90,19 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                StreamBuilder<List<dynamic>>(
+                  stream: fs.streamWeightLogs(uid, limit: 1),
+                  builder: (context, snap) {
+                    final logs = snap.data ?? [];
+                    final hasWeight = logs.isNotEmpty && logs.first.date == FirestoreService.dateKey();
+                    return DailyReminderColumn(
+                      waterGlasses: currentWater,
+                      targetWater: profile.targetWaterGlasses,
+                      hasFoodToday: caloriesIn > 0,
+                      hasWeightToday: hasWeight,
+                    );
+                  },
+                ),
                 _HeroCard(
                   profile: profile,
                   caloriesIn: caloriesIn,
@@ -431,9 +451,9 @@ class _StatChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.86),
+          color: Colors.white.withValues(alpha: 0.86),
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: color.withOpacity(0.12)),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
         ),
         child: Row(
           children: [
@@ -441,7 +461,7 @@ class _StatChip extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 18),
@@ -536,7 +556,7 @@ class _MacroCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: AppTheme.elevatedCard(
           color: Colors.white,
-          borderColor: color.withOpacity(0.12),
+          borderColor: color.withValues(alpha: 0.12),
           boxShadow: AppTheme.softShadow(color),
         ),
         child: Column(
@@ -548,7 +568,7 @@ class _MacroCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: color, size: 18),
@@ -578,8 +598,8 @@ class _MacroCard extends StatelessWidget {
             const SizedBox(height: 10),
             TubeProgressBar(
               progress: progress,
-              colors: [color.withOpacity(0.55), color],
-              backgroundColor: color.withOpacity(0.10),
+              colors: [color.withValues(alpha: 0.55), color],
+              backgroundColor: color.withValues(alpha: 0.10),
               height: 8,
               borderRadius: 999,
             ),
@@ -641,7 +661,7 @@ class _WeeklyChart extends StatelessWidget {
                   const BorderRadius.vertical(top: Radius.circular(8)),
               gradient: LinearGradient(
                 colors: isOver
-                    ? [AppTheme.error.withOpacity(0.6), AppTheme.error]
+                    ? [AppTheme.error.withValues(alpha: 0.6), AppTheme.error]
                     : [AppTheme.secondaryColor, AppTheme.primaryColor],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
@@ -753,7 +773,7 @@ class _WeeklyChart extends StatelessWidget {
                   horizontalLines: [
                     HorizontalLine(
                       y: profile.targetCalories.toDouble(),
-                      color: AppTheme.warning.withOpacity(0.45),
+                      color: AppTheme.warning.withValues(alpha: 0.45),
                       strokeWidth: 1.2,
                       dashArray: [5, 4],
                     ),
@@ -802,7 +822,7 @@ class _ActionCard extends StatelessWidget {
           border: Border.all(
             color: color == Colors.white
                 ? const Color(0xFFE2EBF8)
-                : color.withOpacity(0.2),
+                : color.withValues(alpha: 0.2),
           ),
           boxShadow: AppTheme.softShadow(
             color == Colors.white ? AppTheme.primaryColor : color,
@@ -818,7 +838,7 @@ class _ActionCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color == Colors.white
                     ? AppTheme.pageTintStrong
-                    : Colors.white.withOpacity(0.18),
+                    : Colors.white.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor ?? textColor, size: 20),
@@ -839,7 +859,7 @@ class _ActionCard extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: AppTheme.meta,
-                    color: textColor.withOpacity(0.75),
+                    color: textColor.withValues(alpha: 0.75),
                   ),
                 ),
               ],
@@ -869,7 +889,7 @@ class _WaterCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: AppTheme.elevatedCard(
         color: Colors.white,
-        borderColor: AppTheme.waterColor.withOpacity(0.14),
+        borderColor: AppTheme.waterColor.withValues(alpha: 0.14),
         boxShadow: AppTheme.softShadow(AppTheme.waterColor),
       ),
       child: Column(
@@ -881,7 +901,7 @@ class _WaterCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.waterColor.withOpacity(0.12),
+                  color: AppTheme.waterColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -916,7 +936,7 @@ class _WaterCard extends StatelessWidget {
           TubeProgressBar(
             progress: progress,
             colors: const [AppTheme.secondaryColor, AppTheme.waterColor],
-            backgroundColor: AppTheme.waterColor.withOpacity(0.08),
+            backgroundColor: AppTheme.waterColor.withValues(alpha: 0.08),
             height: 10,
             borderRadius: 999,
           ),
@@ -947,7 +967,7 @@ class _TipCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [tip.color.withOpacity(0.88), tip.color.withOpacity(0.68)],
+          colors: [tip.color.withValues(alpha: 0.88), tip.color.withValues(alpha: 0.68)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -961,7 +981,7 @@ class _TipCard extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -994,7 +1014,7 @@ class _TipCard extends StatelessWidget {
             alignment: Alignment.bottomRight,
             child: Icon(
               tip.icon,
-              color: Colors.white.withOpacity(0.28),
+              color: Colors.white.withValues(alpha: 0.28),
               size: 44,
             ),
           ),

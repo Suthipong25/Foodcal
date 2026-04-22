@@ -62,3 +62,64 @@ class HealthProfileStats {
     );
   }
 }
+
+class HealthProfileValidator {
+  static const int minBirthMonth = 1;
+  static const int maxBirthMonth = 12;
+  static const int minBirthYear = 1900;
+  static const int minHeightCm = 100;
+  static const int maxHeightCm = 260;
+  static const int minWeightKg = 20;
+  static const int maxWeightKg = 400;
+
+  static String? validate({
+    required String name,
+    required int birthMonth,
+    required int birthYear,
+    required double height,
+    required double weight,
+    required double? targetWeight,
+    required String goal,
+  }) {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      return 'กรุณากรอกชื่อ';
+    }
+    if (trimmedName.length > 80) {
+      return 'ชื่อต้องมีความยาวไม่เกิน 80 ตัวอักษร';
+    }
+
+    if (birthMonth < minBirthMonth || birthMonth > maxBirthMonth) {
+      return 'เดือนเกิดต้องอยู่ระหว่าง 1-12';
+    }
+
+    final currentYear = DateTime.now().year;
+    if (birthYear < minBirthYear || birthYear > currentYear) {
+      return 'ปีเกิดต้องอยู่ระหว่าง $minBirthYear-$currentYear';
+    }
+
+    if (height < minHeightCm || height > maxHeightCm) {
+      return 'ส่วนสูงต้องอยู่ระหว่าง $minHeightCm-$maxHeightCm ซม.';
+    }
+
+    if (weight < minWeightKg || weight > maxWeightKg) {
+      return 'น้ำหนักต้องอยู่ระหว่าง $minWeightKg-$maxWeightKg กก.';
+    }
+
+    if (targetWeight != null &&
+        (targetWeight < minWeightKg || targetWeight > maxWeightKg)) {
+      return 'น้ำหนักเป้าหมายต้องอยู่ระหว่าง $minWeightKg-$maxWeightKg กก.';
+    }
+
+    if (targetWeight != null) {
+      if (goal == 'lose' && targetWeight > weight) {
+        return 'เป้าหมายลดน้ำหนักต้องน้อยกว่าน้ำหนักปัจจุบัน';
+      }
+      if (goal == 'gain' && targetWeight < weight) {
+        return 'เป้าหมายเพิ่มน้ำหนักต้องมากกว่าน้ำหนักปัจจุบัน';
+      }
+    }
+
+    return null;
+  }
+}

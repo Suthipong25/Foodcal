@@ -66,17 +66,17 @@ class AppTheme {
     return EdgeInsets.fromLTRB(horizontal, top, horizontal, bottom);
   }
 
-  static Color macroBg(Color source) => source.withOpacity(0.1);
-  static Color macroBorder(Color source) => source.withOpacity(0.16);
+  static Color macroBg(Color source) => source.withValues(alpha: 0.1);
+  static Color macroBorder(Color source) => source.withValues(alpha: 0.16);
 
   static List<BoxShadow> softShadow(Color color) => [
         BoxShadow(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           blurRadius: 24,
           offset: const Offset(0, 10),
         ),
         BoxShadow(
-          color: color.withOpacity(0.04),
+          color: color.withValues(alpha: 0.04),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -100,13 +100,13 @@ class AppTheme {
       gradient: LinearGradient(
         colors: [
           Colors.white,
-          tint.withOpacity(0.14),
+          tint.withValues(alpha: 0.14),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: cardRadius,
-      border: Border.all(color: tint.withOpacity(0.18)),
+      border: Border.all(color: tint.withValues(alpha: 0.18)),
       boxShadow: softShadow(tint),
     );
   }
@@ -181,7 +181,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.white.withOpacity(0.92),
+        backgroundColor: Colors.white.withValues(alpha: 0.92),
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -194,9 +194,9 @@ class AppTheme {
           fontWeight: FontWeight.w800,
         ),
       ),
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: surface,
-        elevation: 0,
+        elevation: 0.0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: cardRadius,
@@ -207,7 +207,7 @@ class AppTheme {
         filled: true,
         fillColor: pageTint,
         hintStyle: GoogleFonts.notoSansThai(
-          color: mutedText.withOpacity(0.9),
+          color: mutedText.withValues(alpha: 0.9),
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -221,11 +221,11 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: innerRadius,
-          borderSide: BorderSide(color: primaryColor.withOpacity(0.08)),
+          borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.08)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: innerRadius,
-          borderSide: BorderSide(color: primaryColor.withOpacity(0.24)),
+          borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.24)),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -244,7 +244,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryColor,
-          side: BorderSide(color: primaryColor.withOpacity(0.16)),
+          side: BorderSide(color: primaryColor.withValues(alpha: 0.16)),
           shape: const RoundedRectangleBorder(borderRadius: innerRadius),
           textStyle: GoogleFonts.notoSansThai(
             fontSize: 14,
@@ -277,7 +277,7 @@ class AppTheme {
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        side: BorderSide(color: primaryColor.withOpacity(0.1)),
+        side: BorderSide(color: primaryColor.withValues(alpha: 0.1)),
         shape: const StadiumBorder(),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -291,8 +291,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       dividerColor: const Color(0xFFE6EEF9),
-      splashColor: primaryColor.withOpacity(0.06),
-      highlightColor: primaryColor.withOpacity(0.03),
+      splashColor: primaryColor.withValues(alpha: 0.06),
+      highlightColor: primaryColor.withValues(alpha: 0.03),
     );
   }
 }

@@ -168,7 +168,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 18,
                   offset: const Offset(0, -6),
                 ),
@@ -377,7 +377,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isError
-              ? AppTheme.error.withOpacity(0.08)
+              ? AppTheme.error.withValues(alpha: 0.08)
               : isUser
                   ? AppTheme.primaryColor
                   : Colors.white,
@@ -389,14 +389,14 @@ class _AICoachScreenState extends State<AICoachScreen> {
               ? null
               : Border.all(
                   color: isError
-                      ? AppTheme.error.withOpacity(0.2)
+                      ? AppTheme.error.withValues(alpha: 0.2)
                       : AppTheme.pageTintStrong,
                 ),
           boxShadow: isUser
               ? AppTheme.softShadow(AppTheme.primaryColor)
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
@@ -453,7 +453,7 @@ class _CoachPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppTheme.pageTintStrong),
       ),

@@ -1,5 +1,8 @@
 
 class FoodItem {
+  /// Unique identifier generated at creation time (UUID v4).
+  /// Older entries loaded from Firestore may have an empty string.
+  String id;
   String name;
   int calories;
   int protein;
@@ -9,17 +12,19 @@ class FoodItem {
   String mealType; // 'Breakfast', 'Lunch', 'Dinner', 'Snack'
 
   FoodItem({
-    required this.name, 
-    required this.calories, 
+    String? id,
+    required this.name,
+    required this.calories,
     this.protein = 0,
     this.carbs = 0,
     this.fat = 0,
     required this.time,
-    this.mealType = 'Snack'
-  });
+    this.mealType = 'Snack',
+  }) : id = id ?? '';
 
   factory FoodItem.fromMap(Map<String, dynamic> map) {
     return FoodItem(
+      id: map['id'] as String? ?? '',
       name: map['name'] ?? '',
       calories: (map['calories'] ?? 0).toInt(),
       protein: (map['protein'] ?? 0).toInt(),
@@ -32,6 +37,7 @@ class FoodItem {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'calories': calories,
       'protein': protein,
@@ -40,6 +46,28 @@ class FoodItem {
       'time': time.toIso8601String(),
       'mealType': mealType,
     };
+  }
+
+  FoodItem copyWith({
+    String? id,
+    String? name,
+    int? calories,
+    int? protein,
+    int? carbs,
+    int? fat,
+    DateTime? time,
+    String? mealType,
+  }) {
+    return FoodItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
+      time: time ?? this.time,
+      mealType: mealType ?? this.mealType,
+    );
   }
 }
 
@@ -143,6 +171,35 @@ class DailyLog {
       'workouts': workouts.map((e) => e.toMap()).toList(),
       'lastUpdated': lastUpdated.toIso8601String(),
     };
+  }
+}
+
+class WorkoutSessionState {
+  final int workoutId;
+  final String dateKey;
+  final int minutes;
+  final DateTime startedAt;
+  final bool completed;
+  final DateTime? completedAt;
+
+  const WorkoutSessionState({
+    required this.workoutId,
+    required this.dateKey,
+    required this.minutes,
+    required this.startedAt,
+    required this.completed,
+    this.completedAt,
+  });
+
+  factory WorkoutSessionState.fromMap(Map<String, dynamic> map) {
+    return WorkoutSessionState(
+      workoutId: (map['workoutId'] ?? 0).toInt(),
+      dateKey: map['dateKey'] ?? '',
+      minutes: (map['minutes'] ?? 0).toInt(),
+      startedAt: _parseDate(map['startedAt']) ?? DateTime.now(),
+      completed: map['completed'] == true,
+      completedAt: _parseDate(map['completedAt']),
+    );
   }
 }
 

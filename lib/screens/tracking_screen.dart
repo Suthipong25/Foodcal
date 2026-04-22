@@ -4,11 +4,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
+import '../models/custom_food.dart';
 import '../models/daily_log.dart';
 import '../models/user_profile.dart';
 import '../services/ai_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/edit_food_dialog.dart';
 import '../widgets/tube_progress_bar.dart';
 
 class TrackingScreen extends StatefulWidget {
@@ -40,6 +42,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
   List<FoodItem> _recentFoods = [];
+  List<CustomFood> _customFoods = [];
   int _lastHandledScanRequestVersion = 0;
 
   @override
@@ -66,10 +69,36 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Future<void> _loadRecentFoods() async {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     if (user != null) {
-      final foods = await Provider.of<FirestoreService>(context, listen: false)
-          .getRecentUniqueFoods(user.uid);
-      if (mounted) setState(() => _recentFoods = foods);
+      final fs = Provider.of<FirestoreService>(context, listen: false);
+      final foods = await fs.getRecentUniqueFoods(user.uid);
+      final custom = await fs.streamCustomFoods(user.uid).first;
+      if (mounted) {
+        setState(() {
+          _recentFoods = foods;
+          _customFoods = custom;
+        });
+      }
     }
+  }
+
+  void _useCustomFood(CustomFood food) {
+    setState(() {
+      _foodController.text = food.name;
+      _calController.text = food.calories.toString();
+      _proteinController.text = food.protein.toString();
+      _carbsController.text = food.carbs.toString();
+      _fatController.text = food.fat.toString();
+      _selectedMeal = _getCurrentMealType();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('เลือก: ${food.name} เรียบร้อย'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.blueAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _useRecentFood(FoodItem food) {
@@ -466,10 +495,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         ),
                       ),
                     ),
-                    if (_recentFoods.isNotEmpty) ...[
+                    if (_customFoods.isNotEmpty || _recentFoods.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       const Text(
-                        'อาหารที่ใช้บ่อย',
+                        'อาหารที่ใช้บ่อย & บันทึกไว้',
                         style: TextStyle(
                             fontSize: AppTheme.meta,
                             fontWeight: FontWeight.w700,
@@ -478,29 +507,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       const SizedBox(height: 8),
                       SizedBox(
                         height: 40,
-                        child: ListView.builder(
+                        child: ListView(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _recentFoods.length,
-                          itemBuilder: (context, index) {
-                            final food = _recentFoods[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: ActionChip(
-                                label: Text(food.name,
-                                    style: const TextStyle(fontSize: 11)),
-                                avatar:
-                                    const Icon(LucideIcons.history, size: 14),
-                                onPressed: () => _useRecentFood(food),
-                                backgroundColor: AppTheme.pageTintStrong,
-                                side: BorderSide(
-                                    color: AppTheme.primaryColor
-                                        .withOpacity(0.12)),
-                                labelStyle: const TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.bold),
+                          children: [
+                            for (final food in _customFoods)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ActionChip(
+                                  label: Text(food.name, style: const TextStyle(fontSize: 11)),
+                                  avatar: const Icon(LucideIcons.star, size: 14, color: AppTheme.warning),
+                                  onPressed: () => _useCustomFood(food),
+                                  backgroundColor: AppTheme.warning.withValues(alpha: 0.1),
+                                  side: BorderSide(color: AppTheme.warning.withValues(alpha: 0.3)),
+                                  labelStyle: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                            );
-                          },
+                            for (final food in _recentFoods)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ActionChip(
+                                  label: Text(food.name, style: const TextStyle(fontSize: 11)),
+                                  avatar: const Icon(LucideIcons.history, size: 14),
+                                  onPressed: () => _useRecentFood(food),
+                                  backgroundColor: AppTheme.pageTintStrong,
+                                  side: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.12)),
+                                  labelStyle: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -614,55 +648,86 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ),
                       const SizedBox(height: 14),
                       ...widget.log!.foods.reversed.take(5).map(
-                            (food) => Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: AppTheme.pageTint,
-                                borderRadius: AppTheme.innerRadius,
-                                border:
-                                    Border.all(color: const Color(0xFFDCE8FA)),
+                            (food) => Dismissible(
+                              key: Key(food.id.isNotEmpty ? food.id : food.name + food.time.toString()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: AppTheme.innerRadius,
+                                ),
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                child: const Icon(LucideIcons.trash2, color: Colors.white),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryColor
-                                          .withOpacity(0.12),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(LucideIcons.utensils,
-                                        color: AppTheme.primaryColor, size: 18),
+                              onDismissed: (_) async {
+                                final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+                                if (uid != null && food.id.isNotEmpty) {
+                                  await Provider.of<FirestoreService>(context, listen: false).removeFood(uid, food.id);
+                                }
+                              },
+                              child: GestureDetector(
+                                onTap: () async {
+                                  final edited = await EditFoodDialog.show(context, existing: food);
+                                  if (edited != null && context.mounted) {
+                                    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+                                    if (uid != null && edited.id.isNotEmpty) {
+                                      await Provider.of<FirestoreService>(context, listen: false).updateFoodItem(uid, edited);
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.pageTint,
+                                    borderRadius: AppTheme.innerRadius,
+                                    border:
+                                        Border.all(color: const Color(0xFFDCE8FA)),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(food.name,
-                                            style: const TextStyle(
-                                                fontSize: AppTheme.body,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppTheme.ink)),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${food.mealType} • P ${food.protein} / C ${food.carbs} / F ${food.fat}',
-                                          style: const TextStyle(
-                                              fontSize: AppTheme.meta,
-                                              color: AppTheme.mutedText),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryColor
+                                              .withValues(alpha: 0.12),
+                                          shape: BoxShape.circle,
                                         ),
-                                      ],
-                                    ),
+                                        child: const Icon(LucideIcons.utensils,
+                                            color: AppTheme.primaryColor, size: 18),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(food.name,
+                                                style: const TextStyle(
+                                                    fontSize: AppTheme.body,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppTheme.ink)),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${food.mealType} • P ${food.protein} / C ${food.carbs} / F ${food.fat}',
+                                              style: const TextStyle(
+                                                  fontSize: AppTheme.meta,
+                                                  color: AppTheme.mutedText),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text('${food.calories} kcal',
+                                          style: const TextStyle(
+                                              fontSize: AppTheme.body,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppTheme.primaryColor)),
+                                    ],
                                   ),
-                                  Text('${food.calories} kcal',
-                                      style: const TextStyle(
-                                          fontSize: AppTheme.body,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppTheme.primaryColor)),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -675,7 +740,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 padding: const EdgeInsets.all(AppTheme.cardPadding),
                 decoration: AppTheme.elevatedCard(
                   color: Colors.white,
-                  borderColor: AppTheme.waterColor.withOpacity(0.12),
+                  borderColor: AppTheme.waterColor.withValues(alpha: 0.12),
                   boxShadow: AppTheme.softShadow(AppTheme.waterColor),
                 ),
                 child: Column(
@@ -873,7 +938,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
           borderRadius: AppTheme.cardRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

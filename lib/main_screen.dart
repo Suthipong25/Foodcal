@@ -14,6 +14,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/tracking_screen.dart';
+import 'screens/weight_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 
@@ -267,6 +268,18 @@ class _MainScreenState extends State<MainScreen> {
       actions: [
         IconButton(
           icon: const Icon(
+            LucideIcons.scale,
+            color: AppTheme.primaryColor,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => WeightScreen(profile: profile)),
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(
             LucideIcons.history,
             color: AppTheme.primaryColor,
           ),
@@ -285,7 +298,7 @@ class _MainScreenState extends State<MainScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 blurRadius: 4,
               ),
             ],
@@ -326,7 +339,7 @@ class _MainScreenState extends State<MainScreen> {
           border: Border(top: BorderSide(color: Colors.grey[200]!)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 12,
               offset: const Offset(0, -4),
             ),

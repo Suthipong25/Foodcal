@@ -9,6 +9,7 @@ import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/reminder_banner.dart';
 import 'admin_screen.dart';
 import 'feedback_screen.dart';
 
@@ -34,6 +35,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Uint8List? _localImageBytes; // แสดงรูปจากเครื่องทันที ก่อน upload เสร็จ
   final ImagePicker _picker = ImagePicker();
 
+  Map<String, bool> _reminderSettings = {
+    'water': true,
+    'food': true,
+    'weight': true,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +57,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .toString());
     _selectedGoal = widget.profile.goal;
     _localPhotoUrl = widget.profile.photoUrl;
+
+    ReminderService.getSettings().then((s) {
+      if (mounted) setState(() => _reminderSettings = s);
+    });
   }
 
   @override
@@ -259,6 +270,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: AppTheme.sectionGap),
               _buildEditPanel(),
               const SizedBox(height: AppTheme.sectionGap),
+              _buildReminderSettings(),
+              const SizedBox(height: AppTheme.sectionGap),
               _buildFeedbackCard(context),
               if (widget.profile.role == 'admin') ...[
                 const SizedBox(height: 12),
@@ -332,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.18),
+                            color: Colors.black.withValues(alpha: 0.18),
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
@@ -414,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         borderRadius: AppTheme.innerRadius,
                         border: Border.all(color: Colors.white),
                       ),
@@ -475,7 +488,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           borderRadius: AppTheme.pillRadius,
           border: Border.all(color: Colors.white),
         ),
@@ -536,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: AppTheme.elevatedCard(
-        borderColor: color.withOpacity(0.14),
+        borderColor: color.withValues(alpha: 0.14),
         boxShadow: AppTheme.softShadow(color),
       ),
       child: Column(
@@ -725,7 +738,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: AppTheme.macroBg(AppTheme.primaryColor),
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +779,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: AppTheme.macroBg(AppTheme.secondaryColor),
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,7 +838,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: AppTheme.macroBg(AppTheme.error),
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: AppTheme.error.withOpacity(0.18)),
+          border: Border.all(color: AppTheme.error.withValues(alpha: 0.18)),
         ),
         child: const Row(
           children: [
@@ -872,7 +885,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
         ),
         child: const Row(
           children: [
@@ -913,7 +926,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: Colors.deepPurple.withOpacity(0.2)),
+          border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.2)),
         ),
         child: const Row(
           children: [
@@ -954,5 +967,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return 'โฟกัสพลังงานและโปรตีนให้พอ เพื่อเสริมการสร้างกล้ามเนื้อ';
     }
     return 'โฟกัสสมดุลพลังงาน เพื่อคงรูปร่างและสุขภาพโดยรวม';
+  }
+
+  Widget _buildReminderSettings() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.elevatedCard(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'การแจ้งเตือนในแอป',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: AppTheme.title,
+              color: AppTheme.ink,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'เลือกเปิด/ปิดแบนเนอร์แจ้งเตือนในหน้าแรก',
+            style: TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: AppTheme.body,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildToggle('เตือนดื่มน้ำ', 'water', LucideIcons.droplet, AppTheme.waterColor),
+          const Divider(),
+          _buildToggle('เตือนบันทึกอาหาร', 'food', LucideIcons.utensils, AppTheme.primaryColor),
+          const Divider(),
+          _buildToggle('เตือนชั่งน้ำหนัก', 'weight', LucideIcons.scale, AppTheme.success),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggle(String label, String key, IconData icon, Color color) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink)),
+        ],
+      ),
+      value: _reminderSettings[key] ?? true,
+      activeThumbColor: color,
+      onChanged: (val) async {
+        setState(() => _reminderSettings[key] = val);
+        await ReminderService.setSetting(key, val);
+      },
+    );
   }
 }

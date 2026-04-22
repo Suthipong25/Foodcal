@@ -476,7 +476,7 @@ class _HeroCard extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppTheme.primaryColor),
@@ -532,7 +532,7 @@ class _MetricCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: AppTheme.elevatedCard(
-          borderColor: color.withOpacity(0.14),
+          borderColor: color.withValues(alpha: 0.14),
           boxShadow: AppTheme.softShadow(color),
         ),
         child: Column(
@@ -609,7 +609,7 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: AppTheme.pillRadius,
       ),
       child: Text(
