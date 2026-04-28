@@ -1,6 +1,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../utils/app_logger.dart';
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -16,10 +17,10 @@ class StorageService {
         ),
       );
       final downloadUrl = await uploadTask.ref.getDownloadURL();
-      debugPrint('Profile picture uploaded: $downloadUrl');
+      AppLogger.info('Profile picture uploaded');
       return downloadUrl;
     } catch (e) {
-      debugPrint('Error uploading profile picture: $e');
+      AppLogger.error('Error uploading profile picture', e);
       return null;
     }
   }

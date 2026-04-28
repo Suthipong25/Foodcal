@@ -10,6 +10,7 @@ import '../models/content_model.dart';
 import '../models/daily_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/app_logger.dart';
 import 'article_detail_screen.dart';
 
 class ContentScreen extends StatefulWidget {
@@ -45,9 +46,6 @@ class _ContentScreenState extends State<ContentScreen> {
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     final width = MediaQuery.sizeOf(context).width;
     final isCompact = width < 560;
-    final filteredVideos = filter == 'All'
-        ? workoutVideos
-        : workoutVideos.where((video) => video.level == filter).toList();
     final completedCount = widget.log?.workouts.length ?? 0;
 
     if (user == null) {
@@ -57,50 +55,68 @@ class _ContentScreenState extends State<ContentScreen> {
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
-        child: StreamBuilder<Map<int, WorkoutSessionState>>(
+        child: StreamBuilder<List<WorkoutVideo>>(
           stream: Provider.of<FirestoreService>(context, listen: false)
-              .streamTodayWorkoutSessions(user.uid),
-          builder: (context, snapshot) {
-            final workoutSessions =
-                snapshot.data ?? const <int, WorkoutSessionState>{};
+              .streamWorkoutVideos(),
+          builder: (context, videosSnapshot) {
+            final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
+            final sourceVideos =
+                allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
+            final filteredVideos = filter == 'All'
+                ? sourceVideos
+                : sourceVideos.where((video) => video.level == filter).toList();
 
-            return SingleChildScrollView(
-              padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeroCard(filteredVideos.length, completedCount),
-                  const SizedBox(height: AppTheme.sectionGap),
-                  _buildSectionHeader(
-                    'บทความน่าอ่าน',
-                    'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildArticleList(isCompact),
-                  const SizedBox(height: AppTheme.sectionGap),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+            return StreamBuilder<Map<int, WorkoutSessionState>>(
+              stream: Provider.of<FirestoreService>(context, listen: false)
+                  .streamTodayWorkoutSessions(user.uid),
+              builder: (context, sessionsSnapshot) {
+                final workoutSessions =
+                    sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
+
+                return SingleChildScrollView(
+                  padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildSectionHeader(
-                          'คลังวิดีโอ',
-                          'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
-                        ),
+                      _buildHeroCard(filteredVideos.length, completedCount),
+                      const SizedBox(height: AppTheme.sectionGap),
+                      _buildSectionHeader(
+                        'บทความน่าอ่าน',
+                        'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
                       ),
-                      const SizedBox(width: 12),
-                      _buildFilterDropdown(),
+                      const SizedBox(height: 12),
+                      _buildArticleList(isCompact),
+                      const SizedBox(height: AppTheme.sectionGap),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: _buildSectionHeader(
+                              'คลังวิดีโอ',
+                              'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildFilterDropdown(),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (videosSnapshot.connectionState == ConnectionState.waiting)
+                        const Center(child: CircularProgressIndicator())
+                      else if (filteredVideos.isEmpty)
+                        const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
+                      else
+                        ...filteredVideos.map(
+                          (video) => _buildWorkoutCard(
+                            video,
+                            isCompact,
+                            session: workoutSessions[video.id],
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  ...filteredVideos.map(
-                    (video) => _buildWorkoutCard(
-                      video,
-                      isCompact,
-                      session: workoutSessions[video.id],
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         ),
@@ -465,7 +481,7 @@ class _ContentScreenState extends State<ContentScreen> {
   Future<void> _launchWorkoutVideo(WorkoutVideo video) async {
     final url = Uri.parse(video.youtubeUrl);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint('Could not launch ${video.youtubeUrl}');
+      AppLogger.warn('Could not launch workout video');
     }
   }
 
@@ -480,7 +496,7 @@ class _ContentScreenState extends State<ContentScreen> {
       await Provider.of<FirestoreService>(context, listen: false)
           .startWorkoutSession(user.uid, _toWorkoutItem(video));
     } catch (error) {
-      debugPrint('Unable to start workout session: $error');
+      AppLogger.error('Unable to start workout session', error);
     }
 
     if (openVideo) {

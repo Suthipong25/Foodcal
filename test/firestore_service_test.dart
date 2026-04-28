@@ -13,15 +13,15 @@ void main() {
 
     test('requiredWorkoutMinutes calculates correctly', () {
       // For level == Beginner
-      expect(FirestoreService.requiredWorkoutMinutes(10, 'Beginner'), 7); // 70%
-      expect(FirestoreService.requiredWorkoutMinutes(20, 'Beginner'), 14);
+      expect(FirestoreService.requiredWorkoutMinutes(10), 6); // 60%
+      expect(FirestoreService.requiredWorkoutMinutes(20), 12);
 
       // For level == Intermediate
-      expect(FirestoreService.requiredWorkoutMinutes(10, 'Intermediate'), 8); // 80%
-      expect(FirestoreService.requiredWorkoutMinutes(20, 'Intermediate'), 16);
+      expect(FirestoreService.requiredWorkoutMinutes(10), 6); // 60%
+      expect(FirestoreService.requiredWorkoutMinutes(20), 12);
 
       // For other levels
-      expect(FirestoreService.requiredWorkoutMinutes(10, 'Expert'), 9); // 90%
+      expect(FirestoreService.requiredWorkoutMinutes(10), 6); // 60%
     });
   });
 }

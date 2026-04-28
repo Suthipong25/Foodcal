@@ -5,10 +5,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
+import '../constants/enums.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+import '../utils/app_logger.dart';
 import '../widgets/reminder_banner.dart';
 import 'admin_screen.dart';
 import 'feedback_screen.dart';
@@ -29,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _heightCtrl;
   late TextEditingController _birthMonthCtrl;
   late TextEditingController _birthYearCtrl;
-  String _selectedGoal = 'maintain';
+  String _selectedGoal = HealthGoal.maintain.value;
   bool _isUploading = false;
   String? _localPhotoUrl;
   Uint8List? _localImageBytes; // แสดงรูปจากเครื่องทันที ก่อน upload เสร็จ
@@ -147,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Save profile error: $e');
+      AppLogger.error('Save profile error', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('บันทึกไม่สำเร็จ: $e')),
@@ -195,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error saving profile picture: $e');
+      AppLogger.error('Error saving profile picture', e);
       if (mounted) {
         // ถ้า upload fail ให้ rollback รูปกลับ
         setState(() => _localImageBytes = null);
@@ -273,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildReminderSettings(),
               const SizedBox(height: AppTheme.sectionGap),
               _buildFeedbackCard(context),
-              if (widget.profile.role == 'admin') ...[
+              if (UserRole.fromString(widget.profile.role) == UserRole.admin) ...[
                 const SizedBox(height: 12),
                 _buildAdminCard(context),
               ],
@@ -798,7 +800,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isExpanded: true,
               underline: const SizedBox(),
               borderRadius: AppTheme.innerRadius,
-              items: ['lose', 'maintain', 'gain']
+              items: HealthGoal.values
+                  .map((goal) => goal.value)
                   .map(
                     (g) => DropdownMenuItem(
                       value: g,
@@ -954,16 +957,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getGoalLabel(String g) {
-    if (g == 'lose') return 'ลดน้ำหนัก';
-    if (g == 'gain') return 'เพิ่มกล้ามเนื้อ';
-    return 'รักษาน้ำหนัก';
+    return HealthGoal.fromString(g).displayName;
   }
 
   String _goalSummary(String goal) {
-    if (goal == 'lose') {
+    if (goal == HealthGoal.lose.value) {
       return 'โฟกัสขาดดุลพลังงานแบบพอดี เพื่อค่อยๆ ลดไขมันอย่างยั่งยืน';
     }
-    if (goal == 'gain') {
+    if (goal == HealthGoal.gain.value) {
       return 'โฟกัสพลังงานและโปรตีนให้พอ เพื่อเสริมการสร้างกล้ามเนื้อ';
     }
     return 'โฟกัสสมดุลพลังงาน เพื่อคงรูปร่างและสุขภาพโดยรวม';

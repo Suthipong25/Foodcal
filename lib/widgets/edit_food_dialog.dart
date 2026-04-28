@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../app_theme.dart';
+import '../constants/app_config.dart';
 import '../models/daily_log.dart';
+import '../utils/datetime_utils.dart';
 
 /// A bottom-sheet dialog for creating or editing a [FoodItem].
 ///
@@ -35,7 +37,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
   final _proteinCtrl = TextEditingController();
   final _carbsCtrl = TextEditingController();
   final _fatCtrl = TextEditingController();
-  String _mealType = 'Snack';
+  String _mealType = AppConfig.mealTypeSnack;
 
   bool get _isEdit => widget.existing != null;
 
@@ -66,11 +68,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
   }
 
   String _suggestMealType() {
-    final h = DateTime.now().hour;
-    if (h < 10) return 'Breakfast';
-    if (h < 15) return 'Lunch';
-    if (h < 20) return 'Dinner';
-    return 'Snack';
+    return DateTimeUtils.getCurrentMealType();
   }
 
   void _submit() {
@@ -105,7 +103,7 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
       protein: protein,
       carbs: carbs,
       fat: fat,
-      time: widget.existing?.time ?? DateTime.now(),
+      time: widget.existing?.time ?? DateTimeUtils.now(),
       mealType: _mealType,
     );
     Navigator.pop(context, result);
@@ -182,10 +180,14 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    _mealChip('เช้า', 'Breakfast', LucideIcons.sunrise),
-                    _mealChip('กลางวัน', 'Lunch', LucideIcons.sun),
-                    _mealChip('เย็น', 'Dinner', LucideIcons.sunset),
-                    _mealChip('ว่าง', 'Snack', LucideIcons.coffee),
+                    _mealChip(
+                        'เช้า', AppConfig.mealTypeBreakfast, LucideIcons.sunrise),
+                    _mealChip(
+                        'กลางวัน', AppConfig.mealTypeLunch, LucideIcons.sun),
+                    _mealChip(
+                        'เย็น', AppConfig.mealTypeDinner, LucideIcons.sunset),
+                    _mealChip(
+                        'ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
                   ],
                 ),
                 const SizedBox(height: 20),

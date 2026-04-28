@@ -1,3 +1,6 @@
+import '../constants/app_config.dart';
+import '../constants/enums.dart';
+
 class HealthProfileStats {
   final int tdee;
   final int targetCalories;
@@ -24,21 +27,26 @@ class HealthProfileStats {
     required String goal,
   }) {
     double bmr = (10 * weight) + (6.25 * height) - (5 * age);
-    bmr += (gender == 'male' ? 5 : -161);
+    bmr += (gender == Gender.male.value ? 5 : -161);
 
     final activityMultipliers = {
-      'sedentary': 1.2,
+      AppConfig.activityLevelSedentary: 1.2,
+      // legacy key support
       'light': 1.375,
-      'moderate': 1.55,
+      AppConfig.activityLevelLightly: 1.375,
+      AppConfig.activityLevelModerate: 1.55,
+      // legacy key support
       'active': 1.725,
+      AppConfig.activityLevelVery: 1.725,
+      AppConfig.activityLevelExtremely: 1.9,
     };
 
     final tdee = (bmr * (activityMultipliers[activityLevel] ?? 1.2)).round();
 
     int targetCalories = tdee;
-    if (goal == 'lose') {
+    if (goal == HealthGoal.lose.value) {
       targetCalories = tdee - 500;
-    } else if (goal == 'gain') {
+    } else if (goal == HealthGoal.gain.value) {
       targetCalories = tdee + 300;
     }
 
@@ -112,10 +120,10 @@ class HealthProfileValidator {
     }
 
     if (targetWeight != null) {
-      if (goal == 'lose' && targetWeight > weight) {
+      if (goal == HealthGoal.lose.value && targetWeight > weight) {
         return 'เป้าหมายลดน้ำหนักต้องน้อยกว่าน้ำหนักปัจจุบัน';
       }
-      if (goal == 'gain' && targetWeight < weight) {
+      if (goal == HealthGoal.gain.value && targetWeight < weight) {
         return 'เป้าหมายเพิ่มน้ำหนักต้องมากกว่าน้ำหนักปัจจุบัน';
       }
     }

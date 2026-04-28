@@ -1,3 +1,4 @@
+import '../constants/app_config.dart';
 
 class FoodItem {
   /// Unique identifier generated at creation time (UUID v4).
@@ -9,7 +10,7 @@ class FoodItem {
   int carbs;
   int fat;
   DateTime time;
-  String mealType; // 'Breakfast', 'Lunch', 'Dinner', 'Snack'
+  String mealType;
 
   FoodItem({
     String? id,
@@ -19,19 +20,26 @@ class FoodItem {
     this.carbs = 0,
     this.fat = 0,
     required this.time,
-    this.mealType = 'Snack',
+    this.mealType = AppConfig.mealTypeSnack,
   }) : id = id ?? '';
 
   factory FoodItem.fromMap(Map<String, dynamic> map) {
+    final name = _safeString(map['name']) ?? '';
+    final calories = _safeInt(map['calories']) ?? 0;
+    final protein = _safeInt(map['protein']) ?? 0;
+    final carbs = _safeInt(map['carbs']) ?? 0;
+    final fat = _safeInt(map['fat']) ?? 0;
+    final mealType = _safeString(map['mealType']) ?? AppConfig.mealTypeSnack;
+
     return FoodItem(
       id: map['id'] as String? ?? '',
-      name: map['name'] ?? '',
-      calories: (map['calories'] ?? 0).toInt(),
-      protein: (map['protein'] ?? 0).toInt(),
-      carbs: (map['carbs'] ?? 0).toInt(),
-      fat: (map['fat'] ?? 0).toInt(),
+      name: name,
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
       time: _parseDate(map['time']) ?? DateTime.now(),
-      mealType: map['mealType'] ?? 'Snack',
+      mealType: mealType,
     );
   }
 
@@ -92,14 +100,17 @@ class WorkoutItem {
 
   factory WorkoutItem.fromMap(Map<String, dynamic> map) {
     return WorkoutItem(
-      id: (map['id'] ?? 0).toInt(),
+      id: _safeInt(map['id']) ?? 0,
       title: map['title'] ?? '',
       level: map['level'] ?? '',
       duration: map['duration'] ?? '',
-      minutes: (map['minutes'] ??
-              int.tryParse((map['duration'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), '')) ??
-              0)
-          .toInt(),
+      minutes: _safeInt(map['minutes']) ??
+          int.tryParse(
+                (map['duration'] ?? '')
+                    .toString()
+                    .replaceAll(RegExp(r'[^0-9]'), ''),
+              ) ??
+          0,
       type: map['type'] ?? '',
       completedAt: _parseDate(map['completedAt']) ?? DateTime.now(),
     );
@@ -146,14 +157,18 @@ class DailyLog {
   factory DailyLog.fromMap(Map<String, dynamic> map) {
     return DailyLog(
       date: map['date'] ?? '',
-      caloriesIn: (map['caloriesIn'] ?? 0).toInt(),
-      caloriesOut: (map['caloriesOut'] ?? 0).toInt(),
-      protein: (map['protein'] ?? 0).toInt(),
-      carbs: (map['carbs'] ?? 0).toInt(),
-      fat: (map['fat'] ?? 0).toInt(),
-      waterGlasses: (map['waterGlasses'] ?? 0).toInt(),
-      foods: (map['foods'] as List<dynamic>? ?? []).map((e) => FoodItem.fromMap(e)).toList(),
-      workouts: (map['workouts'] as List<dynamic>? ?? []).map((e) => WorkoutItem.fromMap(e)).toList(),
+      caloriesIn: _safeInt(map['caloriesIn']) ?? 0,
+      caloriesOut: _safeInt(map['caloriesOut']) ?? 0,
+      protein: _safeInt(map['protein']) ?? 0,
+      carbs: _safeInt(map['carbs']) ?? 0,
+      fat: _safeInt(map['fat']) ?? 0,
+      waterGlasses: _safeInt(map['waterGlasses']) ?? 0,
+      foods: (map['foods'] as List<dynamic>? ?? [])
+          .map((e) => FoodItem.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      workouts: (map['workouts'] as List<dynamic>? ?? [])
+          .map((e) => WorkoutItem.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
       lastUpdated: _parseDate(map['lastUpdated']) ?? DateTime.now(),
     );
   }
@@ -193,9 +208,9 @@ class WorkoutSessionState {
 
   factory WorkoutSessionState.fromMap(Map<String, dynamic> map) {
     return WorkoutSessionState(
-      workoutId: (map['workoutId'] ?? 0).toInt(),
+      workoutId: _safeInt(map['workoutId']) ?? 0,
       dateKey: map['dateKey'] ?? '',
-      minutes: (map['minutes'] ?? 0).toInt(),
+      minutes: _safeInt(map['minutes']) ?? 0,
       startedAt: _parseDate(map['startedAt']) ?? DateTime.now(),
       completed: map['completed'] == true,
       completedAt: _parseDate(map['completedAt']),
@@ -212,4 +227,21 @@ DateTime? _parseDate(dynamic raw) {
     if (dateTime is DateTime) return dateTime;
   } catch (_) {}
   return null;
+}
+
+/// Safely parse an integer from a map value
+int? _safeInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  if (value is num) return value.toInt();
+  return null;
+}
+
+/// Safely parse a string from a map value
+String? _safeString(dynamic value) {
+  if (value == null) return null;
+  if (value is String) return value.isEmpty ? null : value;
+  return value.toString();
 }

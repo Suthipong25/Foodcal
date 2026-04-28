@@ -14,7 +14,45 @@ class WorkoutVideo {
     required this.type,
     required this.youtubeUrl,
   });
+
+  factory WorkoutVideo.fromMap(Map<String, dynamic> map) {
+    return WorkoutVideo(
+      id: (map['id'] as num?)?.toInt() ?? 0,
+      title: (map['title'] ?? '').toString(),
+      level: (map['level'] ?? 'Beginner').toString(),
+      duration: (map['duration'] ?? '0 min').toString(),
+      type: (map['type'] ?? 'Cardio').toString(),
+      youtubeUrl: (map['youtubeUrl'] ?? '').toString(),
+    );
+  }
 }
+
+const List<WorkoutVideo> fallbackWorkoutVideos = [
+  WorkoutVideo(
+    id: 1001,
+    title: 'คาร์ดิโอ 15 นาที สำหรับมือใหม่',
+    level: 'Beginner',
+    duration: '15 min',
+    type: 'Cardio',
+    youtubeUrl: 'https://www.youtube.com/watch?v=IT94xC35u6k',
+  ),
+  WorkoutVideo(
+    id: 1002,
+    title: 'HIIT เผาผลาญไขมันแบบเข้มข้น',
+    level: 'Expert',
+    duration: '20 min',
+    type: 'HIIT',
+    youtubeUrl: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+  ),
+  WorkoutVideo(
+    id: 1003,
+    title: 'โยคะยามเช้า 10 นาที',
+    level: 'Beginner',
+    duration: '10 min',
+    type: 'Yoga',
+    youtubeUrl: 'https://www.youtube.com/watch?v=UEEsdXn8oG8',
+  ),
+];
 
 class Article {
   final int id;
@@ -31,89 +69,6 @@ class Article {
     required this.imageUrl,
   });
 }
-
-const List<WorkoutVideo> workoutVideos = [
-  WorkoutVideo(
-    id: 1,
-    title: 'คาร์ดิโอ 15 นาที สำหรับมือใหม่',
-    level: 'Beginner',
-    duration: '15 min',
-    type: 'Cardio',
-    youtubeUrl: 'https://www.youtube.com/watch?v=IT94xC35u6k',
-  ),
-  WorkoutVideo(
-    id: 2,
-    title: 'HIIT เผาผลาญไขมันแบบเข้มข้น',
-    level: 'Expert',
-    duration: '20 min',
-    type: 'HIIT',
-    youtubeUrl: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
-  ),
-  WorkoutVideo(
-    id: 3,
-    title: 'โยคะยามเช้า 10 นาที',
-    level: 'Beginner',
-    duration: '10 min',
-    type: 'Yoga',
-    youtubeUrl: 'https://www.youtube.com/watch?v=UEEsdXn8oG8',
-  ),
-  WorkoutVideo(
-    id: 4,
-    title: 'หน้าท้องกระชับใน 10 นาที',
-    level: 'Intermediate',
-    duration: '10 min',
-    type: 'Strength',
-    youtubeUrl: 'https://www.youtube.com/watch?v=1919eTCoESo',
-  ),
-  WorkoutVideo(
-    id: 5,
-    title: 'บอดี้เวตสร้างกล้ามเนื้อที่บ้าน',
-    level: 'Expert',
-    duration: '20 min',
-    type: 'Strength',
-    youtubeUrl: 'https://www.youtube.com/watch?v=vc1E5CfRfos',
-  ),
-  WorkoutVideo(
-    id: 6,
-    title: 'พิลาทิสเพิ่มแกนกลางลำตัว',
-    level: 'Intermediate',
-    duration: '20 min',
-    type: 'Pilates',
-    youtubeUrl: 'https://www.youtube.com/watch?v=2eA2Koq6pTI',
-  ),
-  WorkoutVideo(
-    id: 7,
-    title: 'เบิร์นไขมัน 30 นาที แบบไม่กระโดด',
-    level: 'Beginner',
-    duration: '30 min',
-    type: 'Cardio',
-    youtubeUrl: 'https://www.youtube.com/watch?v=v7AYKMP6rOE',
-  ),
-  WorkoutVideo(
-    id: 8,
-    title: 'ยืดเหยียดร่างกาย 15 นาที ทุกวัน',
-    level: 'Beginner',
-    duration: '15 min',
-    type: 'Stretch',
-    youtubeUrl: 'https://www.youtube.com/watch?v=L_xrDAtykMI',
-  ),
-  WorkoutVideo(
-    id: 9,
-    title: 'HIIT สายโหด 15 นาที',
-    level: 'Expert',
-    duration: '15 min',
-    type: 'HIIT',
-    youtubeUrl: 'https://www.youtube.com/watch?v=2MoGxae-zyo',
-  ),
-  WorkoutVideo(
-    id: 10,
-    title: 'กระชับต้นขาและสะโพก',
-    level: 'Intermediate',
-    duration: '15 min',
-    type: 'Strength',
-    youtubeUrl: 'https://www.youtube.com/watch?v=AQ-zcv_viAo',
-  ),
-];
 
 const List<Article> educationArticles = [
   Article(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
+import '../constants/enums.dart';
 import '../models/feedback_log.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
@@ -16,7 +17,7 @@ class AdminScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (profile.role != 'admin') {
+    if (UserRole.fromString(profile.role) != UserRole.admin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Admin Access')),
         body: const Center(child: Text('คุณไม่มีสิทธิ์เข้าถึงหน้านี้')),
@@ -200,7 +201,9 @@ class _UsersTab extends StatelessWidget {
         }
 
         final users = snapshot.data ?? [];
-        final admins = users.where((e) => e.role == 'admin').length;
+        final admins = users
+            .where((e) => UserRole.fromString(e.role) == UserRole.admin)
+            .length;
 
         return ListView(
           padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
@@ -283,7 +286,8 @@ class _UsersTab extends StatelessWidget {
                               ),
                               _StatusPill(
                                 text: user.role.toUpperCase(),
-                                color: user.role == 'admin'
+                                color: UserRole.fromString(user.role) ==
+                                        UserRole.admin
                                     ? const Color(0xFF8A5CF6)
                                     : AppTheme.success,
                               ),
@@ -632,7 +636,7 @@ void _showRoleDialog(
   showDialog(
     context: context,
     builder: (dialogContext) {
-      final isAdmin = user.role == 'admin';
+      final isAdmin = UserRole.fromString(user.role) == UserRole.admin;
       return AlertDialog(
         title: Text('เปลี่ยนสิทธิ์ของ ${user.name}'),
         content: Text(

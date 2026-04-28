@@ -10,7 +10,6 @@ void main() {
     // Create mock data
     final profile = UserProfile(
       uid: 'test_uid',
-      email: 'test@example.com',
       name: 'Test User',
       gender: 'male',
       birthMonth: 1,
@@ -20,6 +19,7 @@ void main() {
       targetWeight: 65,
       activityLevel: 'moderate',
       goal: 'lose',
+      tdee: 2500,
       targetCalories: 2000,
       targetProtein: 150,
       targetCarbs: 200,

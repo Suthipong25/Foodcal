@@ -4,12 +4,16 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
+import '../constants/app_config.dart';
 import '../models/custom_food.dart';
 import '../models/daily_log.dart';
 import '../models/user_profile.dart';
 import '../services/ai_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/datetime_utils.dart';
+import '../utils/input_validator.dart';
+import '../utils/app_logger.dart';
 import '../widgets/edit_food_dialog.dart';
 import '../widgets/tube_progress_bar.dart';
 
@@ -38,32 +42,33 @@ class _TrackingScreenState extends State<TrackingScreen> {
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
   final _fatController = TextEditingController();
-  String _selectedMeal = 'Breakfast';
+  String _selectedMeal = AppConfig.mealTypeBreakfast;
   final ImagePicker _picker = ImagePicker();
   bool _isAnalyzing = false;
   List<FoodItem> _recentFoods = [];
   List<CustomFood> _customFoods = [];
-  int _lastHandledScanRequestVersion = 0;
+  late final ValueNotifier<int> _scanRequestVersionNotifier;
 
   @override
   void initState() {
     super.initState();
-    _lastHandledScanRequestVersion = widget.scanRequestVersion;
+    _scanRequestVersionNotifier = ValueNotifier<int>(widget.scanRequestVersion);
+    _scanRequestVersionNotifier.addListener(_onScanRequestVersionChanged);
     _loadRecentFoods();
   }
 
   @override
   void didUpdateWidget(covariant TrackingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.scanRequestVersion != oldWidget.scanRequestVersion &&
-        widget.scanRequestVersion != _lastHandledScanRequestVersion) {
-      _lastHandledScanRequestVersion = widget.scanRequestVersion;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _scanFood();
-        }
-      });
+    if (widget.scanRequestVersion != oldWidget.scanRequestVersion) {
+      _scanRequestVersionNotifier.value = widget.scanRequestVersion;
     }
+  }
+
+  void _onScanRequestVersionChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scanFood();
+    });
   }
 
   Future<void> _loadRecentFoods() async {
@@ -122,15 +127,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   String _getCurrentMealType() {
-    final hour = DateTime.now().hour;
-    if (hour < 10) return 'Breakfast';
-    if (hour < 15) return 'Lunch';
-    if (hour < 20) return 'Dinner';
-    return 'Snack';
+    return DateTimeUtils.getCurrentMealType();
   }
 
   @override
   void dispose() {
+    _scanRequestVersionNotifier.removeListener(_onScanRequestVersionChanged);
+    _scanRequestVersionNotifier.dispose();
     _foodController.dispose();
     _calController.dispose();
     _proteinController.dispose();
@@ -140,17 +143,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Future<void> _addFood() async {
-    final name = _foodController.text.trim();
+    final name = InputValidator.sanitizeForStorage(_foodController.text);
     final calText = _calController.text.trim();
     final cal = int.tryParse(calText);
     final protein = int.tryParse(_proteinController.text.trim()) ?? 0;
     final carbs = int.tryParse(_carbsController.text.trim()) ?? 0;
     final fat = int.tryParse(_fatController.text.trim()) ?? 0;
 
-    if (name.isEmpty) {
+    final nameError = InputValidator.validateFoodName(name);
+    if (nameError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('กรุณากรอกชื่ออาหาร'),
+        SnackBar(
+          content: Text(nameError),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),
@@ -207,7 +211,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
             protein: protein,
             carbs: carbs,
             fat: fat,
-            time: DateTime.now(),
+            time: DateTimeUtils.now(),
             mealType: _selectedMeal,
           ),
         );
@@ -293,9 +297,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
         setState(() => _isAnalyzing = true);
 
         final bytes = await photo.readAsBytes();
-        debugPrint('Analyzing image (${bytes.length} bytes)...');
+        AppLogger.info('Analyzing image (${bytes.length} bytes)');
         final result = await AIService.analyzeFoodImage(bytes);
-        debugPrint('AI Result: $result');
+        AppLogger.info('AI image analysis completed');
 
         if (mounted) {
           if (result != null && result.containsKey('name')) {
@@ -331,7 +335,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error scanning food: $e');
+      AppLogger.error('Error scanning food', e);
       if (mounted) {
         setState(() => _isAnalyzing = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -368,9 +372,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
     setState(() => _isAnalyzing = true);
     try {
-      debugPrint('Estimating calories for: $name');
+      AppLogger.info('Estimating calories for food name');
       final result = await AIService.estimateCalories(name);
-      debugPrint('AI Translation Result: $result');
+      AppLogger.info('AI text estimation completed');
 
       if (mounted) {
         if (result != null) {
@@ -392,7 +396,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error estimating calories: $e');
+      AppLogger.error('Error estimating calories', e);
       if (mounted) {
         setState(() => _isAnalyzing = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -580,11 +584,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
+                        _buildMealChip('เช้า', AppConfig.mealTypeBreakfast,
+                            LucideIcons.sunrise),
                         _buildMealChip(
-                            'เช้า', 'Breakfast', LucideIcons.sunrise),
-                        _buildMealChip('กลางวัน', 'Lunch', LucideIcons.sun),
-                        _buildMealChip('เย็น', 'Dinner', LucideIcons.sunset),
-                        _buildMealChip('ว่าง', 'Snack', LucideIcons.coffee),
+                            'กลางวัน', AppConfig.mealTypeLunch, LucideIcons.sun),
+                        _buildMealChip('เย็น', AppConfig.mealTypeDinner,
+                            LucideIcons.sunset),
+                        _buildMealChip(
+                            'ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
                       ],
                     ),
                     const SizedBox(height: 16),

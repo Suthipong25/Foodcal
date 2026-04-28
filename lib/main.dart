@@ -14,6 +14,7 @@ import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/storage_service.dart';
+import 'utils/app_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,11 +22,11 @@ void main() async {
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exception}');
+    AppLogger.error('FlutterError', details.exception);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('PlatformDispatcher Error: $error');
+    AppLogger.error('PlatformDispatcher Error', error);
     return true;
   };
 

@@ -1,5 +1,6 @@
-
 import '../utils/health_profile_stats.dart';
+import '../constants/app_config.dart';
+import '../constants/enums.dart';
 
 class UserProfile {
   String uid;
@@ -12,8 +13,8 @@ class UserProfile {
   double weight;
   double? targetWeight;
   String activityLevel;
-  String goal; // 'lose', 'maintain', 'gain'
-  String role; // 'user', 'admin'
+  String goal;
+  String role;
 
   int get age {
     if (birthYear != null && birthMonth != null) {
@@ -26,21 +27,29 @@ class UserProfile {
   }
 
   int get estimatedGoalDays {
-    if (targetWeight == null || targetWeight == weight || goal == 'maintain') return 0;
-    
+    if (targetWeight == null ||
+        targetWeight == weight ||
+        goal == HealthGoal.maintain.value) {
+      return 0;
+    }
+
     int dailyDiff;
-    if (goal == 'lose') {
-      if (targetWeight! > weight) return 0; // cannot lose weight to reach a higher target
+    if (goal == HealthGoal.lose.value) {
+      if (targetWeight! > weight) {
+        return 0; // cannot lose weight to reach a higher target
+      }
       dailyDiff = tdee - targetCalories;
       if (dailyDiff <= 0) dailyDiff = 500;
-    } else if (goal == 'gain') {
-      if (targetWeight! < weight) return 0; // cannot gain weight to reach a lower target
+    } else if (goal == HealthGoal.gain.value) {
+      if (targetWeight! < weight) {
+        return 0; // cannot gain weight to reach a lower target
+      }
       dailyDiff = targetCalories - tdee;
       if (dailyDiff <= 0) dailyDiff = 300;
     } else {
       return 0;
     }
-    
+
     final totalKgDiff = (weight - targetWeight!).abs();
     final totalKcalDiff = totalKgDiff * 7700;
     return (totalKcalDiff / dailyDiff).ceil();
@@ -51,14 +60,14 @@ class UserProfile {
     if (days <= 0) return null;
     return DateTime.now().add(Duration(days: days));
   }
-  
+
   // Stats
   int tdee;
   int targetCalories;
   int targetProtein;
   int targetCarbs;
   int targetFat;
-  
+
   int targetWaterGlasses;
   int streak;
   DateTime joinedDate;
@@ -91,11 +100,12 @@ class UserProfile {
   }) : _legacyAge = legacyAge;
 
   factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
+    // Parse age fields with null safety
     final legacyAge = (map['age'] as num?)?.toInt();
     final birthMonth = (map['birthMonth'] as num?)?.toInt();
     final birthYear = (map['birthYear'] as num?)?.toInt();
-    
-    int currentAge = legacyAge ?? 25;
+
+    int currentAge = legacyAge ?? AppConfig.defaultAge;
     if (birthYear != null && birthMonth != null) {
       final now = DateTime.now();
       currentAge = now.year - birthYear;
@@ -103,14 +113,20 @@ class UserProfile {
       if (currentAge <= 0) currentAge = 1;
     }
 
-    final height = (map['height'] ?? 170).toDouble();
-    final weight = (map['weight'] ?? 60).toDouble();
-    final targetWeight = map['targetWeight'] != null ? (map['targetWeight'] as num).toDouble() : null;
-    final gender = map['gender'] ?? 'male';
-    final activityLevel = map['activityLevel'] ?? 'moderate';
-    final goal = map['goal'] ?? 'maintain';
-    final role = map['role'] ?? 'user';
-    
+    // Parse dimensions with defaults and null safety
+    final height = _safeDouble(map['height']) ?? AppConfig.defaultHeight;
+    final weight = _safeDouble(map['weight']) ?? AppConfig.defaultWeight;
+    final targetWeight =
+        map['targetWeight'] != null ? _safeDouble(map['targetWeight']) : null;
+
+    // Parse profile settings with safe fallbacks
+    final gender = _safeString(map['gender']) ?? Gender.male.value;
+    final activityLevel =
+        _safeString(map['activityLevel']) ?? ActivityLevel.moderate.value;
+    final goal = _safeString(map['goal']) ?? HealthGoal.maintain.value;
+    final role = _safeString(map['role']) ?? UserRole.user.value;
+    final name = _safeString(map['name']) ?? '';
+
     final stats = HealthProfileStats.calculate(
       weight: weight,
       height: height,
@@ -122,7 +138,7 @@ class UserProfile {
 
     return UserProfile(
       uid: uid,
-      name: map['name'] ?? '',
+      name: name,
       gender: gender,
       birthMonth: birthMonth,
       birthYear: birthYear,
@@ -159,7 +175,6 @@ class UserProfile {
       'activityLevel': activityLevel,
       'goal': goal,
       'role': role,
-
       'tdee': tdee,
       'targetCalories': targetCalories,
       'targetProtein': targetProtein,
@@ -238,6 +253,25 @@ class UserProfile {
       lastLoginDate: lastLoginDate ?? this.lastLoginDate,
       photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
     );
+  }
+
+  // ── Static Helpers ────────────────────────────────────────────────────────
+
+  /// Safely parse a double from a map value, handling various input types
+  static double? _safeDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
+  /// Safely parse a string from a map value
+  static String? _safeString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value.isEmpty ? null : value;
+    return value.toString();
   }
 }
 

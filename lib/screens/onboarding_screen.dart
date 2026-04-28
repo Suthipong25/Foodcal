@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../app_theme.dart';
+import '../constants/app_config.dart';
+import '../constants/enums.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_profile.dart';
 import '../utils/health_profile_stats.dart';
+import '../utils/app_logger.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -17,14 +20,14 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int step = 1;
   final _nameController = TextEditingController();
-  String gender = 'male';
+  String gender = Gender.male.value;
   int birthMonth = 1;
   int birthYear = 2000;
   double height = 170;
   double weight = 60;
   double targetWeight = 60;
-  String activityLevel = 'moderate';
-  String goal = 'maintain';
+  String activityLevel = ActivityLevel.moderate.value;
+  String goal = HealthGoal.maintain.value;
   bool loading = false;
 
   @override
@@ -88,10 +91,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           streak: 1,
         );
 
-        final saveData = profile.toEditableMap();
-        debugPrint('[Onboarding] Saving UID=${user.uid}, data=$saveData');
+        AppLogger.info('[Onboarding] Saving profile data');
         await firestore.saveUserProfile(user.uid, profile);
-        debugPrint('Profile saved successfully for ${user.uid}');
+        AppLogger.info('Profile saved successfully');
 
         // Pop กลับไปยัง MainScreen — stream จะอัปเดตและแสดงหน้าหลักเอง
         if (mounted) {
@@ -102,7 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         throw Exception('User is null');
       }
     } on FirebaseException catch (e) {
-      debugPrint('Error saving profile: ${e.code} - ${e.message}');
+      AppLogger.error('Error saving profile (${e.code})', e.message);
       if (mounted) {
         String message = 'เกิดข้อผิดพลาด: ${e.message}';
         if (e.code == 'permission-denied') {
@@ -114,7 +116,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Error saving profile: $e');
+      AppLogger.error('Error saving profile', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -224,16 +226,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     child: _buildSelectButton(
                                         'male',
                                         'ชาย',
-                                        gender == 'male',
-                                        () => setState(() => gender = 'male'))),
+                                        gender == Gender.male.value,
+                                        () => setState(() => gender = Gender.male.value))),
                                 const SizedBox(width: 12),
                                 Expanded(
                                     child: _buildSelectButton(
                                         'female',
                                         'หญิง',
-                                        gender == 'female',
+                                        gender == Gender.female.value,
                                         () =>
-                                            setState(() => gender = 'female'))),
+                                            setState(() => gender = Gender.female.value))),
                               ],
                             ),
                           ] else if (step == 2) ...[
@@ -282,21 +284,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     double.tryParse(v) ?? targetWeight)),
                           ] else if (step == 3) ...[
                             _buildLabel('ระดับกิจกรรมของคุณ'),
-                            _buildActivityOption('sedentary',
+                            _buildActivityOption(AppConfig.activityLevelSedentary,
                                 'นั่งทำงานเป็นหลัก', 'ออกกำลังกายน้อยมาก'),
-                            _buildActivityOption('light', 'เคลื่อนไหวบ้าง',
+                            _buildActivityOption(AppConfig.activityLevelLightly, 'เคลื่อนไหวบ้าง',
                                 'ออกกำลังกาย 1-3 วัน/สัปดาห์'),
-                            _buildActivityOption('moderate', 'ปานกลาง',
+                            _buildActivityOption(AppConfig.activityLevelModerate, 'ปานกลาง',
                                 'ออกกำลังกาย 3-5 วัน/สัปดาห์'),
-                            _buildActivityOption('active', 'หนัก',
+                            _buildActivityOption(AppConfig.activityLevelVery, 'หนัก',
                                 'ออกกำลังกาย 6-7 วัน/สัปดาห์'),
                           ] else if (step == 4) ...[
                             _buildLabel('เป้าหมายของคุณ'),
                             _buildGoalOption(
-                                'lose', 'ลดน้ำหนัก', 'ลดไขมัน เน้นแคลอรี่ต่ำ'),
-                            _buildGoalOption('maintain', 'รักษาน้ำหนัก',
+                                HealthGoal.lose.value, 'ลดน้ำหนัก', 'ลดไขมัน เน้นแคลอรี่ต่ำ'),
+                            _buildGoalOption(HealthGoal.maintain.value, 'รักษาน้ำหนัก',
                                 'กินเท่าที่ใช้ ไม่เพิ่มไม่ลด'),
-                            _buildGoalOption('gain', 'เพิ่มกล้ามเนื้อ',
+                            _buildGoalOption(HealthGoal.gain.value, 'เพิ่มกล้ามเนื้อ',
                                 'เพิ่มน้ำหนักและกล้ามเนื้อ'),
                           ],
                         ],

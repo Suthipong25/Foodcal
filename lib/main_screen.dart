@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import 'models/daily_log.dart';
+import 'constants/enums.dart';
 import 'models/user_profile.dart';
 import 'screens/admin_screen.dart';
 import 'screens/content_screen.dart';
@@ -17,6 +18,7 @@ import 'screens/tracking_screen.dart';
 import 'screens/weight_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'utils/app_logger.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -40,7 +42,8 @@ class _MainScreenState extends State<MainScreen> {
     if (_userProfileStream == null) {
       final user = Provider.of<AuthService>(context, listen: false).currentUser;
       if (user != null) {
-        final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+        final firestoreService =
+            Provider.of<FirestoreService>(context, listen: false);
         _userProfileStream = firestoreService.streamUserProfile(user.uid);
         _dailyLogsStream = firestoreService.streamDailyLogs(user.uid, limit: 7);
       }
@@ -149,7 +152,7 @@ class _MainScreenState extends State<MainScreen> {
         _syncDailyVisit(user.uid, firestoreService);
 
         // ถ้ายูสเซอร์เป็น Admin ให้เข้าหน้า Admin ทันที โดยไม่สนหน้าแท็บหลัก
-        if (userProfile.role == 'admin') {
+        if (UserRole.fromString(userProfile.role) == UserRole.admin) {
           return AdminScreen(profile: userProfile);
         }
 
@@ -398,7 +401,7 @@ class _MainScreenState extends State<MainScreen> {
       try {
         await firestoreService.updateLoginStreak(uid);
       } catch (error) {
-        debugPrint('Unable to sync daily visit: $error');
+        AppLogger.warn('Unable to sync daily visit: $error');
         _lastSyncedVisitKey = null;
       }
     });

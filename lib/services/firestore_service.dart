@@ -1,27 +1,33 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 
+import '../constants/app_config.dart';
+import '../constants/enums.dart';
 import '../models/custom_food.dart';
 import '../models/daily_log.dart';
 import '../models/feedback_log.dart';
+import '../models/content_model.dart';
 import '../models/user_profile.dart';
 import '../models/weight_log.dart';
+import '../utils/datetime_utils.dart';
 import '../utils/health_profile_stats.dart';
+import '../utils/input_validator.dart';
+import '../utils/retryable_operation.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   static const _uuid = Uuid();
-  static const int _maxSingleFoodCalories = 5000;
-  static const int _maxSingleMacroGrams = 500;
-  static const int _maxDailyCalories = 20000;
-  static const int _maxDailyWorkoutCalories = 10000;
-  static const int _maxDailyWaterGlasses = 40;
-  static const Duration _bangkokOffset = Duration(hours: 7);
 
   // --- Collection References ---
   CollectionReference get _usersRef => _db.collection('users');
+
+  Future<T> _withRetry<T>(String operationName, Future<T> Function() operation) {
+    return RetryableOperation.execute<T>(
+      operationName: operationName,
+      operation: operation,
+    );
+  }
 
   // ── validation ────────────────────────────────────────────────────────────
 
@@ -29,22 +35,33 @@ class FirestoreService {
     if (food.name.trim().isEmpty) {
       throw ArgumentError('Food name is required.');
     }
+
+    // Use InputValidator for validation
+    final nameError = InputValidator.validateFoodName(food.name);
+    if (nameError != null) throw ArgumentError(nameError);
+
+    final calError = InputValidator.validateCalories(food.calories.toString());
+    if (calError != null) throw ArgumentError(calError);
+
     final values = [food.calories, food.protein, food.carbs, food.fat];
     if (values.any((v) => v < 0)) {
       throw ArgumentError('Food values must be non-negative.');
     }
-    if (food.calories > _maxSingleFoodCalories ||
-        food.protein > _maxSingleMacroGrams ||
-        food.carbs > _maxSingleMacroGrams ||
-        food.fat > _maxSingleMacroGrams) {
+    if (food.calories > AppConfig.maxSingleFoodCalories ||
+        food.protein > AppConfig.maxSingleMacroGrams ||
+        food.carbs > AppConfig.maxSingleMacroGrams ||
+        food.fat > AppConfig.maxSingleMacroGrams) {
       throw ArgumentError('Food values exceed safe limits.');
     }
   }
 
   void _validateWorkout(WorkoutItem workout) {
     if (workout.id <= 0) throw ArgumentError('Workout id is invalid.');
-    if (workout.title.trim().isEmpty) throw ArgumentError('Workout title is required.');
-    if (workout.minutes < 1 || workout.minutes > 180) {
+    if (workout.title.trim().isEmpty) {
+      throw ArgumentError('Workout title is required.');
+    }
+    if (workout.minutes < AppConfig.minWorkoutMinutes ||
+        workout.minutes > AppConfig.maxWorkoutMinutes) {
       throw ArgumentError('Workout duration is out of range.');
     }
   }
@@ -63,7 +80,8 @@ class FirestoreService {
   Stream<List<UserProfile>> streamAllUsers() {
     return _usersRef.snapshots().map((snap) {
       return snap.docs
-          .map((doc) => UserProfile.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+          .map((doc) =>
+              UserProfile.fromMap(doc.id, doc.data() as Map<String, dynamic>))
           .toList();
     });
   }
@@ -72,11 +90,15 @@ class FirestoreService {
 
   Future<void> setAdminRole(String targetUid, bool promoteToAdmin) async {
     final callable = FirebaseFunctions.instance.httpsCallable('setAdminRole');
-    await callable.call({'targetUid': targetUid, 'role': promoteToAdmin ? 'admin' : 'user'});
+    await callable.call({
+      'targetUid': targetUid,
+      'role': promoteToAdmin ? UserRole.admin.value : UserRole.user.value,
+    });
   }
 
   Future<void> deleteUserAccount(String targetUid) async {
-    final callable = FirebaseFunctions.instance.httpsCallable('deleteUserAccount');
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('deleteUserAccount');
     await callable.call({'targetUid': targetUid});
   }
 
@@ -91,7 +113,11 @@ class FirestoreService {
       goal: profile.goal,
     );
     if (validationError != null) throw ArgumentError(validationError);
-    await _usersRef.doc(uid).set(profile.toEditableMap(), SetOptions(merge: true));
+    await _withRetry('saveUserProfile', () {
+      return _usersRef
+          .doc(uid)
+          .set(profile.toEditableMap(), SetOptions(merge: true));
+    });
   }
 
   Future<void> updateLoginStreak(String uid) async {
@@ -118,8 +144,8 @@ class FirestoreService {
 
   // ── Static helpers ────────────────────────────────────────────────────────
 
-  static Map<String, int> calculateStats(
-      double weight, double height, int age, String gender, String activityLevel, String goal) {
+  static Map<String, int> calculateStats(double weight, double height, int age,
+      String gender, String activityLevel, String goal) {
     final stats = HealthProfileStats.calculate(
       weight: weight,
       height: height,
@@ -139,7 +165,8 @@ class FirestoreService {
   }
 
   static String bangkokDateKey([DateTime? dateTime]) {
-    final bkk = (dateTime ?? DateTime.now()).toUtc().add(_bangkokOffset);
+    final source = (dateTime ?? DateTime.now()).toUtc();
+    final bkk = source.add(const Duration(hours: AppConfig.bangkokUtcOffsetHours));
     return '${bkk.year.toString().padLeft(4, '0')}-'
         '${bkk.month.toString().padLeft(2, '0')}-'
         '${bkk.day.toString().padLeft(2, '0')}';
@@ -186,13 +213,10 @@ class FirestoreService {
   // ── Daily Log — Date keys ─────────────────────────────────────────────────
 
   static String dateKey([DateTime? dateTime]) {
-    final now = (dateTime ?? DateTime.now()).toLocal();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
+    return DateTimeUtils.dateKey(dateTime ?? DateTimeUtils.now());
   }
 
-  static String utcDateKey([DateTime? dateTime]) => dateKey(dateTime);
+  static String utcDateKey([DateTime? dateTime]) => bangkokDateKey(dateTime);
 
   DocumentReference _logRef(String uid, [String? key]) {
     return _usersRef.doc(uid).collection('daily_logs').doc(key ?? dateKey());
@@ -232,7 +256,19 @@ class FirestoreService {
         .orderBy('date', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) => DailyLog.fromMap(doc.data())).toList());
+        .map((snap) =>
+            snap.docs.map((doc) => DailyLog.fromMap(doc.data())).toList());
+  }
+
+  Stream<List<WorkoutVideo>> streamWorkoutVideos() {
+    return _db
+        .collection('workout_videos')
+        .orderBy('id')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => WorkoutVideo.fromMap(doc.data()))
+            .where((video) => video.youtubeUrl.trim().isNotEmpty)
+            .toList());
   }
 
   // ── Food CRUD ─────────────────────────────────────────────────────────────
@@ -262,8 +298,11 @@ class FirestoreService {
       }
       final data = snap.data() as Map<String, dynamic>? ?? {};
       final foods = List<dynamic>.from(data['foods'] as List? ?? []);
-      final caloriesIn = ((data['caloriesIn'] as num?)?.toInt() ?? 0) + food.calories;
-      if (caloriesIn > _maxDailyCalories) throw Exception('Daily calories exceed the allowed limit.');
+      final caloriesIn =
+          ((data['caloriesIn'] as num?)?.toInt() ?? 0) + food.calories;
+      if (caloriesIn > AppConfig.maxDailyCalories) {
+        throw Exception('Daily calories exceed the allowed limit.');
+      }
       foods.add(foodMap);
       tx.update(logRef, {
         'caloriesIn': caloriesIn,
@@ -277,16 +316,19 @@ class FirestoreService {
   }
 
   /// Remove a food item by [foodId] from a specific day's log (default: today).
-  Future<void> removeFood(String uid, String foodId, {String? forDateKey}) async {
+  Future<void> removeFood(String uid, String foodId,
+      {String? forDateKey}) async {
     final logRef = _logRef(uid, forDateKey);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(logRef);
       if (!snap.exists) return;
       final data = snap.data() as Map<String, dynamic>? ?? {};
       final foods = List<Map<String, dynamic>>.from(
-        (data['foods'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)),
+        (data['foods'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map)),
       );
-      final removed = foods.where((f) => (f['id'] as String?) == foodId).toList();
+      final removed =
+          foods.where((f) => (f['id'] as String?) == foodId).toList();
       if (removed.isEmpty) return; // already gone
       foods.removeWhere((f) => (f['id'] as String?) == foodId);
 
@@ -304,23 +346,29 @@ class FirestoreService {
   }
 
   /// Update a food item in-place (by id). Works for any day's log.
-  Future<void> updateFoodItem(String uid, FoodItem updated, {String? forDateKey}) async {
+  Future<void> updateFoodItem(String uid, FoodItem updated,
+      {String? forDateKey}) async {
     _validateFoodItem(updated);
-    if (updated.id.isEmpty) throw ArgumentError('FoodItem must have a non-empty id to update.');
+    if (updated.id.isEmpty) {
+      throw ArgumentError('FoodItem must have a non-empty id to update.');
+    }
     final logRef = _logRef(uid, forDateKey);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(logRef);
       if (!snap.exists) throw Exception('Log not found.');
       final data = snap.data() as Map<String, dynamic>? ?? {};
       final foods = List<Map<String, dynamic>>.from(
-        (data['foods'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)),
+        (data['foods'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map)),
       );
       final idx = foods.indexWhere((f) => (f['id'] as String?) == updated.id);
       if (idx < 0) throw Exception('Food item not found.');
       foods[idx] = updated.toMap();
 
       final totals = _sumFoods(foods);
-      if (totals['cal']! > _maxDailyCalories) throw Exception('Daily calories exceed the allowed limit.');
+      if (totals['cal']! > AppConfig.maxDailyCalories) {
+        throw Exception('Daily calories exceed the allowed limit.');
+      }
       tx.update(logRef, {
         'foods': foods,
         'caloriesIn': totals['cal'],
@@ -346,7 +394,9 @@ class FirestoreService {
   // ── Water ─────────────────────────────────────────────────────────────────
 
   Future<void> updateWater(String uid, int delta) async {
-    if (![1, 2, 6, -1].contains(delta)) throw ArgumentError('Unsupported water delta.');
+    if (![1, 2, 6, -1].contains(delta)) {
+      throw ArgumentError('Unsupported water delta.');
+    }
     final logRef = _logRef(uid);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(logRef);
@@ -369,21 +419,27 @@ class FirestoreService {
       final data = snap.data() as Map<String, dynamic>? ?? {};
       int next = ((data['waterGlasses'] as num?)?.toInt() ?? 0) + delta;
       if (next < 0) next = 0;
-      if (next > _maxDailyWaterGlasses) throw Exception('Daily water exceeds the allowed limit.');
-      tx.update(logRef, {'waterGlasses': next, 'lastUpdated': FieldValue.serverTimestamp()});
+      if (next > AppConfig.maxDailyWaterGlasses) {
+        throw Exception('Daily water exceeds the allowed limit.');
+      }
+      tx.update(logRef,
+          {'waterGlasses': next, 'lastUpdated': FieldValue.serverTimestamp()});
     });
   }
 
   /// Set water to an absolute value (for retroactive edits).
   Future<void> setWater(String uid, int glasses, {String? forDateKey}) async {
-    if (glasses < 0 || glasses > _maxDailyWaterGlasses) {
+    if (glasses < 0 || glasses > AppConfig.maxDailyWaterGlasses) {
       throw ArgumentError('Water glasses out of range.');
     }
     final logRef = _logRef(uid, forDateKey);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(logRef);
       if (!snap.exists) throw Exception('Log not found for that date.');
-      tx.update(logRef, {'waterGlasses': glasses, 'lastUpdated': FieldValue.serverTimestamp()});
+      tx.update(logRef, {
+        'waterGlasses': glasses,
+        'lastUpdated': FieldValue.serverTimestamp()
+      });
     });
   }
 
@@ -391,45 +447,62 @@ class FirestoreService {
 
   Future<void> startWorkoutSession(String uid, WorkoutItem workout) async {
     _validateWorkout(workout);
-    final sessionRef = _usersRef.doc(uid).collection('workout_sessions').doc(workout.id.toString());
-    await sessionRef.set({
-      'workoutId': workout.id,
-      'title': workout.title,
-      'level': workout.level,
-      'type': workout.type,
-      'minutes': workout.minutes,
-      'dateKey': dateKey(),
-      'startedAt': DateTime.now().toUtc().toIso8601String(),
-      'completed': false,
-      'completedAt': null,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    final sessionRef = _usersRef
+        .doc(uid)
+        .collection('workout_sessions')
+        .doc(workout.id.toString());
+        
+    final startedAtIso = DateTime.now().toUtc().toIso8601String();
+    
+    await _withRetry('startWorkoutSession', () {
+      return sessionRef.set({
+        'workoutId': workout.id,
+        'title': workout.title,
+        'level': workout.level,
+        'type': workout.type,
+        'minutes': workout.minutes,
+        'dateKey': dateKey(),
+        'startedAt': startedAtIso,
+        'completed': false,
+        'completedAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    });
   }
 
   Future<void> finishWorkout(String uid, WorkoutItem workout) async {
     _validateWorkout(workout);
     final logRef = _logRef(uid);
-    final sessionRef = _usersRef.doc(uid).collection('workout_sessions').doc(workout.id.toString());
+    final sessionRef = _usersRef
+        .doc(uid)
+        .collection('workout_sessions')
+        .doc(workout.id.toString());
 
     await _db.runTransaction((tx) async {
       final sessionSnap = await tx.get(sessionRef);
       if (!sessionSnap.exists) throw Exception('Workout session not started.');
       final sessionData = sessionSnap.data() ?? <String, dynamic>{};
-      final startedAt = DateTime.tryParse(sessionData['startedAt'] as String? ?? '');
+      final startedAt =
+          DateTime.tryParse(sessionData['startedAt'] as String? ?? '');
       if (sessionData['dateKey'] != dateKey() || startedAt == null) {
         throw Exception('Workout session is no longer valid.');
       }
       if (sessionData['completed'] == true) {
-        throw Exception('Workout session already completed. Start a new session.');
+        throw Exception(
+            'Workout session already completed. Start a new session.');
       }
       final requiredMinutes = requiredWorkoutMinutes(workout.minutes);
       final elapsed = DateTime.now().difference(startedAt).inMinutes;
       if (elapsed < requiredMinutes) {
-        throw Exception('Need at least $requiredMinutes minutes before completing.');
+        throw Exception(
+            'Need at least $requiredMinutes minutes before completing.');
       }
       final burned = calculateWorkoutCalories(workout);
       final logSnap = await tx.get(logRef);
-      final completedMap = {...workout.toMap(), 'completedAt': DateTime.now().toUtc().toIso8601String()};
+      final completedMap = {
+        ...workout.toMap(),
+        'completedAt': DateTime.now().toUtc().toIso8601String()
+      };
       if (!logSnap.exists) {
         tx.set(logRef, {
           'date': dateKey(),
@@ -446,8 +519,11 @@ class FirestoreService {
       } else {
         final data = logSnap.data() as Map<String, dynamic>? ?? {};
         final workouts = List<dynamic>.from(data['workouts'] as List? ?? []);
-        final nextCalOut = ((data['caloriesOut'] as num?)?.toInt() ?? 0) + burned;
-        if (nextCalOut > _maxDailyWorkoutCalories) throw Exception('Daily workout calories exceeded.');
+        final nextCalOut =
+            ((data['caloriesOut'] as num?)?.toInt() ?? 0) + burned;
+        if (nextCalOut > AppConfig.maxDailyWorkoutCalories) {
+          throw Exception('Daily workout calories exceeded.');
+        }
         workouts.add(completedMap);
         tx.update(logRef, {
           'caloriesOut': nextCalOut,
@@ -464,7 +540,8 @@ class FirestoreService {
   }
 
   /// Stream all completed workout sessions (for history screen).
-  Stream<List<Map<String, dynamic>>> streamWorkoutSessions(String uid, {int limit = 50}) {
+  Stream<List<Map<String, dynamic>>> streamWorkoutSessions(String uid,
+      {int limit = 50}) {
     return _usersRef
         .doc(uid)
         .collection('workout_sessions')
@@ -503,11 +580,14 @@ class FirestoreService {
   CollectionReference _weightLogsRef(String uid) =>
       _usersRef.doc(uid).collection('weight_logs');
 
-  Future<void> logWeight(String uid, double weightKg, {String? note, String? forDateKey}) async {
-    if (weightKg <= 0 || weightKg > 500) throw ArgumentError('Weight out of range.');
+  Future<void> logWeight(String uid, double weightKg,
+      {String? note, String? forDateKey}) async {
+    if (weightKg <= 0 || weightKg > 500) {
+      throw ArgumentError('Weight out of range.');
+    }
     final key = forDateKey ?? dateKey();
     final log = WeightLog(date: key, weightKg: weightKg, note: note);
-    await _weightLogsRef(uid).doc(key).set(log.toMap());
+    await _withRetry('logWeight', () => _weightLogsRef(uid).doc(key).set(log.toMap()));
   }
 
   Future<void> deleteWeightLog(String uid, String forDateKey) async {
@@ -534,14 +614,19 @@ class FirestoreService {
         .orderBy('isFavorite', descending: true)
         .snapshots()
         .map((snap) => snap.docs
-            .map((doc) => CustomFood.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+            .map((doc) =>
+                CustomFood.fromMap(doc.id, doc.data() as Map<String, dynamic>))
             .toList());
   }
 
   Future<String> saveCustomFood(String uid, CustomFood food) async {
     if (food.name.trim().isEmpty) throw ArgumentError('Food name is required.');
     final id = food.id.isNotEmpty ? food.id : _uuid.v4();
-    await _customFoodsRef(uid).doc(id).set(food.toMap(), SetOptions(merge: true));
+    await _withRetry('saveCustomFood', () {
+      return _customFoodsRef(uid)
+          .doc(id)
+          .set(food.toMap(), SetOptions(merge: true));
+    });
     return id;
   }
 
@@ -549,14 +634,18 @@ class FirestoreService {
     await _customFoodsRef(uid).doc(foodId).delete();
   }
 
-  Future<void> toggleFavorite(String uid, String foodId, {required bool isFavorite}) async {
-    await _customFoodsRef(uid).doc(foodId).update({'isFavorite': isFavorite});
+  Future<void> toggleFavorite(String uid, String foodId,
+      {required bool isFavorite}) async {
+    await _withRetry('toggleFavorite', () {
+      return _customFoodsRef(uid).doc(foodId).update({'isFavorite': isFavorite});
+    });
   }
 
   // ── Feedback ──────────────────────────────────────────────────────────────
 
   Future<void> submitFeedback(FeedbackLog log) async {
-    await _db.collection('feedback').add(log.toMap());
+    final docId = _uuid.v4();
+    await _withRetry('submitFeedback', () => _db.collection('feedback').doc(docId).set(log.toMap()));
   }
 
   Stream<List<FeedbackLog>> streamAllFeedback() {
@@ -564,7 +653,8 @@ class FirestoreService {
         .collection('feedback')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => FeedbackLog.fromMap(doc.id, doc.data())).toList());
+        .map((snap) => snap.docs
+            .map((doc) => FeedbackLog.fromMap(doc.id, doc.data()))
+            .toList());
   }
 }
