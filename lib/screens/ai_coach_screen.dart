@@ -48,15 +48,16 @@ class _AICoachScreenState extends State<AICoachScreen> {
         _messages.add({
           'role': response != null ? 'ai' : 'error',
           'content': response ??
-              'ตอนนี้ยังไม่สามารถเชื่อมต่อ AI Coach ได้ กรุณาตรวจสอบการตั้งค่า AI_BACKEND_URL',
+              'ตอนนี้ยังไม่สามารถเชื่อมต่อ AI Coach ได้ กรุณาลองใหม่อีกครั้ง',
         });
       });
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
       setState(() {
         _messages.add({
           'role': 'error',
-          'content': 'เกิดข้อผิดพลาด: $e',
+          'content': 'เกิดข้อผิดพลาด: $errorMsg',
         });
       });
     } finally {

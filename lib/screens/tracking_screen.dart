@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -47,6 +49,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   bool _isAnalyzing = false;
   List<FoodItem> _recentFoods = [];
   List<CustomFood> _customFoods = [];
+  StreamSubscription<List<CustomFood>>? _customFoodsSubscription;
   late final ValueNotifier<int> _scanRequestVersionNotifier;
 
   @override
@@ -76,13 +79,70 @@ class _TrackingScreenState extends State<TrackingScreen> {
     if (user != null) {
       final fs = Provider.of<FirestoreService>(context, listen: false);
       final foods = await fs.getRecentUniqueFoods(user.uid);
-      final custom = await fs.streamCustomFoods(user.uid).first;
+      _customFoodsSubscription ??=
+          fs.streamCustomFoods(user.uid).listen((customFoods) {
+        if (!mounted) return;
+        setState(() => _customFoods = customFoods);
+      });
       if (mounted) {
         setState(() {
           _recentFoods = foods;
-          _customFoods = custom;
         });
       }
+    }
+  }
+
+  Future<bool> _confirmRemoveFood(FoodItem food) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    
+    final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('ลบรายการอาหาร'),
+            content: Text('ต้องการลบ "${food.name}" ออกจากบันทึกวันนี้ใช่ไหม'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('ยกเลิก'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('ลบ'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete) return false;
+
+    final uid = authService.currentUser?.uid;
+    if (uid == null || food.id.isEmpty) return false;
+
+    try {
+      await firestoreService.removeFood(uid, food.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ลบ ${food.name} เรียบร้อยแล้ว'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ลบรายการไม่สำเร็จ: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
     }
   }
 
@@ -132,6 +192,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   void dispose() {
+    _customFoodsSubscription?.cancel();
     _scanRequestVersionNotifier.removeListener(_onScanRequestVersionChanged);
     _scanRequestVersionNotifier.dispose();
     _foodController.dispose();
@@ -302,9 +363,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
         AppLogger.info('AI image analysis completed');
 
         if (mounted) {
-          if (result != null && result.containsKey('name')) {
+          if (result != null) {
             setState(() {
-              _foodController.text = result['name'] ?? '';
+              final detectedName = (result['name'] ?? '').toString().trim();
+              _foodController.text = detectedName.isNotEmpty
+                  ? detectedName
+                  : (_foodController.text.trim().isNotEmpty
+                      ? _foodController.text.trim()
+                      : 'อาหารที่สแกน');
               _calController.text = (result['calories'] ?? '').toString();
               _proteinController.text = (result['protein'] ?? '').toString();
               _carbsController.text = (result['carbs'] ?? '').toString();
@@ -315,7 +381,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'AI วิเคราะห์: ${result['name']} (${result['calories']} kcal)',
+                  'AI วิเคราะห์: ${_foodController.text} (${result['calories']} kcal)',
                 ),
                 backgroundColor: Colors.blueAccent,
                 behavior: SnackBarBehavior.floating,
@@ -338,9 +404,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
       AppLogger.error('Error scanning food', e);
       if (mounted) {
         setState(() => _isAnalyzing = false);
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('ไม่สามารถวิเคราะห์รูปภาพได้: $e'),
+            content: Text('ไม่สามารถวิเคราะห์รูปภาพได้: $errorMsg'),
             backgroundColor: Colors.red,
           ),
         );
@@ -399,9 +466,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
       AppLogger.error('Error estimating calories', e);
       if (mounted) {
         setState(() => _isAnalyzing = false);
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการคำนวณ: $e'),
+            content: Text('เกิดข้อผิดพลาดในการคำนวณ: $errorMsg'),
             backgroundColor: Colors.red,
           ),
         );
@@ -495,7 +563,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         suffixIcon: IconButton(
                           icon: const Icon(LucideIcons.sparkles,
                               color: Colors.amber, size: 20),
-                          onPressed: _estimateCaloriesText,
+                          onPressed: _isAnalyzing ? null : _estimateCaloriesText,
                         ),
                       ),
                     ),
@@ -551,23 +619,38 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           color: AppTheme.mutedText),
                     ),
                     const SizedBox(height: 8),
-                    Row(
+                    TextField(
+                      controller: _calController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'แคลอรี่ (kcal)',
+                        filled: true,
+                        fillColor: Color(0x1A1F6FEB),
+                        border: OutlineInputBorder(
+                          borderRadius: AppTheme.innerRadius,
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: TextField(
-                            controller: _calController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              hintText: 'แคลอรี่ (kcal)',
-                              filled: true,
-                              fillColor: Color(0x1A1F6FEB),
-                              border: OutlineInputBorder(
-                                borderRadius: AppTheme.innerRadius,
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
+                        _buildMacroField(
+                          _proteinController,
+                          'โปรตีน (g)',
+                          compact: isCompact,
+                        ),
+                        _buildMacroField(
+                          _carbsController,
+                          'คาร์บ (g)',
+                          compact: isCompact,
+                        ),
+                        _buildMacroField(
+                          _fatController,
+                          'ไขมัน (g)',
+                          compact: isCompact,
                         ),
                       ],
                     ),
@@ -594,28 +677,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             'ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildMacroField(
-                          _proteinController,
-                          'โปรตีน (g)',
-                          compact: isCompact,
-                        ),
-                        _buildMacroField(
-                          _carbsController,
-                          'คาร์บ (g)',
-                          compact: isCompact,
-                        ),
-                        _buildMacroField(
-                          _fatController,
-                          'ไขมัน (g)',
-                          compact: isCompact,
-                        ),
-                      ],
-                    ),
+
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -668,12 +730,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 padding: const EdgeInsets.only(right: 20),
                                 child: const Icon(LucideIcons.trash2, color: Colors.white),
                               ),
-                              onDismissed: (_) async {
-                                final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
-                                if (uid != null && food.id.isNotEmpty) {
-                                  await Provider.of<FirestoreService>(context, listen: false).removeFood(uid, food.id);
-                                }
-                              },
+                              confirmDismiss: (_) => _confirmRemoveFood(food),
                               child: GestureDetector(
                                 onTap: () async {
                                   final edited = await EditFoodDialog.show(context, existing: food);
@@ -755,20 +812,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(LucideIcons.droplet,
-                                color: AppTheme.waterColor, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: AppTheme.title,
-                                color: AppTheme.ink,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.droplet,
+                                  color: AppTheme.waterColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: AppTheme.title,
+                                    color: AppTheme.ink,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         Text(
                           '${widget.log?.waterGlasses ?? 0}',

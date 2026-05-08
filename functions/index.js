@@ -1,4 +1,4 @@
-const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
@@ -17,25 +17,11 @@ const maxDailyCaloriesIn = 20000;
 const maxDailyCaloriesOut = 10000;
 const maxWaterGlasses = 40;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-exports.estimateFood = onRequest({ secrets: [geminiApiKey] }, async (req, res) => {
-  if (req.method === "OPTIONS") {
-    return res.status(204).set(corsHeaders).send("");
-  }
-  res.set(corsHeaders);
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const foodName = `${req.body?.foodName || ""}`.trim();
+exports.estimateFood = onCall({ secrets: [geminiApiKey] }, async (request) => {
+  requireAuth(request);
+  const foodName = `${request.data?.foodName || ""}`.trim();
   if (!foodName) {
-    return res.status(400).json({ error: "foodName is required" });
+    throw new HttpsError("invalid-argument", "foodName is required");
   }
 
   const prompt = `You are a nutrition expert.
@@ -56,28 +42,20 @@ Rules:
       prompt,
       apiKey: geminiApiKey.value(),
     });
-    return res.json(result);
+    return result;
   } catch (error) {
     logger.error("estimateFood failed", error);
-    return res.status(500).json({ error: `${error}` });
+    throw new HttpsError("internal", `${error}`);
   }
 });
 
-exports.analyzeFoodImage = onRequest(
+exports.analyzeFoodImage = onCall(
   { secrets: [geminiApiKey] },
-  async (req, res) => {
-    if (req.method === "OPTIONS") {
-      return res.status(204).set(corsHeaders).send("");
-    }
-    res.set(corsHeaders);
-
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    const imageBase64 = `${req.body?.imageBase64 || ""}`.trim();
+  async (request) => {
+    requireAuth(request);
+    const imageBase64 = `${request.data?.imageBase64 || ""}`.trim();
     if (!imageBase64) {
-      return res.status(400).json({ error: "imageBase64 is required" });
+      throw new HttpsError("invalid-argument", "imageBase64 is required");
     }
 
     const prompt = `You are a nutrition expert.
@@ -101,28 +79,20 @@ Rules:
         imageBase64,
         apiKey: geminiApiKey.value(),
       });
-      return res.json(result);
+      return result;
     } catch (error) {
       logger.error("analyzeFoodImage failed", error);
-      return res.status(500).json({ error: `${error}` });
+      throw new HttpsError("internal", `${error}`);
     }
   }
 );
 
-exports.askCoach = onRequest({ secrets: [geminiApiKey] }, async (req, res) => {
-  if (req.method === "OPTIONS") {
-    return res.status(204).set(corsHeaders).send("");
-  }
-  res.set(corsHeaders);
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const message = `${req.body?.message || ""}`.trim();
-  const history = Array.isArray(req.body?.history) ? req.body.history : [];
+exports.askCoach = onCall({ secrets: [geminiApiKey] }, async (request) => {
+  requireAuth(request);
+  const message = `${request.data?.message || ""}`.trim();
+  const history = Array.isArray(request.data?.history) ? request.data.history : [];
   if (!message) {
-    return res.status(400).json({ error: "message is required" });
+    throw new HttpsError("invalid-argument", "message is required");
   }
 
   const historyContext = history
@@ -150,10 +120,10 @@ ${historyContext ? `Previous conversation:\n${historyContext}\n\n` : ""}User: ${
       temperature: 0.7,
       maxOutputTokens: 512,
     });
-    return res.json({ reply });
+    return { reply };
   } catch (error) {
     logger.error("askCoach failed", error);
-    return res.status(500).json({ error: `${error}` });
+    throw new HttpsError("internal", `${error}`);
   }
 });
 
@@ -298,33 +268,28 @@ exports.updateWater = onCall(async (request) => {
 
 exports.startWorkoutSession = onCall(async (request) => {
   const uid = requireAuth(request);
-  const workoutId = toPositiveInt(request.data?.workoutId, 0);
-  const minutes = toPositiveInt(request.data?.minutes, 0);
-
-  if (workoutId <= 0 || minutes <= 0 || minutes > 180) {
-    throw new HttpsError("invalid-argument", "Invalid workout session payload.");
-  }
+  const workout = normalizeWorkout(request.data?.workout);
 
   const todayKey = getBangkokDateKey(new Date());
-  const sessionRef = db
-    .collection("users")
-    .doc(uid)
-    .collection("workout_sessions")
-    .doc(String(workoutId));
+  const sessionRef = db.collection("users").doc(uid).collection("workout_sessions").doc();
 
   await sessionRef.set(
     {
-      workoutId,
-      minutes,
+      workoutId: workout.id,
+      title: workout.title,
+      level: workout.level,
+      duration: workout.duration,
+      minutes: workout.minutes,
+      type: workout.type,
       dateKey: todayKey,
       startedAt: new Date().toISOString(),
       completed: false,
       updatedAt: FieldValue.serverTimestamp(),
     },
-    { merge: true }
+    { merge: false }
   );
 
-  return { success: true, dateKey: todayKey };
+  return { success: true, dateKey: todayKey, sessionId: sessionRef.id };
 });
 
 exports.finishWorkout = onCall(async (request) => {
@@ -332,22 +297,28 @@ exports.finishWorkout = onCall(async (request) => {
   const workout = normalizeWorkout(request.data?.workout);
   const todayKey = getBangkokDateKey(new Date());
   const logRef = getDailyLogRef(uid, todayKey);
-  const sessionRef = db
+  const sessionQuery = db
     .collection("users")
     .doc(uid)
     .collection("workout_sessions")
-    .doc(String(workout.id));
+    .where("dateKey", "==", todayKey)
+    .where("workoutId", "==", workout.id)
+    .where("completed", "==", false)
+    .orderBy("startedAt", "desc")
+    .limit(1);
 
   await db.runTransaction(async (transaction) => {
-    const [logSnap, sessionSnap] = await Promise.all([
+    const [logSnap, sessionQuerySnap] = await Promise.all([
       transaction.get(logRef),
-      transaction.get(sessionRef),
+      transaction.get(sessionQuery),
     ]);
 
-    if (!sessionSnap.exists) {
+    if (sessionQuerySnap.empty) {
       throw new HttpsError("failed-precondition", "Workout session has not been started.");
     }
 
+    const sessionSnap = sessionQuerySnap.docs[0];
+    const sessionRef = sessionSnap.ref;
     const session = sessionSnap.data() || {};
     const sessionDateKey = session.dateKey;
     const startedAt = parseDate(session.startedAt);
@@ -463,13 +434,38 @@ exports.deleteUserAccount = onCall(async (request) => {
   }
 
   try {
-    await getAuth().deleteUser(targetUid);
-    await db.collection("users").doc(targetUid).delete();
+    try {
+      await getAuth().deleteUser(targetUid);
+    } catch (authError) {
+      if (authError.code === "auth/user-not-found") {
+        logger.warn(`User ${targetUid} not found in Firebase Auth, proceeding to delete Firestore document.`);
+      } else {
+        throw authError;
+      }
+    }
+    const userRef = db.collection("users").doc(targetUid);
+    const subcollections = [
+      "daily_logs",
+      "workout_sessions",
+      "weight_logs",
+      "custom_foods",
+    ];
+
+    for (const subcollection of subcollections) {
+      const snapshot = await userRef.collection(subcollection).get();
+      if (!snapshot.empty) {
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+      }
+    }
+
+    await userRef.delete();
     logger.info(`Admin ${callerUid} deleted user ${targetUid}`);
     return { success: true };
   } catch (error) {
     logger.error(`Failed to delete user ${targetUid}`, error);
-    throw new HttpsError("internal", "Failed to delete user account.");
+    throw new HttpsError("internal", `Failed to delete user account: ${error.message}`);
   }
 });
 

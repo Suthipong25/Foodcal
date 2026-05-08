@@ -1,4 +1,5 @@
 import '../constants/app_config.dart';
+import '../utils/datetime_utils.dart';
 
 class FoodItem {
   /// Unique identifier generated at creation time (UUID v4).
@@ -38,7 +39,7 @@ class FoodItem {
       protein: protein,
       carbs: carbs,
       fat: fat,
-      time: _parseDate(map['time']) ?? DateTime.now(),
+      time: _parseDate(map['time']) ?? DateTimeUtils.now(),
       mealType: mealType,
     );
   }
@@ -112,7 +113,7 @@ class WorkoutItem {
               ) ??
           0,
       type: map['type'] ?? '',
-      completedAt: _parseDate(map['completedAt']) ?? DateTime.now(),
+      completedAt: _parseDate(map['completedAt']) ?? DateTimeUtils.now(),
     );
   }
 
@@ -169,7 +170,7 @@ class DailyLog {
       workouts: (map['workouts'] as List<dynamic>? ?? [])
           .map((e) => WorkoutItem.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
-      lastUpdated: _parseDate(map['lastUpdated']) ?? DateTime.now(),
+      lastUpdated: _parseDate(map['lastUpdated']) ?? DateTimeUtils.now(),
     );
   }
 
@@ -211,7 +212,7 @@ class WorkoutSessionState {
       workoutId: _safeInt(map['workoutId']) ?? 0,
       dateKey: map['dateKey'] ?? '',
       minutes: _safeInt(map['minutes']) ?? 0,
-      startedAt: _parseDate(map['startedAt']) ?? DateTime.now(),
+      startedAt: _parseDate(map['startedAt']) ?? DateTimeUtils.now(),
       completed: map['completed'] == true,
       completedAt: _parseDate(map['completedAt']),
     );

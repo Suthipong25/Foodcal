@@ -36,11 +36,16 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.articles.length,
-        itemBuilder: (context, index) => _buildArticlePage(widget.articles[index]),
+      backgroundColor: AppTheme.pageBg,
+      body: DecoratedBox(
+        decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: widget.articles.length,
+          itemBuilder: (context, index) {
+            return _buildArticlePage(widget.articles[index]);
+          },
+        ),
       ),
     );
   }
@@ -49,26 +54,68 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = AppTheme.horizontalPaddingForWidth(screenWidth);
     final maxContentWidth = AppTheme.maxContentWidth(screenWidth);
+    final heroHeight = screenWidth < 380 ? 260.0 : 300.0;
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
       slivers: [
         SliverAppBar(
-          backgroundColor: Colors.white,
+          expandedHeight: heroHeight,
+          pinned: true,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.chevronLeft, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            article.category,
-            style: TextStyle(
-              color: Colors.blue[800],
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
+          backgroundColor: Colors.white.withValues(alpha: 0.92),
+          surfaceTintColor: Colors.transparent,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: _CircleIconButton(
+              icon: LucideIcons.chevronLeft,
+              onTap: () => Navigator.pop(context),
             ),
           ),
-          pinned: true,
+          titleSpacing: 0,
+          title: Text(
+            article.category,
+            style: const TextStyle(
+              color: AppTheme.primaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+            ),
+          ),
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  article.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppTheme.pageTintStrong,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      LucideIcons.image,
+                      color: AppTheme.secondaryColor,
+                      size: 40,
+                    ),
+                  ),
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x22000000),
+                        Color(0x4010233F),
+                        Color(0xE6F8FAFC),
+                      ],
+                      stops: [0, 0.45, 1],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         SliverToBoxAdapter(
           child: Center(
@@ -77,61 +124,28 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
-                  24,
+                  20,
                   horizontalPadding,
                   32,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      article.title,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    _buildHeadlineCard(article),
+                    const SizedBox(height: 18),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppTheme.cardPadding),
+                      decoration: AppTheme.elevatedCard(
+                        color: Colors.white,
+                        borderColor: AppTheme.pageTintStrong,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.clock,
-                            size: 14,
-                            color: Colors.blue[700],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'อ่าน 3 นาที',
-                            style: TextStyle(
-                              color: Colors.blue[700],
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _buildBodyContent(article.body),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    Text(
-                      article.body,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.8,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 28),
                   ],
                 ),
               ),
@@ -139,6 +153,261 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHeadlineCard(Article article) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              borderRadius: AppTheme.pillRadius,
+            ),
+            child: Text(
+              article.category,
+              style: const TextStyle(
+                color: AppTheme.primaryColor,
+                fontSize: AppTheme.meta,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            article.title,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.ink,
+              height: 1.18,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MetaPill(
+                icon: LucideIcons.clock3,
+                label: 'อ่าน 3 นาที',
+                color: AppTheme.primaryColor,
+              ),
+              _MetaPill(
+                icon: LucideIcons.sparkles,
+                label: 'สรุปสั้น เข้าใจง่าย',
+                color: AppTheme.success,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildBodyContent(String body) {
+    final blocks = body
+        .trim()
+        .split(RegExp(r'\n\s*\n'))
+        .map((block) => block.trim())
+        .where((block) => block.isNotEmpty)
+        .toList();
+
+    final widgets = <Widget>[];
+    for (var i = 0; i < blocks.length; i++) {
+      final block = blocks[i];
+      final lines = block
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .toList();
+
+      if (lines.isEmpty) {
+        continue;
+      }
+
+      final title = lines.first;
+      final remaining = lines.skip(1).toList();
+      final isSection = remaining.isNotEmpty && !_isListLine(title);
+
+      if (isSection) {
+        widgets.add(
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.ink,
+              height: 1.3,
+            ),
+          ),
+        );
+        widgets.add(const SizedBox(height: 12));
+        widgets.addAll(_buildLines(remaining));
+      } else {
+        widgets.addAll(_buildLines(lines));
+      }
+
+      if (i != blocks.length - 1) {
+        widgets.add(const SizedBox(height: 22));
+      }
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildLines(List<String> lines) {
+    final widgets = <Widget>[];
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final isListLine = _isListLine(line);
+
+      widgets.add(
+        isListLine
+            ? _ArticleListRow(text: _stripListPrefix(line))
+            : Text(
+                line,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.8,
+                  color: AppTheme.ink,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+      );
+
+      if (i != lines.length - 1) {
+        widgets.add(SizedBox(height: isListLine ? 10 : 14));
+      }
+    }
+
+    return widgets;
+  }
+
+  bool _isListLine(String line) {
+    return RegExp(r'^(-|\d+\.)\s+').hasMatch(line);
+  }
+
+  String _stripListPrefix(String line) {
+    return line.replaceFirst(RegExp(r'^(-|\d+\.)\s+'), '');
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _MetaPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.9),
+        borderRadius: AppTheme.pillRadius,
+        border: Border.all(color: color.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArticleListRow extends StatelessWidget {
+  final String text;
+
+  const _ArticleListRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: AppTheme.macroBg(AppTheme.primaryColor),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const Icon(
+            LucideIcons.check,
+            size: 14,
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.7,
+              color: AppTheme.ink,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CircleIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.88),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            icon,
+            color: AppTheme.ink,
+            size: 20,
+          ),
+        ),
+      ),
     );
   }
 }

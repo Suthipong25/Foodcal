@@ -1,5 +1,6 @@
 import '../constants/app_config.dart';
 import '../constants/enums.dart';
+import '../utils/datetime_utils.dart';
 
 class HealthProfileStats {
   final int tdee;
@@ -101,7 +102,7 @@ class HealthProfileValidator {
       return 'เดือนเกิดต้องอยู่ระหว่าง 1-12';
     }
 
-    final currentYear = DateTime.now().year;
+    final currentYear = DateTimeUtils.now().year;
     if (birthYear < minBirthYear || birthYear > currentYear) {
       return 'ปีเกิดต้องอยู่ระหว่าง $minBirthYear-$currentYear';
     }

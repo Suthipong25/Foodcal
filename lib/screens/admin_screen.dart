@@ -20,7 +20,13 @@ class AdminScreen extends StatelessWidget {
     if (UserRole.fromString(profile.role) != UserRole.admin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Admin Access')),
-        body: const Center(child: Text('คุณไม่มีสิทธิ์เข้าถึงหน้านี้')),
+        body: const _AdminMessageState(
+          icon: Icons.lock_outline_rounded,
+          title: 'ไม่มีสิทธิ์เข้าถึง',
+          message:
+              'หน้านี้สำหรับผู้ดูแลระบบเท่านั้น\nกรุณาติดต่อผู้ดูแลหากคุณเชื่อว่านี่เป็นข้อผิดพลาด',
+          accent: AppTheme.error,
+        ),
       );
     }
 
@@ -59,16 +65,35 @@ class AdminScreen extends StatelessWidget {
   }
 }
 
-class _FeedbackTab extends StatelessWidget {
+class _FeedbackTab extends StatefulWidget {
   const _FeedbackTab();
 
   @override
-  Widget build(BuildContext context) {
+  State<_FeedbackTab> createState() => _FeedbackTabState();
+}
+
+class _FeedbackTabState extends State<_FeedbackTab> {
+  late Future<List<FeedbackLog>> _feedbackFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
     final firestore = Provider.of<FirestoreService>(context, listen: false);
+    setState(() {
+      _feedbackFuture = firestore.getAllFeedback();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
 
-    return StreamBuilder<List<FeedbackLog>>(
-      stream: firestore.streamAllFeedback(),
+    return FutureBuilder<List<FeedbackLog>>(
+      future: _feedbackFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -89,100 +114,123 @@ class _FeedbackTab extends StatelessWidget {
           counts[key] = (counts[key] ?? 0) + 1;
         }
 
-        return ListView(
-          padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
-          children: [
-            const _HeroCard(
-              title: 'ภาพรวมผลตอบรับ',
-              subtitle: 'ดูคะแนนเฉลี่ย ฟีเจอร์ที่ผู้ใช้ชอบ และความคิดเห็นล่าสุด',
-              icon: Icons.analytics_outlined,
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _MetricCard(
-                  label: 'คะแนนเฉลี่ย',
-                  value: avg.toStringAsFixed(1),
-                  icon: Icons.star_rounded,
-                  color: Colors.orange,
-                ),
-                _MetricCard(
-                  label: 'feedback ทั้งหมด',
-                  value: '${logs.length}',
-                  icon: Icons.forum_outlined,
-                  color: AppTheme.success,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _FeatureChartCard(data: counts),
-            const SizedBox(height: 16),
-            const _SectionHeader(
-              title: 'ความคิดเห็นล่าสุด',
-              subtitle: 'แสดง feedback ล่าสุดจากผู้ใช้',
-            ),
-            const SizedBox(height: 12),
-            ...logs.take(12).map(
-                  (log) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.elevatedCard(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              _StatusPill(
-                                text: '${log.rating} ดาว',
-                                color: Colors.orange,
-                              ),
-                              const Spacer(),
-                              Text(
-                                DateFormat('dd/MM/yyyy').format(log.createdAt),
-                                style: const TextStyle(
-                                  fontSize: AppTheme.meta,
-                                  color: AppTheme.mutedText,
+        return RefreshIndicator(
+          onRefresh: () async => _loadData(),
+          child: ListView(
+            padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
+            children: [
+              const _HeroCard(
+                title: 'ภาพรวมผลตอบรับ',
+                subtitle: 'ดูคะแนนเฉลี่ย ฟีเจอร์ที่ผู้ใช้ชอบ และความคิดเห็นล่าสุด',
+                icon: Icons.analytics_outlined,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _MetricCard(
+                    label: 'คะแนนเฉลี่ย',
+                    value: avg.toStringAsFixed(1),
+                    icon: Icons.star_rounded,
+                    color: Colors.orange,
+                  ),
+                  _MetricCard(
+                    label: 'feedback ทั้งหมด',
+                    value: '${logs.length}',
+                    icon: Icons.forum_outlined,
+                    color: AppTheme.success,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FeatureChartCard(data: counts),
+              const SizedBox(height: 16),
+              const _SectionHeader(
+                title: 'ความคิดเห็นล่าสุด',
+                subtitle: 'แสดง feedback ล่าสุดจากผู้ใช้',
+              ),
+              const SizedBox(height: 12),
+              ...logs.take(12).map(
+                    (log) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: AppTheme.elevatedCard(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                _StatusPill(
+                                  text: '${log.rating} ดาว',
+                                  color: Colors.orange,
                                 ),
+                                const Spacer(),
+                                Text(
+                                  DateFormat('dd/MM/yyyy').format(log.createdAt),
+                                  style: const TextStyle(
+                                    fontSize: AppTheme.meta,
+                                    color: AppTheme.mutedText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              log.favoriteFeature.isEmpty
+                                  ? 'ไม่ระบุฟีเจอร์โปรด'
+                                  : log.favoriteFeature,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.ink,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            log.favoriteFeature.isEmpty
-                                ? 'ไม่ระบุฟีเจอร์โปรด'
-                                : log.favoriteFeature,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.ink,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            log.comment.isEmpty
-                                ? 'ไม่มีความคิดเห็นเพิ่มเติม'
-                                : log.comment,
-                            style: const TextStyle(
-                              color: AppTheme.mutedText,
-                              height: 1.45,
+                            const SizedBox(height: 6),
+                            Text(
+                              log.comment.isEmpty
+                                  ? 'ไม่มีความคิดเห็นเพิ่มเติม'
+                                  : log.comment,
+                              style: const TextStyle(
+                                color: AppTheme.mutedText,
+                                height: 1.45,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 }
 
-class _UsersTab extends StatelessWidget {
+class _UsersTab extends StatefulWidget {
   const _UsersTab();
+
+  @override
+  State<_UsersTab> createState() => _UsersTabState();
+}
+
+class _UsersTabState extends State<_UsersTab> {
+  late Future<List<UserProfile>> _usersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    final firestore = Provider.of<FirestoreService>(context, listen: false);
+    setState(() {
+      _usersFuture = firestore.getAllUsers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,8 +238,8 @@ class _UsersTab extends StatelessWidget {
     final myUid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
     final width = MediaQuery.sizeOf(context).width;
 
-    return StreamBuilder<List<UserProfile>>(
-      stream: firestore.streamAllUsers(),
+    return FutureBuilder<List<UserProfile>>(
+      future: _usersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -205,134 +253,137 @@ class _UsersTab extends StatelessWidget {
             .where((e) => UserRole.fromString(e.role) == UserRole.admin)
             .length;
 
-        return ListView(
-          padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
-          children: [
-            const _HeroCard(
-              title: 'จัดการผู้ใช้งาน',
-              subtitle: 'ดูรายชื่อผู้ใช้ ปรับสิทธิ์ และลบบัญชีได้จากหน้านี้',
-              icon: Icons.manage_accounts_outlined,
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _MetricCard(
-                  label: 'ผู้ใช้ทั้งหมด',
-                  value: '${users.length}',
-                  icon: Icons.people_alt_outlined,
-                  color: AppTheme.primaryColor,
-                ),
-                _MetricCard(
-                  label: 'ผู้ดูแลระบบ',
-                  value: '$admins',
-                  icon: Icons.security_outlined,
-                  color: const Color(0xFF8A5CF6),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const _SectionHeader(
-              title: 'รายชื่อผู้ใช้',
-              subtitle: 'คุณไม่สามารถลบบัญชีหรือลดสิทธิ์ของตัวเองได้',
-            ),
-            const SizedBox(height: 12),
-            ...users.map(
-                  (user) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.elevatedCard(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: AppTheme.pageTintStrong,
-                                child: Text(
-                                  user.name.isNotEmpty
-                                      ? user.name[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      user.name.isNotEmpty ? user.name : 'Unknown',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.ink,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'สมัครเมื่อ ${DateFormat('dd/MM/yyyy').format(user.joinedDate)}',
-                                      style: const TextStyle(
-                                        fontSize: AppTheme.meta,
-                                        color: AppTheme.mutedText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              _StatusPill(
-                                text: user.role.toUpperCase(),
-                                color: UserRole.fromString(user.role) ==
-                                        UserRole.admin
-                                    ? const Color(0xFF8A5CF6)
-                                    : AppTheme.success,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          if (user.uid == myUid)
-                            const Text(
-                              'บัญชีนี้คือบัญชีของคุณ',
-                              style: TextStyle(
-                                fontSize: AppTheme.meta,
-                                color: AppTheme.mutedText,
-                              ),
-                            )
-                          else
+        return RefreshIndicator(
+          onRefresh: () async => _loadData(),
+          child: ListView(
+            padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
+            children: [
+              const _HeroCard(
+                title: 'จัดการผู้ใช้งาน',
+                subtitle: 'ดูรายชื่อผู้ใช้ ปรับสิทธิ์ และลบบัญชีได้จากหน้านี้',
+                icon: Icons.manage_accounts_outlined,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _MetricCard(
+                    label: 'ผู้ใช้ทั้งหมด',
+                    value: '${users.length}',
+                    icon: Icons.people_alt_outlined,
+                    color: AppTheme.primaryColor,
+                  ),
+                  _MetricCard(
+                    label: 'ผู้ดูแลระบบ',
+                    value: '$admins',
+                    icon: Icons.security_outlined,
+                    color: const Color(0xFF8A5CF6),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const _SectionHeader(
+                title: 'รายชื่อผู้ใช้',
+                subtitle: 'คุณไม่สามารถลบบัญชีหรือลดสิทธิ์ของตัวเองได้',
+              ),
+              const SizedBox(height: 12),
+              ...users.map(
+                    (user) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: AppTheme.elevatedCard(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Row(
                               children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () =>
-                                        _showRoleDialog(context, user, firestore),
-                                    icon: const Icon(Icons.manage_accounts),
-                                    label: const Text('เปลี่ยนสิทธิ์'),
+                                CircleAvatar(
+                                  backgroundColor: AppTheme.pageTintStrong,
+                                  child: Text(
+                                    user.name.isNotEmpty
+                                        ? user.name[0].toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      color: AppTheme.primaryColor,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: _dialogPrimaryButtonStyle(
-                                      backgroundColor: AppTheme.error,
-                                    ),
-                                    onPressed: () =>
-                                        _showDeleteDialog(context, user, firestore),
-                                    icon: const Icon(Icons.delete_outline),
-                                    label: const Text('ลบบัญชี'),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        user.name.isNotEmpty ? user.name : 'Unknown',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.ink,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'สมัครเมื่อ ${DateFormat('dd/MM/yyyy').format(user.joinedDate)}',
+                                        style: const TextStyle(
+                                          fontSize: AppTheme.meta,
+                                          color: AppTheme.mutedText,
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                                _StatusPill(
+                                  text: user.role.toUpperCase(),
+                                  color: UserRole.fromString(user.role) ==
+                                          UserRole.admin
+                                      ? const Color(0xFF8A5CF6)
+                                      : AppTheme.success,
                                 ),
                               ],
                             ),
-                        ],
+                            const SizedBox(height: 14),
+                            if (user.uid == myUid)
+                              const Text(
+                                'บัญชีนี้คือบัญชีของคุณ',
+                                style: TextStyle(
+                                  fontSize: AppTheme.meta,
+                                  color: AppTheme.mutedText,
+                                ),
+                              )
+                            else
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () =>
+                                          _showRoleDialog(context, user, firestore, _loadData),
+                                      icon: const Icon(Icons.manage_accounts),
+                                      label: const Text('เปลี่ยนสิทธิ์'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      style: _dialogPrimaryButtonStyle(
+                                        backgroundColor: AppTheme.error,
+                                      ),
+                                      onPressed: () =>
+                                          _showDeleteDialog(context, user, firestore, _loadData),
+                                      icon: const Icon(Icons.delete_outline),
+                                      label: const Text('ลบบัญชี'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -632,6 +683,7 @@ void _showRoleDialog(
   BuildContext context,
   UserProfile user,
   FirestoreService firestore,
+  VoidCallback onSuccess,
 ) {
   showDialog(
     context: context,
@@ -660,6 +712,7 @@ void _showRoleDialog(
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('อัปเดตสิทธิ์เรียบร้อยแล้ว')),
                   );
+                  onSuccess();
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -681,6 +734,7 @@ void _showDeleteDialog(
   BuildContext context,
   UserProfile user,
   FirestoreService firestore,
+  VoidCallback onSuccess,
 ) {
   showDialog(
     context: context,
@@ -708,6 +762,7 @@ void _showDeleteDialog(
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('ลบบัญชีเรียบร้อยแล้ว')),
                 );
+                onSuccess();
               }
             } catch (e) {
               if (context.mounted) {
@@ -747,3 +802,69 @@ ButtonStyle _dialogPrimaryButtonStyle({Color? backgroundColor}) {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
   );
 }
+
+class _AdminMessageState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color accent;
+
+  const _AdminMessageState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 440),
+          padding: const EdgeInsets.all(24),
+          decoration: AppTheme.elevatedCard(
+            borderColor: accent.withValues(alpha: 0.14),
+            boxShadow: AppTheme.softShadow(accent),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accent),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: AppTheme.title,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: AppTheme.body,
+                  color: AppTheme.mutedText,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

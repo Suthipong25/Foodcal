@@ -11,6 +11,7 @@ import '../models/daily_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/datetime_utils.dart';
 import 'article_detail_screen.dart';
 
 class ContentScreen extends StatefulWidget {
@@ -26,6 +27,9 @@ class _ContentScreenState extends State<ContentScreen> {
   String filter = 'All';
   final Set<int> _submittingWorkoutIds = <int>{};
   Timer? _refreshTimer;
+  
+  Stream<List<WorkoutVideo>>? _videosStream;
+  Stream<Map<int, WorkoutSessionState>>? _sessionsStream;
 
   @override
   void initState() {
@@ -33,6 +37,19 @@ class _ContentScreenState extends State<ContentScreen> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_videosStream == null) {
+      final firestore = Provider.of<FirestoreService>(context, listen: false);
+      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      _videosStream = firestore.streamWorkoutVideos();
+      if (user != null) {
+        _sessionsStream = firestore.streamTodayWorkoutSessions(user.uid);
+      }
+    }
   }
 
   @override
@@ -56,8 +73,7 @@ class _ContentScreenState extends State<ContentScreen> {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
         child: StreamBuilder<List<WorkoutVideo>>(
-          stream: Provider.of<FirestoreService>(context, listen: false)
-              .streamWorkoutVideos(),
+          stream: _videosStream,
           builder: (context, videosSnapshot) {
             final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
             final sourceVideos =
@@ -67,8 +83,7 @@ class _ContentScreenState extends State<ContentScreen> {
                 : sourceVideos.where((video) => video.level == filter).toList();
 
             return StreamBuilder<Map<int, WorkoutSessionState>>(
-              stream: Provider.of<FirestoreService>(context, listen: false)
-                  .streamTodayWorkoutSessions(user.uid),
+              stream: _sessionsStream,
               builder: (context, sessionsSnapshot) {
                 final workoutSessions =
                     sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
@@ -474,7 +489,7 @@ class _ContentScreenState extends State<ContentScreen> {
       minutes:
           int.tryParse(video.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
       type: video.type,
-      completedAt: DateTime.now(),
+      completedAt: DateTimeUtils.now(),
     );
   }
 
@@ -815,7 +830,7 @@ class _ContentScreenState extends State<ContentScreen> {
     final requiredMinutes = FirestoreService.requiredWorkoutMinutes(
       totalMinutes,
     );
-    return DateTime.now().difference(session.startedAt).inMinutes >=
+    return DateTimeUtils.now().difference(session.startedAt).inMinutes >=
         requiredMinutes;
   }
 

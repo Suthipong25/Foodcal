@@ -17,6 +17,7 @@ import '../utils/retryable_operation.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
   static const _uuid = Uuid();
 
   // --- Collection References ---
@@ -77,29 +78,31 @@ class FirestoreService {
     });
   }
 
-  Stream<List<UserProfile>> streamAllUsers() {
-    return _usersRef.snapshots().map((snap) {
-      return snap.docs
-          .map((doc) =>
-              UserProfile.fromMap(doc.id, doc.data() as Map<String, dynamic>))
-          .toList();
-    });
+  Future<List<UserProfile>> getAllUsers() async {
+    final snap = await _usersRef.get();
+    return snap.docs
+        .map((doc) =>
+            UserProfile.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
   }
 
   // ── Admin Operations ──────────────────────────────────────────────────────
 
   Future<void> setAdminRole(String targetUid, bool promoteToAdmin) async {
-    final callable = FirebaseFunctions.instance.httpsCallable('setAdminRole');
-    await callable.call({
-      'targetUid': targetUid,
-      'role': promoteToAdmin ? UserRole.admin.value : UserRole.user.value,
+    await _withRetry('setAdminRole', () {
+      return _functions.httpsCallable('setAdminRole').call({
+        'targetUid': targetUid,
+        'role': promoteToAdmin ? UserRole.admin.value : UserRole.user.value,
+      });
     });
   }
 
   Future<void> deleteUserAccount(String targetUid) async {
-    final callable =
-        FirebaseFunctions.instance.httpsCallable('deleteUserAccount');
-    await callable.call({'targetUid': targetUid});
+    await _withRetry('deleteUserAccount', () async {
+      await _functions.httpsCallable('deleteUserAccount').call({
+        'targetUid': targetUid,
+      });
+    });
   }
 
   Future<void> saveUserProfile(String uid, UserProfile profile) async {
@@ -120,24 +123,38 @@ class FirestoreService {
     });
   }
 
+  Future<void> updateProfilePicture(String uid, String photoUrl) async {
+    await _withRetry('updateProfilePicture', () {
+      return _usersRef.doc(uid).update({'photoUrl': photoUrl});
+    });
+  }
+
   Future<void> updateLoginStreak(String uid) async {
-    final now = DateTime.now();
-    final userRef = _usersRef.doc(uid);
-    await _db.runTransaction((transaction) async {
-      final snap = await transaction.get(userRef);
-      if (!snap.exists) return;
-      final data = snap.data() as Map<String, dynamic>? ?? {};
-      final currentStreak = (data['streak'] as int?) ?? 0;
-      final rawLastLogin = data['lastLoginDate'] as String?;
-      final nextStreak = calculateNextLoginStreak(
-        currentStreak: currentStreak,
-        rawLastLogin: rawLastLogin,
-        now: now,
-      );
-      if (nextStreak == null) return;
-      transaction.update(userRef, {
-        'streak': nextStreak,
-        'lastLoginDate': now.toUtc().toIso8601String(),
+    final now = DateTimeUtils.now();
+    final todayKey = DateTimeUtils.dateKey(now);
+    
+    await _withRetry('recordDailyVisit', () async {
+      await _db.runTransaction((tx) async {
+        final ref = _usersRef.doc(uid);
+        final snap = await tx.get(ref);
+        if (!snap.exists) return;
+        final data = snap.data() as Map<String, dynamic>;
+        
+        final currentStreak = data['streak'] as int? ?? 0;
+        final lastLogin = data['lastLoginDate'] as String?;
+        
+        final nextStreak = calculateNextLoginStreak(
+          currentStreak: currentStreak,
+          rawLastLogin: lastLogin,
+          now: now,
+        );
+        
+        if (nextStreak != null) {
+          tx.update(ref, {
+            'streak': nextStreak,
+            'lastLoginDate': todayKey,
+          });
+        }
       });
     });
   }
@@ -164,19 +181,16 @@ class FirestoreService {
     };
   }
 
+  /// @deprecated Use DateTimeUtils.dateKey() directly.
   static String bangkokDateKey([DateTime? dateTime]) {
-    final source = (dateTime ?? DateTime.now()).toUtc();
-    final bkk = source.add(const Duration(hours: AppConfig.bangkokUtcOffsetHours));
-    return '${bkk.year.toString().padLeft(4, '0')}-'
-        '${bkk.month.toString().padLeft(2, '0')}-'
-        '${bkk.day.toString().padLeft(2, '0')}';
+    return DateTimeUtils.dateKey(dateTime ?? DateTimeUtils.now());
   }
 
   static String? _normalizeBangkokDateKey(String? rawDate) {
     if (rawDate == null) return null;
     final parsed = DateTime.tryParse(rawDate);
     if (parsed == null) return null;
-    return bangkokDateKey(parsed);
+    return DateTimeUtils.dateKey(parsed);
   }
 
   static int? calculateNextLoginStreak({
@@ -184,7 +198,7 @@ class FirestoreService {
     required String? rawLastLogin,
     DateTime? now,
   }) {
-    final todayKey = bangkokDateKey(now);
+    final todayKey = DateTimeUtils.dateKey(now ?? DateTimeUtils.now());
     final lastKey = _normalizeBangkokDateKey(rawLastLogin);
     if (lastKey == todayKey) return null;
     int nextStreak = 1;
@@ -243,7 +257,19 @@ class FirestoreService {
       final sessions = <int, WorkoutSessionState>{};
       for (final doc in snap.docs) {
         final s = WorkoutSessionState.fromMap(doc.data());
-        sessions[s.workoutId] = s;
+        final existing = sessions[s.workoutId];
+        if (existing == null) {
+          sessions[s.workoutId] = s;
+          continue;
+        }
+
+        final shouldReplace =
+            (!s.completed && existing.completed) ||
+            (s.completed == existing.completed &&
+                s.startedAt.isAfter(existing.startedAt));
+        if (shouldReplace) {
+          sessions[s.workoutId] = s;
+        }
       }
       return sessions;
     });
@@ -447,94 +473,64 @@ class FirestoreService {
 
   Future<void> startWorkoutSession(String uid, WorkoutItem workout) async {
     _validateWorkout(workout);
-    final sessionRef = _usersRef
-        .doc(uid)
-        .collection('workout_sessions')
-        .doc(workout.id.toString());
-        
-    final startedAtIso = DateTime.now().toUtc().toIso8601String();
-    
-    await _withRetry('startWorkoutSession', () {
-      return sessionRef.set({
+    await _withRetry('startWorkoutSession', () async {
+      final sessionRef = _usersRef.doc(uid).collection('workout_sessions').doc(workout.id.toString());
+      await sessionRef.set({
         'workoutId': workout.id,
         'title': workout.title,
-        'level': workout.level,
-        'type': workout.type,
+        'duration': workout.duration,
         'minutes': workout.minutes,
+        'type': workout.type,
+        'level': workout.level,
         'dateKey': dateKey(),
-        'startedAt': startedAtIso,
+        'startedAt': FieldValue.serverTimestamp(),
         'completed': false,
-        'completedAt': null,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
     });
   }
 
   Future<void> finishWorkout(String uid, WorkoutItem workout) async {
     _validateWorkout(workout);
-    final logRef = _logRef(uid);
-    final sessionRef = _usersRef
-        .doc(uid)
-        .collection('workout_sessions')
-        .doc(workout.id.toString());
-
-    await _db.runTransaction((tx) async {
-      final sessionSnap = await tx.get(sessionRef);
-      if (!sessionSnap.exists) throw Exception('Workout session not started.');
-      final sessionData = sessionSnap.data() ?? <String, dynamic>{};
-      final startedAt =
-          DateTime.tryParse(sessionData['startedAt'] as String? ?? '');
-      if (sessionData['dateKey'] != dateKey() || startedAt == null) {
-        throw Exception('Workout session is no longer valid.');
-      }
-      if (sessionData['completed'] == true) {
-        throw Exception(
-            'Workout session already completed. Start a new session.');
-      }
-      final requiredMinutes = requiredWorkoutMinutes(workout.minutes);
-      final elapsed = DateTime.now().difference(startedAt).inMinutes;
-      if (elapsed < requiredMinutes) {
-        throw Exception(
-            'Need at least $requiredMinutes minutes before completing.');
-      }
-      final burned = calculateWorkoutCalories(workout);
-      final logSnap = await tx.get(logRef);
-      final completedMap = {
-        ...workout.toMap(),
-        'completedAt': DateTime.now().toUtc().toIso8601String()
-      };
-      if (!logSnap.exists) {
-        tx.set(logRef, {
-          'date': dateKey(),
-          'caloriesIn': 0,
-          'caloriesOut': burned,
-          'protein': 0,
-          'carbs': 0,
-          'fat': 0,
-          'waterGlasses': 0,
-          'foods': [],
-          'workouts': [completedMap],
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      } else {
-        final data = logSnap.data() as Map<String, dynamic>? ?? {};
-        final workouts = List<dynamic>.from(data['workouts'] as List? ?? []);
-        final nextCalOut =
-            ((data['caloriesOut'] as num?)?.toInt() ?? 0) + burned;
-        if (nextCalOut > AppConfig.maxDailyWorkoutCalories) {
-          throw Exception('Daily workout calories exceeded.');
+    await _withRetry('finishWorkout', () async {
+      final sessionRef = _usersRef.doc(uid).collection('workout_sessions').doc(workout.id.toString());
+      
+      await _db.runTransaction((tx) async {
+        tx.set(sessionRef, {
+          'completed': true,
+          'completedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        
+        final logRef = _logRef(uid);
+        final snap = await tx.get(logRef);
+        final caloriesBurned = calculateWorkoutCalories(workout);
+        
+        if (!snap.exists) {
+          tx.set(logRef, {
+            'date': dateKey(),
+            'caloriesIn': 0,
+            'caloriesOut': caloriesBurned,
+            'protein': 0,
+            'carbs': 0,
+            'fat': 0,
+            'waterGlasses': 0,
+            'foods': [],
+            'workouts': [workout.toMap()],
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+          return;
         }
-        workouts.add(completedMap);
+        
+        final data = snap.data() as Map<String, dynamic>? ?? {};
+        final workouts = List<dynamic>.from(data['workouts'] as List? ?? []);
+        workouts.add(workout.toMap());
+        
+        final currentOut = ((data['caloriesOut'] as num?)?.toInt() ?? 0);
+        
         tx.update(logRef, {
-          'caloriesOut': nextCalOut,
+          'caloriesOut': currentOut + caloriesBurned,
           'workouts': workouts,
           'lastUpdated': FieldValue.serverTimestamp(),
         });
-      }
-      tx.update(sessionRef, {
-        'completed': true,
-        'completedAt': DateTime.now().toUtc().toIso8601String(),
-        'updatedAt': FieldValue.serverTimestamp(),
       });
     });
   }
@@ -648,13 +644,13 @@ class FirestoreService {
     await _withRetry('submitFeedback', () => _db.collection('feedback').doc(docId).set(log.toMap()));
   }
 
-  Stream<List<FeedbackLog>> streamAllFeedback() {
-    return _db
+  Future<List<FeedbackLog>> getAllFeedback() async {
+    final snap = await _db
         .collection('feedback')
         .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => FeedbackLog.fromMap(doc.id, doc.data()))
-            .toList());
+        .get();
+    return snap.docs
+        .map((doc) => FeedbackLog.fromMap(doc.id, doc.data()))
+        .toList();
   }
 }

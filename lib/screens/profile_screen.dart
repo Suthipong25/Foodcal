@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/datetime_utils.dart';
 import '../widgets/reminder_banner.dart';
 import 'admin_screen.dart';
 import 'feedback_screen.dart';
@@ -55,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         text: (widget.profile.birthMonth ?? 1).toString());
     _birthYearCtrl = TextEditingController(
         text: (widget.profile.birthYear ??
-                (DateTime.now().year - widget.profile.age))
+                (DateTimeUtils.now().year - widget.profile.age))
             .toString());
     _selectedGoal = widget.profile.goal;
     _localPhotoUrl = widget.profile.photoUrl;
@@ -99,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final now = DateTime.now();
+    final now = DateTimeUtils.now();
     int a = now.year - by;
     if (now.month < bm) a--;
     if (a <= 0) a = 1;
@@ -136,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         joinedDate: widget.profile.joinedDate,
         lastLoginDate: widget.profile.lastLoginDate,
         streak: widget.profile.streak,
-        photoUrl: widget.profile.photoUrl,
+        photoUrl: _localPhotoUrl ?? widget.profile.photoUrl,
       );
 
       await Provider.of<FirestoreService>(context, listen: false)
@@ -177,29 +179,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return;
 
-    // Upload ใน background
     try {
       final firestore = Provider.of<FirestoreService>(context, listen: false);
-      final storage = Provider.of<StorageService>(context, listen: false);
-      final photoUrl = await storage.uploadProfilePicture(widget.profile.uid, bytes);
+      final base64Image = base64Encode(bytes);
+      final photoUrl = 'data:image/jpeg;base64,$base64Image';
 
-      if (photoUrl == null) throw Exception('Upload failed.');
-
-      await firestore.saveUserProfile(
-        widget.profile.uid,
-        widget.profile.copyWith(photoUrl: photoUrl),
-      );
+      await firestore.updateProfilePicture(widget.profile.uid, photoUrl);
 
       if (mounted) {
         setState(() {
           _localPhotoUrl = photoUrl;
-          _localImageBytes = null; // ใช้ URL จริงแทนแล้ว
+          _localImageBytes = null;
         });
       }
     } catch (e) {
       AppLogger.error('Error saving profile picture', e);
       if (mounted) {
-        // ถ้า upload fail ให้ rollback รูปกลับ
         setState(() => _localImageBytes = null);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('อัปโหลดรูปไม่สำเร็จ กรุณาลองอีกครั้ง')),
@@ -322,7 +317,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               )
                             : _localPhotoUrl != null
                                 ? DecorationImage(
-                                    image: NetworkImage(_localPhotoUrl!),
+                                    image: _localPhotoUrl!.startsWith('data:')
+                                        ? MemoryImage(base64Decode(_localPhotoUrl!.split(',')[1])) as ImageProvider
+                                        : NetworkImage(_localPhotoUrl!),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -479,7 +476,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _heightCtrl.text = widget.profile.height.toString();
           _birthMonthCtrl.text = (widget.profile.birthMonth ?? 1).toString();
           _birthYearCtrl.text = (widget.profile.birthYear ??
-                  (DateTime.now().year - widget.profile.age))
+                  (DateTimeUtils.now().year - widget.profile.age))
               .toString();
           setState(() {
             _selectedGoal = widget.profile.goal;

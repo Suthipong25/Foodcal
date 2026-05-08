@@ -88,14 +88,9 @@ service cloud.firestore {
           || (request.resource.data.targetWeight is number
             && request.resource.data.targetWeight >= 20
             && request.resource.data.targetWeight <= 400))
-        && request.resource.data.activityLevel in ['sedentary', 'light', 'moderate', 'active']
+        && request.resource.data.activityLevel in ['sedentary', 'light', 'lightly', 'moderate', 'active', 'very', 'extremely']
         && request.resource.data.goal in ['lose', 'maintain', 'gain']
         && isIsoString(request.resource.data.joinedDate)
-        && (!('streak' in request.resource.data)
-          || isNonNegativeInt(request.resource.data.streak))
-        && (!('lastLoginDate' in request.resource.data)
-          || request.resource.data.lastLoginDate == null
-          || isIsoString(request.resource.data.lastLoginDate))
         && (!('photoUrl' in request.resource.data)
           || request.resource.data.photoUrl == null
           || (request.resource.data.photoUrl is string

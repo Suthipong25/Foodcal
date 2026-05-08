@@ -8,7 +8,11 @@ class StorageService {
 
   Future<String?> uploadProfilePicture(String uid, Uint8List data) async {
     try {
-      final ref = _storage.ref().child('users').child(uid).child('profile.jpg');
+      final ref = _storage
+          .ref()
+          .child('profile_photos')
+          .child(uid)
+          .child('profile.jpg');
       final uploadTask = await ref.putData(
         data,
         SettableMetadata(

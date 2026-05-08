@@ -7,6 +7,7 @@ import '../constants/enums.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_profile.dart';
+import '../utils/datetime_utils.dart';
 import '../utils/health_profile_stats.dart';
 import '../utils/app_logger.dart';
 
@@ -60,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final user = auth.currentUser;
 
       if (user != null) {
-        final now = DateTime.now();
+        final now = DateTimeUtils.now();
         int currentAge = now.year - birthYear;
         if (now.month < birthMonth) currentAge--;
         if (currentAge <= 0) currentAge = 1;
@@ -86,8 +87,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           targetCarbs: stats['targetCarbs']!,
           targetFat: stats['targetFat']!,
           targetWaterGlasses: stats['targetWaterGlasses']!,
-          joinedDate: DateTime.now(),
-          lastLoginDate: DateTime.now(),
+          joinedDate: DateTimeUtils.now(),
+          lastLoginDate: DateTimeUtils.now(),
           streak: 1,
         );
 

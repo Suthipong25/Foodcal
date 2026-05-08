@@ -200,80 +200,104 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   PreferredSizeWidget _buildHomeAppBar(UserProfile profile) {
+    final avatarImage = profile.photoUrl == null
+        ? null
+        : (profile.photoUrl!.startsWith('data:')
+            ? MemoryImage(base64Decode(profile.photoUrl!.split(',')[1]))
+                as ImageProvider
+            : NetworkImage(profile.photoUrl!));
+
     return AppBar(
-      backgroundColor: Colors.white,
+      toolbarHeight: 88,
+      backgroundColor: Colors.white.withValues(alpha: 0.94),
       elevation: 0,
+      scrolledUnderElevation: 0,
       leadingWidth: 0,
       titleSpacing: 16,
-      title: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
         children: [
-          Row(
-            children: [
-              const SizedBox(width: 4),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  shape: BoxShape.circle,
-                  image: profile.photoUrl != null
-                      ? DecorationImage(
-                          image: profile.photoUrl!.startsWith('data:')
-                              ? MemoryImage(
-                                  base64Decode(profile.photoUrl!.split(',')[1]),
-                                ) as ImageProvider
-                              : NetworkImage(profile.photoUrl!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: profile.photoUrl == null
-                    ? Center(
-                        child: Text(
-                          profile.name.isNotEmpty
-                              ? profile.name[0].toUpperCase()
-                              : 'F',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      )
-                    : null,
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFDFF0FF), Color(0xFFECF5FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Foodcal',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+              image: avatarImage == null
+                  ? null
+                  : DecorationImage(image: avatarImage, fit: BoxFit.cover),
+            ),
+            child: avatarImage == null
+                ? Center(
+                    child: Text(
+                      profile.name.isNotEmpty
+                          ? profile.name[0].toUpperCase()
+                          : 'F',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.pageTintStrong,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'Foodcal',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            'สวัสดี, คุณ${profile.name}',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.blueGrey[300],
+                const SizedBox(height: 6),
+                Text(
+                  'สวัสดี, คุณ${profile.name}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.ink,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'กลับมาดูภาพรวมสุขภาพของวันนี้กัน',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blueGrey[400],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
       actions: [
-        IconButton(
-          icon: const Icon(
-            LucideIcons.scale,
-            color: AppTheme.primaryColor,
-          ),
+        _buildTopAction(
+          icon: LucideIcons.scale,
+          tooltip: 'น้ำหนัก',
           onPressed: () {
             Navigator.push(
               context,
@@ -281,11 +305,10 @@ class _MainScreenState extends State<MainScreen> {
             );
           },
         ),
-        IconButton(
-          icon: const Icon(
-            LucideIcons.history,
-            color: AppTheme.primaryColor,
-          ),
+        const SizedBox(width: 4),
+        _buildTopAction(
+          icon: LucideIcons.history,
+          tooltip: 'ประวัติ',
           onPressed: () {
             Navigator.push(
               context,
@@ -294,28 +317,27 @@ class _MainScreenState extends State<MainScreen> {
           },
         ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          margin: const EdgeInsets.fromLTRB(8, 18, 16, 18),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.blue.withValues(alpha: 0.1),
-                blurRadius: 4,
-              ),
-            ],
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFF4DD), Color(0xFFFFFBF1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFFFD797)),
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.flame, color: Colors.orange[400], size: 16),
+              Icon(LucideIcons.flame, color: Colors.orange[500], size: 16),
               const SizedBox(width: 4),
               Text(
                 '${profile.streak} วัน',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[900],
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink,
                 ),
               ),
             ],
@@ -325,65 +347,95 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildTopAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFE1EBFA)),
+        boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+      ),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon, color: AppTheme.primaryColor, size: 18),
+      ),
+    );
+  }
+
   Widget _buildBottomBar(double screenWidth) {
     final isCompact = AppTheme.isCompactWidth(screenWidth);
 
     return SafeArea(
       top: false,
-      child: Container(
+      child: Padding(
         padding: EdgeInsets.fromLTRB(
-          isCompact ? 6 : 12,
-          isCompact ? 6 : 10,
-          isCompact ? 6 : 12,
-          isCompact ? 8 : 12,
+          isCompact ? 10 : 14,
+          0,
+          isCompact ? 10 : 14,
+          isCompact ? 10 : 14,
         ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey[200]!)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildNavItem(
-                LucideIcons.activity,
-                'หน้าหลัก',
-                0,
-                compact: isCompact,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            isCompact ? 8 : 12,
+            isCompact ? 8 : 10,
+            isCompact ? 8 : 12,
+            isCompact ? 8 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFE0EAF8)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
               ),
-            ),
-            Expanded(
-              child: _buildNavItem(
-                LucideIcons.utensils,
-                'บันทึก',
-                1,
-                compact: isCompact,
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.activity,
+                  'หน้าหลัก',
+                  0,
+                  compact: isCompact,
+                ),
               ),
-            ),
-            Expanded(child: _buildScanNavAction(isCompact)),
-            Expanded(
-              child: _buildNavItem(
-                LucideIcons.play,
-                'เรียนรู้',
-                2,
-                compact: isCompact,
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.utensils,
+                  'บันทึก',
+                  1,
+                  compact: isCompact,
+                ),
               ),
-            ),
-            Expanded(
-              child: _buildNavItem(
-                LucideIcons.user,
-                'โปรไฟล์',
-                3,
-                compact: isCompact,
+              Expanded(child: _buildScanNavAction(isCompact)),
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.play,
+                  'เรียนรู้',
+                  2,
+                  compact: isCompact,
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: _buildNavItem(
+                  LucideIcons.user,
+                  'โปรไฟล์',
+                  3,
+                  compact: isCompact,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -411,7 +463,7 @@ class _MainScreenState extends State<MainScreen> {
     final active = _currentIndex == 1;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 4),
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -419,40 +471,53 @@ class _MainScreenState extends State<MainScreen> {
             _scanRequestVersion++;
           });
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          height: compact ? 44 : 54,
-          padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: active
-                  ? const [Color(0xFF1F6FEB), Color(0xFF3C8CFF)]
-                  : const [Color(0xFF2E7CF6), Color(0xFF5DA7FF)],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(LucideIcons.camera, color: Colors.white, size: 18),
-              if (!compact) ...[
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    'สแกนอาหาร',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: compact ? 10 : 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final showLabel = !compact && constraints.maxWidth >= 88;
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              height: compact ? 50 : 58,
+              padding: EdgeInsets.symmetric(horizontal: showLabel ? 14 : 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: active
+                      ? const [Color(0xFF1F6FEB), Color(0xFF3C8CFF)]
+                      : const [Color(0xFF317AF0), Color(0xFF69B2FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ],
-          ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.camera, color: Colors.white, size: 18),
+                  if (showLabel) ...[
+                    const SizedBox(width: 6),
+                    const Flexible(
+                      child: Text(
+                        'สแกน',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -473,29 +538,39 @@ class _MainScreenState extends State<MainScreen> {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(
           horizontal: compact ? 2 : 6,
-          vertical: compact ? 6 : 8,
+          vertical: compact ? 8 : 9,
         ),
         decoration: BoxDecoration(
-          color: active ? Colors.blue[50] : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          color: active ? AppTheme.pageTintStrong : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: active ? 18 : 0,
+              height: 3,
+              margin: const EdgeInsets.only(bottom: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
             Icon(
               icon,
-              color: active ? Colors.blue[600] : Colors.blueGrey[200],
+              color: active ? AppTheme.primaryColor : Colors.blueGrey[300],
               size: compact ? 20 : 22,
             ),
             if (!compact) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: active ? Colors.blue[600] : Colors.blueGrey[200],
+                  fontWeight: FontWeight.w800,
+                  color: active ? AppTheme.primaryColor : Colors.blueGrey[400],
                 ),
               ),
             ],

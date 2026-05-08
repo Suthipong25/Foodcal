@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/datetime_utils.dart';
 
 class FeedbackLog {
   final String id;
@@ -24,7 +25,7 @@ class FeedbackLog {
       rating: (map['rating'] ?? 5).toInt(),
       comment: map['comment'] ?? '',
       favoriteFeature: map['favoriteFeature'] ?? '',
-      createdAt: _parseDate(map['createdAt']) ?? DateTime.now(),
+      createdAt: _parseDate(map['createdAt']) ?? DateTimeUtils.now(),
     );
   }
 

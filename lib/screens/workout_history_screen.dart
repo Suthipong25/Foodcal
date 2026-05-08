@@ -7,6 +7,7 @@ import '../app_theme.dart';
 import '../models/daily_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/datetime_utils.dart';
 
 class WorkoutHistoryScreen extends StatefulWidget {
   const WorkoutHistoryScreen({super.key});
@@ -63,7 +64,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
                     duration: s['duration'] as String? ?? '',
                     minutes: (s['minutes'] as num? ?? 0).toInt(),
                     type: s['type'] as String? ?? '',
-                    completedAt: DateTime.tryParse(s['completedAt'] as String? ?? '') ?? DateTime.now(),
+                    completedAt: DateTime.tryParse(s['completedAt'] as String? ?? '') ?? DateTimeUtils.now(),
                   );
                   totalMinutes += w.minutes;
                   totalBurned += FirestoreService.calculateWorkoutCalories(w);
@@ -220,7 +221,7 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
       duration: '$minutes min',
       minutes: minutes,
       type: type,
-      completedAt: completedAt ?? DateTime.now(),
+      completedAt: completedAt ?? DateTimeUtils.now(),
     );
     final burned = FirestoreService.calculateWorkoutCalories(w);
     final levelColor = level == 'Expert'

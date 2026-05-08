@@ -2,6 +2,8 @@
 /// This eliminates magic numbers scattered throughout the codebase.
 class AppConfig {
   // ── Timezone ──────────────────────────────────────────────────────────────
+  /// Bangkok is UTC+7
+  static const Duration bangkokTimeZone = Duration(hours: 7);
   static const int bangkokUtcOffsetHours = 7;
 
   // ── Food Validation ───────────────────────────────────────────────────────

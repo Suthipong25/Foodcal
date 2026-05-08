@@ -1,9 +1,10 @@
 import '../utils/health_profile_stats.dart';
 import '../constants/app_config.dart';
 import '../constants/enums.dart';
+import '../utils/datetime_utils.dart';
 
 class UserProfile {
-  String uid;
+  final String uid;
   String name;
   String gender;
   int? birthMonth;
@@ -18,7 +19,7 @@ class UserProfile {
 
   int get age {
     if (birthYear != null && birthMonth != null) {
-      final now = DateTime.now();
+      final now = DateTimeUtils.now();
       int calculatedAge = now.year - birthYear!;
       if (now.month < birthMonth!) calculatedAge--;
       return calculatedAge > 0 ? calculatedAge : 1;
@@ -58,7 +59,7 @@ class UserProfile {
   DateTime? get estimatedGoalDate {
     final days = estimatedGoalDays;
     if (days <= 0) return null;
-    return DateTime.now().add(Duration(days: days));
+    return DateTimeUtils.now().add(Duration(days: days));
   }
 
   // Stats
@@ -86,13 +87,15 @@ class UserProfile {
     this.targetWeight,
     required this.activityLevel,
     required this.goal,
+    // UserRole.user.value == 'user' — use the string literal here because
+    // enum .value getters are not compile-time constants in Dart.
     this.role = 'user',
     required this.tdee,
     required this.targetCalories,
     required this.targetProtein,
     required this.targetCarbs,
     required this.targetFat,
-    this.targetWaterGlasses = 8,
+    this.targetWaterGlasses = AppConfig.defaultTargetWaterGlasses,
     this.streak = 0,
     required this.joinedDate,
     this.lastLoginDate,
@@ -107,7 +110,7 @@ class UserProfile {
 
     int currentAge = legacyAge ?? AppConfig.defaultAge;
     if (birthYear != null && birthMonth != null) {
-      final now = DateTime.now();
+      final now = DateTimeUtils.now();
       currentAge = now.year - birthYear;
       if (now.month < birthMonth) currentAge--;
       if (currentAge <= 0) currentAge = 1;
@@ -156,7 +159,7 @@ class UserProfile {
       targetFat: stats.targetFat,
       targetWaterGlasses: stats.targetWaterGlasses,
       streak: (map['streak'] ?? 0).toInt(),
-      joinedDate: _parseDate(map['joinedDate']) ?? DateTime.now(),
+      joinedDate: _parseDate(map['joinedDate']) ?? DateTimeUtils.now(),
       lastLoginDate: _parseDate(map['lastLoginDate']),
       photoUrl: map['photoUrl'],
     );

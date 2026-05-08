@@ -6,6 +6,7 @@ import '../app_theme.dart';
 import '../models/feedback_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/datetime_utils.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -56,7 +57,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         rating: _rating,
         comment: _commentCtrl.text.trim(),
         favoriteFeature: _selectedFeature,
-        createdAt: DateTime.now(),
+        createdAt: DateTimeUtils.now(),
       );
 
       await firestore.submitFeedback(log);

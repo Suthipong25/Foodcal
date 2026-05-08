@@ -10,6 +10,7 @@ import '../models/daily_log.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/datetime_utils.dart';
 import '../widgets/reminder_banner.dart';
 import '../widgets/tube_progress_bar.dart';
 import 'package:provider/provider.dart';
@@ -74,7 +75,7 @@ class DashboardScreen extends StatelessWidget {
     final progress = targetCalories > 0
         ? (caloriesIn / targetCalories).clamp(0.0, 1.0)
         : 0.0;
-    final todayTip = _tips[DateTime.now().day % _tips.length];
+    final todayTip = _tips[DateTimeUtils.now().day % _tips.length];
 
     final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid ?? '';
     final fs = Provider.of<FirestoreService>(context, listen: false);
@@ -627,7 +628,7 @@ class _WeeklyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = DateTimeUtils.now();
     final weekDays = <String>[];
     final barGroups = <BarChartGroupData>[];
 
