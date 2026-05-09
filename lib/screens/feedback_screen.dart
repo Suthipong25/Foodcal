@@ -7,6 +7,8 @@ import '../models/feedback_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/datetime_utils.dart';
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -84,82 +86,88 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxContentWidth = AppTheme.maxContentWidth(screenWidth);
 
-    return Scaffold(
-      backgroundColor: AppTheme.pageBg,
-      appBar: AppBar(
-        title: const Text(
-          'ให้คะแนนความพึงพอใจ',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.ink,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxContentWidth),
-          child: SingleChildScrollView(
-            padding: AppTheme.pageInsetsForWidth(
-              screenWidth,
-              bottom: 28,
+    return AnimatedPageWrapper(
+      child: Column(
+        children: [
+          AppBar(
+            title: const Text(
+              'ให้คะแนนความพึงพอใจ',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppTheme.ink,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeroCard(),
-                const SizedBox(height: 18),
-                _buildRatingCard(screenWidth),
-                const SizedBox(height: 18),
-                _buildFeatureCard(),
-                const SizedBox(height: 18),
-                _buildCommentCard(),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: AppTheme.ink),
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxContentWidth),
+                child: SingleChildScrollView(
+                  padding: AppTheme.pageInsetsForWidth(
+                    screenWidth,
+                    bottom: 28,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeroCard(),
+                      const SizedBox(height: 18),
+                      _buildRatingCard(screenWidth),
+                      const SizedBox(height: 18),
+                      _buildFeatureCard(),
+                      const SizedBox(height: 18),
+                      _buildCommentCard(),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppTheme.innerRadius,
                             ),
-                          )
-                        : const Text(
-                            'ส่งความคิดเห็น',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            elevation: 0,
                           ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'ส่งความคิดเห็น',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildHeroCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
-      child: const Column(
+    return const GlassCard(
+      padding: EdgeInsets.all(22),
+      opacity: 0.15,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -168,13 +176,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 LucideIcons.heartHandshake,
                 color: AppTheme.primaryColor,
               ),
-              SizedBox(width: 10),
+              SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  'ทุกคะแนนช่วยให้เราปรับ Foodcal ได้ดีขึ้น',
+                  'ทุกคะแนนช่วยให้เราพัฒนา Foodcal ให้ดีขึ้น',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     color: AppTheme.ink,
                   ),
                 ),
@@ -187,6 +195,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             style: TextStyle(
               color: AppTheme.mutedText,
               height: 1.5,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -197,17 +207,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget _buildRatingCard(double screenWidth) {
     final isCompact = AppTheme.isCompactWidth(screenWidth);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.elevatedCard(),
+    return GlassCard(
+      padding: const EdgeInsets.all(22),
+      opacity: 0.12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'คุณพึงพอใจกับการใช้งานแอปมากแค่ไหน',
             style: TextStyle(
-              fontSize: AppTheme.title,
-              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -216,14 +226,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             _rating == 0 ? 'แตะที่ดาวเพื่อให้คะแนน' : _ratingLabel(_rating),
             style: const TextStyle(
               color: AppTheme.mutedText,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(5, (index) {
               final ratingValue = index + 1;
               final isSelected = ratingValue <= _rating;
@@ -232,18 +241,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 onTap: () => setState(() => _rating = ratingValue),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  width: isCompact ? 48 : 54,
-                  height: 60,
+                  width: isCompact ? 52 : 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? const Color(0xFFFFF4DA)
-                        : AppTheme.pageTint,
-                    borderRadius: BorderRadius.circular(18),
+                        : Colors.white.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
                           ? const Color(0xFFFFC95A)
-                          : AppTheme.pageTintStrong,
+                          : Colors.white.withValues(alpha: 0.3),
+                      width: isSelected ? 2 : 1.5,
                     ),
+                    boxShadow: isSelected ? [
+                      BoxShadow(color: Colors.orange.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))
+                    ] : null,
                   ),
                   child: Icon(
                     isSelected
@@ -251,7 +264,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         : Icons.star_outline_rounded,
                     color:
                         isSelected ? Colors.orangeAccent : Colors.grey.shade400,
-                    size: 32,
+                    size: 36,
                   ),
                 ),
               );
@@ -263,17 +276,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Widget _buildFeatureCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.elevatedCard(),
+    return GlassCard(
+      padding: const EdgeInsets.all(22),
+      opacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'ฟีเจอร์ที่คุณชอบมากที่สุด',
             style: TextStyle(
-              fontSize: AppTheme.title,
-              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -283,6 +296,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             style: TextStyle(
               color: AppTheme.mutedText,
               height: 1.5,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
@@ -301,19 +316,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   }
                 },
                 selectedColor: AppTheme.primaryColor.withValues(alpha: 0.14),
-                backgroundColor: AppTheme.pageTint,
+                backgroundColor: Colors.white.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(14),
                   side: BorderSide(
                     color: isSelected
-                        ? AppTheme.primaryColor.withValues(alpha: 0.3)
-                        : AppTheme.pageTintStrong,
+                        ? AppTheme.primaryColor
+                        : Colors.white.withValues(alpha: 0.3),
                   ),
                 ),
                 labelStyle: TextStyle(
                   color:
-                      isSelected ? AppTheme.primaryColor : AppTheme.mutedText,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      isSelected ? AppTheme.primaryColor : AppTheme.ink,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
               );
             }).toList(),
@@ -324,17 +339,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Widget _buildCommentCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.elevatedCard(),
+    return GlassCard(
+      padding: const EdgeInsets.all(22),
+      opacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'อยากให้เราปรับอะไรเพิ่ม',
             style: TextStyle(
-              fontSize: AppTheme.title,
-              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -344,6 +359,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             style: TextStyle(
               color: AppTheme.mutedText,
               height: 1.5,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
@@ -353,11 +370,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             maxLines: 6,
             decoration: InputDecoration(
               filled: true,
-              fillColor: AppTheme.pageTint,
+              fillColor: Colors.white.withValues(alpha: 0.4),
               hintText: 'แชร์ความคิดเห็นของคุณที่นี่...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),

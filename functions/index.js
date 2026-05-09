@@ -414,6 +414,8 @@ exports.setAdminRole = onCall(async (request) => {
   return { success: true };
 });
 
+
+
 exports.deleteUserAccount = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Must be signed in.");
@@ -425,7 +427,7 @@ exports.deleteUserAccount = onCall(async (request) => {
     throw new HttpsError("permission-denied", "Only admins can delete accounts.");
   }
 
-  const { targetUid } = request.data;
+  const targetUid = request.data?.targetUid;
   if (typeof targetUid !== "string" || !targetUid) {
     throw new HttpsError("invalid-argument", "targetUid is required.");
   }
@@ -454,9 +456,24 @@ exports.deleteUserAccount = onCall(async (request) => {
     for (const subcollection of subcollections) {
       const snapshot = await userRef.collection(subcollection).get();
       if (!snapshot.empty) {
-        const batch = db.batch();
-        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
+        const batches = [];
+        let batch = db.batch();
+        let count = 0;
+        
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+          count++;
+          if (count === 490) {
+            batches.push(batch.commit());
+            batch = db.batch();
+            count = 0;
+          }
+        });
+        
+        if (count > 0) {
+          batches.push(batch.commit());
+        }
+        await Promise.all(batches);
       }
     }
 
@@ -465,7 +482,7 @@ exports.deleteUserAccount = onCall(async (request) => {
     return { success: true };
   } catch (error) {
     logger.error(`Failed to delete user ${targetUid}`, error);
-    throw new HttpsError("internal", `Failed to delete user account: ${error.message}`);
+    throw new HttpsError("unknown", `Failed to delete user account: ${error.message}`);
   }
 });
 
@@ -485,7 +502,6 @@ function differenceInDays(fromKey, toKey) {
   const to = new Date(`${toKey}T00:00:00.000Z`);
   return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
 }
-
 function parseDate(value) {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);

@@ -6,6 +6,10 @@ import 'package:provider/provider.dart';
 import '../app_theme.dart';
 import '../services/auth_service.dart';
 
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/gradient_button.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -69,138 +73,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = AppTheme.isCompactWidth(screenWidth);
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: AppTheme.maxContentWidth(screenWidth),
+    return AnimatedPageWrapper(
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: AppTheme.maxContentWidth(screenWidth),
+            ),
+            child: SingleChildScrollView(
+              padding: AppTheme.pageInsetsForWidth(
+                screenWidth,
+                top: 20,
+                bottom: 24,
               ),
-              child: SingleChildScrollView(
-                padding: AppTheme.pageInsetsForWidth(
-                  screenWidth,
-                  top: 20,
-                  bottom: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(LucideIcons.arrowLeft, size: 18),
-                      label: const Text('กลับ'),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildHero(isCompact),
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: EdgeInsets.all(isCompact ? 20 : 28),
-                      decoration: AppTheme.elevatedCard(
-                        borderColor: const Color(0xFFE3ECFA),
-                        boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'สร้างบัญชีใหม่',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.ink,
-                            ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(LucideIcons.arrowLeft, size: 18),
+                    label: const Text('กลับ', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildHero(isCompact),
+                  const SizedBox(height: 18),
+                  GlassCard(
+                    padding: EdgeInsets.all(isCompact ? 20 : 28),
+                    opacity: 0.15,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'สร้างบัญชีใหม่',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'เริ่มต้นติดตามเป้าหมายสุขภาพของคุณด้วยโปรไฟล์เดียว',
+                          style: TextStyle(
+                            color: AppTheme.mutedText,
+                            fontSize: AppTheme.body,
                           ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'เริ่มต้นติดตามเป้าหมายสุขภาพของคุณด้วยโปรไฟล์เดียว',
-                            style: TextStyle(
-                              color: AppTheme.mutedText,
-                              fontSize: AppTheme.body,
-                            ),
-                          ),
-                          if (error != null) ...[
-                            const SizedBox(height: 18),
-                            _buildErrorBanner(error!),
-                          ],
-                          const SizedBox(height: 22),
-                          _buildLabel('อีเมล'),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              hintText: 'hello@example.com',
-                              prefixIcon: Icon(LucideIcons.mail, size: 18),
-                            ),
-                          ),
+                        ),
+                        if (error != null) ...[
                           const SizedBox(height: 18),
-                          _buildLabel('รหัสผ่าน'),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              hintText: '••••••••',
-                              prefixIcon: Icon(LucideIcons.lock, size: 18),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          _buildLabel('ยืนยันรหัสผ่าน'),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _confirmPasswordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              hintText: '••••••••',
-                              prefixIcon: Icon(
-                                LucideIcons.shieldCheck,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed:
-                                  loading ? null : () => _handleRegister(context),
-                              child: loading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text('สมัครสมาชิก'),
-                                        SizedBox(width: 8),
-                                        Icon(LucideIcons.userPlus, size: 18),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ',
-                              ),
-                            ),
-                          ),
+                          _buildErrorBanner(error!),
                         ],
-                      ),
+                        const SizedBox(height: 22),
+                        _buildLabel('อีเมล'),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            hintText: 'hello@example.com',
+                            prefixIcon: Icon(LucideIcons.mail, size: 18),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _buildLabel('รหัสผ่าน'),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            hintText: '••••••••',
+                            prefixIcon: Icon(LucideIcons.lock, size: 18),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _buildLabel('ยืนยันรหัสผ่าน'),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            hintText: '••••••••',
+                            prefixIcon: Icon(
+                              LucideIcons.shieldCheck,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        GradientButton(
+                          text: 'สมัครสมาชิก',
+                          icon: LucideIcons.userPlus,
+                          isLoading: loading,
+                          onPressed: loading ? null : () => _handleRegister(context),
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -210,9 +186,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildHero(bool isCompact) {
-    return Container(
+    return GlassCard(
       padding: EdgeInsets.all(isCompact ? 20 : 24),
-      decoration: AppTheme.tintedCard(AppTheme.accentColor),
+      opacity: 0.2,
       child: Row(
         children: [
           Container(
@@ -232,21 +208,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Foodcal',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.ink,
-                  ),
+                  style: Theme.of(context).textTheme.headlineLarge,
                 ),
-                SizedBox(height: 6),
-                Text(
-                  'เริ่มต้นวางเป้าหมายอาหาร น้ำ และการดูแลตัวเองในแอปเดียว',
+                const SizedBox(height: 6),
+                const Text(
+                  'เริ่มต้นวางเป้าหมายสุขภาพในแอปเดียว',
                   style: TextStyle(
                     color: AppTheme.mutedText,
                     fontSize: AppTheme.body,

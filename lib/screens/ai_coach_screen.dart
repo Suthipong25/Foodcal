@@ -5,6 +5,9 @@ import '../app_theme.dart';
 import '../services/ai_service.dart';
 import 'feedback_screen.dart';
 
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
+
 class AICoachScreen extends StatefulWidget {
   const AICoachScreen({super.key});
 
@@ -74,37 +77,36 @@ class _AICoachScreenState extends State<AICoachScreen> {
     final isCompact = AppTheme.isCompactWidth(screenWidth);
     final contentWidth = AppTheme.maxContentWidth(screenWidth);
 
-    return Scaffold(
-      backgroundColor: AppTheme.pageBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.ink),
-        title: const Text(
-          'AI Coach',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.ink,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'ให้คะแนนความพึงพอใจ',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-              );
-            },
-            icon: const Icon(
-              LucideIcons.star,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ],
-      ),
-      body: Column(
+    return AnimatedPageWrapper(
+      child: Column(
         children: [
+          AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: AppTheme.ink),
+            title: const Text(
+              'AI Coach',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppTheme.ink,
+              ),
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'ให้คะแนนความพึงพอใจ',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+                  );
+                },
+                icon: const Icon(
+                  LucideIcons.star,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -162,18 +164,12 @@ class _AICoachScreenState extends State<AICoachScreen> {
               16,
               bottomInset > 0 ? 12 : 18,
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: const Border(
-                top: BorderSide(color: AppTheme.pageTintStrong),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, -6),
-                ),
-              ],
+            decoration: AppTheme.subtleCard(
+              background: Colors.white.withValues(alpha: 0.96),
+              borderColor: const Color(0xFFE7EDF4),
+              boxShadow: const [],
+            ).copyWith(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SafeArea(
               top: false,
@@ -191,15 +187,22 @@ class _AICoachScreenState extends State<AICoachScreen> {
                           textInputAction: TextInputAction.send,
                           decoration: InputDecoration(
                             hintText:
-                                'ถามเรื่องอาหาร การออกกำลังกาย หรือน้ำหนักคงที่ได้เลย',
+                                'ถามเรื่องอาหาร การออกกำลังกาย หรือสุขภาพ...',
                             hintStyle: const TextStyle(
                               color: AppTheme.mutedText,
+                              fontSize: 14,
                             ),
                             filled: true,
-                            fillColor: AppTheme.pageTint,
-                            border: OutlineInputBorder(
+                            fillColor: Colors.white,
+                            enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide.none,
+                              borderSide: const BorderSide(color: Color(0xFFE3EAF2)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.28),
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -213,10 +216,12 @@ class _AICoachScreenState extends State<AICoachScreen> {
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         decoration: BoxDecoration(
-                          color: _isLoading
-                              ? AppTheme.pageTintStrong
-                              : AppTheme.primaryColor,
+                          gradient: _isLoading
+                              ? null
+                              : AppTheme.primaryGradient,
+                          color: _isLoading ? AppTheme.pageTintStrong : null,
                           shape: BoxShape.circle,
+                          boxShadow: _isLoading ? null : AppTheme.softShadow(AppTheme.primaryColor),
                         ),
                         child: IconButton(
                           onPressed: _isLoading ? null : _sendMessage,
@@ -240,9 +245,9 @@ class _AICoachScreenState extends State<AICoachScreen> {
   }
 
   Widget _buildHeroCard(bool isCompact) {
-    return Container(
+    return GlassCard(
       padding: EdgeInsets.all(isCompact ? 18 : 20),
-      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+      opacity: 0.15,
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -255,7 +260,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                   'โค้ชส่วนตัวสำหรับการกิน การดื่มน้ำ และการปรับแผนสุขภาพ',
                   style: TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     color: AppTheme.ink,
                     height: 1.35,
                   ),
@@ -270,6 +275,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
               fontSize: AppTheme.body,
               color: AppTheme.mutedText,
               height: 1.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 14),
@@ -288,20 +294,17 @@ class _AICoachScreenState extends State<AICoachScreen> {
   }
 
   Widget _buildQuickPrompts() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: AppTheme.elevatedCard(
-        color: Colors.white,
-        borderColor: const Color(0xFFE4EEFB),
-      ),
+      opacity: 0.12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'เริ่มต้นถามได้ทันที',
             style: TextStyle(
-              fontSize: AppTheme.title,
-              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -310,7 +313,8 @@ class _AICoachScreenState extends State<AICoachScreen> {
             'กดเลือกหัวข้อด้านล่างเพื่อให้ AI Coach ช่วยวิเคราะห์สถานการณ์ได้เร็วขึ้น',
             style: TextStyle(
               color: AppTheme.mutedText,
-              height: 1.45,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
@@ -320,30 +324,37 @@ class _AICoachScreenState extends State<AICoachScreen> {
               child: InkWell(
                 onTap: () => _sendMessage(prompt),
                 borderRadius: BorderRadius.circular(18),
-                child: Ink(
+                child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 14,
                   ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.pageTint,
+                  decoration: AppTheme.subtleCard(
+                    background: Colors.white,
+                    borderColor: const Color(0xFFE7EDF4),
+                    boxShadow: const [],
+                  ).copyWith(
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppTheme.pageTintStrong),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        LucideIcons.messageCircle,
-                        color: AppTheme.primaryColor,
-                        size: 18,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: AppTheme.iconBubble(AppTheme.primaryColor),
+                        child: const Icon(
+                          LucideIcons.messageCircle,
+                          color: AppTheme.primaryColor,
+                          size: 16,
+                        ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           prompt,
                           style: const TextStyle(
                             color: AppTheme.ink,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -371,37 +382,32 @@ class _AICoachScreenState extends State<AICoachScreen> {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 14),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.8,
         ),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
+          gradient: isUser ? AppTheme.primaryGradient : null,
           color: isError
-              ? AppTheme.error.withValues(alpha: 0.08)
-              : isUser
-                  ? AppTheme.primaryColor
-                  : Colors.white,
-          borderRadius: BorderRadius.circular(18).copyWith(
-            bottomRight: isUser ? Radius.zero : const Radius.circular(18),
-            bottomLeft: !isUser ? Radius.zero : const Radius.circular(18),
+              ? AppTheme.error.withValues(alpha: 0.1)
+              : !isUser
+                  ? Colors.white
+                  : null,
+          borderRadius: BorderRadius.circular(22).copyWith(
+            bottomRight: isUser ? Radius.zero : const Radius.circular(22),
+            bottomLeft: !isUser ? Radius.zero : const Radius.circular(22),
           ),
           border: isUser
               ? null
               : Border.all(
                   color: isError
                       ? AppTheme.error.withValues(alpha: 0.2)
-                      : AppTheme.pageTintStrong,
+                      : const Color(0xFFE7EDF4),
                 ),
           boxShadow: isUser
               ? AppTheme.softShadow(AppTheme.primaryColor)
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+              : AppTheme.softShadow(AppTheme.primaryColor),
         ),
         child: Text(
           msg['content'] ?? '',
@@ -412,7 +418,8 @@ class _AICoachScreenState extends State<AICoachScreen> {
                     ? Colors.white
                     : AppTheme.ink,
             height: 1.5,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: isUser ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 15,
           ),
         ),
       ),
@@ -426,15 +433,18 @@ class _CoachIconCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: Colors.white,
+      width: 48,
+      height: 48,
+      decoration: AppTheme.subtleCard(
+        background: Colors.white,
+        borderColor: const Color(0xFFE7EDF4),
+      ).copyWith(
         borderRadius: BorderRadius.circular(16),
       ),
       child: const Icon(
         LucideIcons.sparkles,
         color: AppTheme.primaryColor,
+        size: 24,
       ),
     );
   }
@@ -452,22 +462,24 @@ class _CoachPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: AppTheme.pageTintStrong,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppTheme.pageTintStrong),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: AppTheme.primaryColor),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             label,
             style: const TextStyle(
               color: AppTheme.ink,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontSize: 12,
             ),
           ),

@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
 import '../models/daily_log.dart';
@@ -13,7 +14,7 @@ import '../services/firestore_service.dart';
 import '../utils/datetime_utils.dart';
 import '../widgets/reminder_banner.dart';
 import '../widgets/tube_progress_bar.dart';
-import 'package:provider/provider.dart';
+import '../widgets/glass_card.dart';
 import 'ai_coach_screen.dart';
 
 class TipItem {
@@ -118,32 +119,36 @@ class DashboardScreen extends StatelessWidget {
                   subtitle: 'ดูว่าวันนี้เราเข้าใกล้เป้าหมายมากแค่ไหน',
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _MacroCard(
-                      title: 'โปรตีน',
-                      current: currentProtein,
-                      target: profile.targetProtein,
-                      color: AppTheme.proteinColor,
-                      icon: LucideIcons.beef,
-                    ),
-                    _MacroCard(
-                      title: 'คาร์บ',
-                      current: currentCarbs,
-                      target: profile.targetCarbs,
-                      color: AppTheme.carbsColor,
-                      icon: LucideIcons.sun,
-                    ),
-                    _MacroCard(
-                      title: 'ไขมัน',
-                      current: currentFat,
-                      target: profile.targetFat,
-                      color: AppTheme.fatColor,
-                      icon: LucideIcons.moon,
-                    ),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _MacroCard(
+                        title: 'โปรตีน',
+                        current: currentProtein,
+                        target: profile.targetProtein,
+                        color: AppTheme.proteinColor,
+                        icon: LucideIcons.beef,
+                      ),
+                      const SizedBox(width: 12),
+                      _MacroCard(
+                        title: 'คาร์บ',
+                        current: currentCarbs,
+                        target: profile.targetCarbs,
+                        color: AppTheme.carbsColor,
+                        icon: LucideIcons.sun,
+                      ),
+                      const SizedBox(width: 12),
+                      _MacroCard(
+                        title: 'ไขมัน',
+                        current: currentFat,
+                        target: profile.targetFat,
+                        color: AppTheme.fatColor,
+                        icon: LucideIcons.moon,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppTheme.sectionGap),
                 const _SectionHeader(
@@ -157,7 +162,6 @@ class DashboardScreen extends StatelessWidget {
                     title: 'เพิ่มอาหาร',
                     subtitle: 'บันทึกมื้อใหม่',
                     color: AppTheme.primaryColor,
-                    textColor: Colors.white,
                     onTap: () => onSwitchTab(1),
                   ),
                   const SizedBox(height: 12),
@@ -165,9 +169,7 @@ class DashboardScreen extends StatelessWidget {
                     icon: LucideIcons.play,
                     title: 'ออกกำลังกาย',
                     subtitle: 'เปิดคลังวิดีโอ',
-                    color: Colors.white,
-                    textColor: AppTheme.ink,
-                    iconColor: Colors.pinkAccent,
+                    color: AppTheme.warning,
                     onTap: () => onSwitchTab(2),
                   ),
                 ] else
@@ -179,7 +181,6 @@ class DashboardScreen extends StatelessWidget {
                           title: 'เพิ่มอาหาร',
                           subtitle: 'บันทึกมื้อใหม่',
                           color: AppTheme.primaryColor,
-                          textColor: Colors.white,
                           onTap: () => onSwitchTab(1),
                         ),
                       ),
@@ -189,9 +190,7 @@ class DashboardScreen extends StatelessWidget {
                           icon: LucideIcons.play,
                           title: 'ออกกำลังกาย',
                           subtitle: 'เปิดคลังวิดีโอ',
-                          color: Colors.white,
-                          textColor: AppTheme.ink,
-                          iconColor: Colors.pinkAccent,
+                          color: AppTheme.warning,
                           onTap: () => onSwitchTab(2),
                         ),
                       ),
@@ -202,9 +201,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: LucideIcons.messageSquare,
                   title: 'AI Coach',
                   subtitle: 'รับคำแนะนำเรื่องอาหาร พฤติกรรม และการฟื้นตัว',
-                  color: const Color(0xFFF3EEFF),
-                  textColor: AppTheme.ink,
-                  iconColor: const Color(0xFF6C3FF4),
+                  color: AppTheme.aiColor,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -269,9 +266,10 @@ class _HeroCard extends StatelessWidget {
     final isOver = remainingCalories < 0;
     final emphasis = isOver ? AppTheme.error : AppTheme.primaryColor;
 
-    return Container(
+    return GlassCard(
       padding: EdgeInsets.all(isCompact ? 18 : 22),
-      decoration: AppTheme.tintedCard(emphasis),
+      opacity: 0.18,
+      borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -302,29 +300,33 @@ class _HeroCard extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _StatChip(
-                label: isOver ? 'เกินเป้า' : 'เหลืออีก',
-                value: '${remainingCalories.abs()} kcal',
-                icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
-                color: emphasis,
-              ),
-              _StatChip(
-                label: 'เป้าหมายน้ำดื่ม',
-                value: '${profile.targetWaterGlasses} แก้ว',
-                icon: LucideIcons.droplet,
-                color: AppTheme.waterColor,
-              ),
-              _StatChip(
-                label: 'Streak',
-                value: '${profile.streak} วัน',
-                icon: LucideIcons.flame,
-                color: AppTheme.warning,
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: [
+                _StatChip(
+                  label: isOver ? 'เกินเป้า' : 'เหลืออีก',
+                  value: '${remainingCalories.abs()} kcal',
+                  icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
+                  color: emphasis,
+                ),
+                const SizedBox(width: 10),
+                _StatChip(
+                  label: 'เป้าหมายน้ำดื่ม',
+                  value: '${profile.targetWaterGlasses} แก้ว',
+                  icon: LucideIcons.droplet,
+                  color: AppTheme.waterColor,
+                ),
+                const SizedBox(width: 10),
+                _StatChip(
+                  label: 'Streak',
+                  value: '${profile.streak} วัน',
+                  icon: LucideIcons.flame,
+                  color: AppTheme.warning,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -452,9 +454,10 @@ class _StatChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.86),
+          color: Colors.white,
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: color.withValues(alpha: 0.12)),
+          border: Border.all(color: const Color(0xFFDDE8F4)),
+          boxShadow: AppTheme.softShadow(color),
         ),
         child: Row(
           children: [
@@ -509,15 +512,25 @@ class _SectionHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: AppTheme.title,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.ink,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.pageTintStrong,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: AppTheme.primaryColor.withValues(alpha: 0.10),
+            ),
+          ),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: AppTheme.meta,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.primaryColor,
+            ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
           subtitle,
           style: const TextStyle(
@@ -551,48 +564,42 @@ class _MacroCard extends StatelessWidget {
     final remaining = target - current;
     final isOver = remaining < 0;
 
-    return SizedBox(
-      width: 190,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.elevatedCard(
-          color: Colors.white,
-          borderColor: color.withValues(alpha: 0.12),
-          boxShadow: AppTheme.softShadow(color),
-        ),
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      opacity: 0.16,
+      borderColor: const Color(0xFFDDE8F4),
+      child: SizedBox(
+        width: 158,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 18),
+                  width: 32,
+                  height: 32,
+                  decoration: AppTheme.iconBubble(color),
+                  child: Icon(icon, color: color, size: 16),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     title,
                     style: const TextStyle(
-                      fontSize: AppTheme.body,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
                       color: AppTheme.ink,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               '$current / $target g',
               style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
                 color: AppTheme.ink,
               ),
             ),
@@ -601,15 +608,15 @@ class _MacroCard extends StatelessWidget {
               progress: progress,
               colors: [color.withValues(alpha: 0.55), color],
               backgroundColor: color.withValues(alpha: 0.10),
-              height: 8,
+              height: 6,
               borderRadius: 999,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               isOver ? 'เกิน ${remaining.abs()} g' : 'เหลือ $remaining g',
               style: TextStyle(
-                fontSize: AppTheme.meta,
-                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
                 color: isOver ? AppTheme.error : AppTheme.mutedText,
               ),
             ),
@@ -685,13 +692,10 @@ class _WeeklyChart extends StatelessWidget {
             .reduce(math.max)
             .toDouble();
 
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.elevatedCard(
-        color: Colors.white,
-        borderColor: const Color(0xFFE3ECFA),
-        boxShadow: AppTheme.softShadow(const Color(0xFF7CA7E9)),
-      ),
+      opacity: 0.18,
+      borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -710,9 +714,12 @@ class _WeeklyChart extends StatelessWidget {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppTheme.pageTintStrong,
                   borderRadius: AppTheme.pillRadius,
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                  ),
                 ),
                 child: const Text(
                   'เป้าหมายรายวัน',
@@ -726,61 +733,69 @@ class _WeeklyChart extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          AspectRatio(
-            aspectRatio: 1.85,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY:
-                    math.max(maxLog, profile.targetCalories.toDouble()) * 1.25,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: math.max(profile.targetCalories / 2, 1),
-                  getDrawingHorizontalLine: (_) => const FlLine(
-                    color: AppTheme.pageTintStrong,
-                    strokeWidth: 1,
+          Container(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE4EDF8)),
+            ),
+            child: AspectRatio(
+              aspectRatio: 1.85,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY:
+                      math.max(maxLog, profile.targetCalories.toDouble()) * 1.25,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: math.max(profile.targetCalories / 2, 1),
+                    getDrawingHorizontalLine: (_) => const FlLine(
+                      color: Color(0xFFDCE7F5),
+                      strokeWidth: 1,
+                    ),
                   ),
-                ),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) => Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          weekDays[value.toInt()],
-                          style: const TextStyle(
-                            fontSize: AppTheme.meta,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.mutedText,
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) => Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            weekDays[value.toInt()],
+                            style: const TextStyle(
+                              fontSize: AppTheme.meta,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.mutedText,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
+                  extraLinesData: ExtraLinesData(
+                    horizontalLines: [
+                      HorizontalLine(
+                        y: profile.targetCalories.toDouble(),
+                        color: AppTheme.warning.withValues(alpha: 0.65),
+                        strokeWidth: 1.3,
+                        dashArray: [5, 4],
+                      ),
+                    ],
+                  ),
+                  barGroups: barGroups,
                 ),
-                extraLinesData: ExtraLinesData(
-                  horizontalLines: [
-                    HorizontalLine(
-                      y: profile.targetCalories.toDouble(),
-                      color: AppTheme.warning.withValues(alpha: 0.45),
-                      strokeWidth: 1.2,
-                      dashArray: [5, 4],
-                    ),
-                  ],
-                ),
-                barGroups: barGroups,
               ),
             ),
           ),
@@ -795,8 +810,6 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color color;
-  final Color textColor;
-  final Color? iconColor;
   final VoidCallback onTap;
 
   const _ActionCard({
@@ -804,8 +817,6 @@ class _ActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.color,
-    required this.textColor,
-    this.iconColor,
     required this.onTap,
   });
 
@@ -817,17 +828,9 @@ class _ActionCard extends StatelessWidget {
         width: double.infinity,
         height: 118,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: AppTheme.cardRadius,
-          border: Border.all(
-            color: color == Colors.white
-                ? const Color(0xFFE2EBF8)
-                : color.withValues(alpha: 0.2),
-          ),
-          boxShadow: AppTheme.softShadow(
-            color == Colors.white ? AppTheme.primaryColor : color,
-          ),
+        decoration: AppTheme.subtleCard(
+          background: Colors.white,
+          borderColor: const Color(0xFFDDE8F4),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -836,31 +839,26 @@ class _ActionCard extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: color == Colors.white
-                    ? AppTheme.pageTintStrong
-                    : Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor ?? textColor, size: 20),
+              decoration: AppTheme.iconBubble(color),
+              child: Icon(icon, color: color, size: 20),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: textColor,
+                    color: AppTheme.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: AppTheme.meta,
-                    color: textColor.withValues(alpha: 0.75),
+                    color: AppTheme.mutedText,
                   ),
                 ),
               ],
@@ -886,13 +884,10 @@ class _WaterCard extends StatelessWidget {
     final progress =
         targetWater > 0 ? (currentWater / targetWater).clamp(0.0, 1.0) : 0.0;
 
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: AppTheme.elevatedCard(
-        color: Colors.white,
-        borderColor: AppTheme.waterColor.withValues(alpha: 0.14),
-        boxShadow: AppTheme.softShadow(AppTheme.waterColor),
-      ),
+      opacity: 0.16,
+      borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -901,10 +896,7 @@ class _WaterCard extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
-                  color: AppTheme.waterColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
+                decoration: AppTheme.iconBubble(AppTheme.waterColor),
                 child: const Icon(
                   LucideIcons.droplet,
                   color: AppTheme.waterColor,
@@ -966,38 +958,27 @@ class _TipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [tip.color.withValues(alpha: 0.88), tip.color.withValues(alpha: 0.68)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppTheme.cardRadius,
-        boxShadow: AppTheme.softShadow(tip.color),
-      ),
+      decoration: AppTheme.subtleCard(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
+            decoration: AppTheme.iconBubble(tip.color),
+            child: Icon(
               LucideIcons.lightbulb,
-              color: Colors.white,
+              color: tip.color,
               size: 18,
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
+          Text(
             'Tip วันนี้',
             style: TextStyle(
               fontSize: AppTheme.meta,
               fontWeight: FontWeight.w700,
-              color: Colors.white70,
+              color: tip.color,
             ),
           ),
           const SizedBox(height: 6),
@@ -1006,7 +987,7 @@ class _TipCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppTheme.ink,
               height: 1.45,
             ),
           ),
@@ -1015,8 +996,8 @@ class _TipCard extends StatelessWidget {
             alignment: Alignment.bottomRight,
             child: Icon(
               tip.icon,
-              color: Colors.white.withValues(alpha: 0.28),
-              size: 44,
+              color: tip.color.withValues(alpha: 0.22),
+              size: 40,
             ),
           ),
         ],

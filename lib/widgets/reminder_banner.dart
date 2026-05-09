@@ -62,29 +62,50 @@ class _ReminderBannerState extends State<ReminderBanner> {
       duration: const Duration(milliseconds: 220),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: widget.color.withValues(alpha: 0.10),
+          color: Colors.white,
           borderRadius: AppTheme.cardRadius,
-          border: Border.all(color: widget.color.withValues(alpha: 0.25)),
+          border: Border.all(color: widget.color.withValues(alpha: 0.16)),
+          boxShadow: AppTheme.softShadow(widget.color),
         ),
         child: Row(
           children: [
-            Icon(widget.icon, color: widget.color, size: 18),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(widget.icon, color: widget.color, size: 17),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 widget.message,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.body,
-                  color: widget.color,
+                  color: AppTheme.ink,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             GestureDetector(
               onTap: () => setState(() => _dismissed = true),
-              child: Icon(LucideIcons.x, size: 16, color: widget.color.withValues(alpha: 0.6)),
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F8FC),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Icon(
+                  LucideIcons.x,
+                  size: 14,
+                  color: widget.color.withValues(alpha: 0.7),
+                ),
+              ),
             ),
           ],
         ),

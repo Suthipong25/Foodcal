@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
@@ -9,6 +10,7 @@ import '../models/feedback_log.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/glass_card.dart';
 
 class AdminScreen extends StatelessWidget {
   final UserProfile profile;
@@ -33,12 +35,15 @@ class AdminScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppTheme.pageBg,
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Admin Dashboard'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text('แดชบอร์ดผู้ดูแล', style: TextStyle(fontWeight: FontWeight.w900)),
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout, color: AppTheme.error),
+              icon: const Icon(LucideIcons.logOut, color: AppTheme.error),
               tooltip: 'ออกจากระบบ',
               onPressed: () async {
                 await Provider.of<AuthService>(context, listen: false).signOut();
@@ -48,9 +53,11 @@ class AdminScreen extends StatelessWidget {
           bottom: const TabBar(
             labelColor: AppTheme.primaryColor,
             unselectedLabelColor: AppTheme.mutedText,
+            indicatorColor: AppTheme.primaryColor,
+            indicatorWeight: 3,
             tabs: [
-              Tab(icon: Icon(Icons.analytics_outlined), text: 'Feedback'),
-              Tab(icon: Icon(Icons.manage_accounts_outlined), text: 'Users'),
+              Tab(icon: Icon(LucideIcons.barChart2), text: 'ข้อเสนอแนะ'),
+              Tab(icon: Icon(LucideIcons.users), text: 'ผู้ใช้งาน'),
             ],
           ),
         ),
@@ -117,46 +124,50 @@ class _FeedbackTabState extends State<_FeedbackTab> {
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: ListView(
-            padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
+            padding: AppTheme.pageInsetsForWidth(width, top: 120, bottom: 24),
             children: [
               const _HeroCard(
                 title: 'ภาพรวมผลตอบรับ',
                 subtitle: 'ดูคะแนนเฉลี่ย ฟีเจอร์ที่ผู้ใช้ชอบ และความคิดเห็นล่าสุด',
-                icon: Icons.analytics_outlined,
+                icon: LucideIcons.barChart2,
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _MetricCard(
-                    label: 'คะแนนเฉลี่ย',
-                    value: avg.toStringAsFixed(1),
-                    icon: Icons.star_rounded,
-                    color: Colors.orange,
-                  ),
-                  _MetricCard(
-                    label: 'feedback ทั้งหมด',
-                    value: '${logs.length}',
-                    icon: Icons.forum_outlined,
-                    color: AppTheme.success,
-                  ),
-                ],
+              const SizedBox(height: 18),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                  children: [
+                    _MetricCard(
+                      label: 'คะแนนเฉลี่ย',
+                      value: avg.toStringAsFixed(1),
+                      icon: LucideIcons.star,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 12),
+                    _MetricCard(
+                      label: 'Feedback ทั้งหมด',
+                      value: '${logs.length}',
+                      icon: LucideIcons.messageSquare,
+                      color: AppTheme.success,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               _FeatureChartCard(data: counts),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               const _SectionHeader(
                 title: 'ความคิดเห็นล่าสุด',
                 subtitle: 'แสดง feedback ล่าสุดจากผู้ใช้',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               ...logs.take(12).map(
                     (log) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.elevatedCard(),
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(18),
+                        opacity: 0.18,
+                        borderColor: const Color(0xFFDDE8F4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -170,23 +181,25 @@ class _FeedbackTabState extends State<_FeedbackTab> {
                                 Text(
                                   DateFormat('dd/MM/yyyy').format(log.createdAt),
                                   style: const TextStyle(
-                                    fontSize: AppTheme.meta,
+                                    fontSize: 11,
                                     color: AppTheme.mutedText,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 14),
                             Text(
                               log.favoriteFeature.isEmpty
                                   ? 'ไม่ระบุฟีเจอร์โปรด'
                                   : log.favoriteFeature,
                               style: const TextStyle(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 color: AppTheme.ink,
+                                fontSize: 15,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Text(
                               log.comment.isEmpty
                                   ? 'ไม่มีความคิดเห็นเพิ่มเติม'
@@ -194,6 +207,8 @@ class _FeedbackTabState extends State<_FeedbackTab> {
                               style: const TextStyle(
                                 color: AppTheme.mutedText,
                                 height: 1.45,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -256,62 +271,73 @@ class _UsersTabState extends State<_UsersTab> {
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: ListView(
-            padding: AppTheme.pageInsetsForWidth(width, top: 16, bottom: 24),
+            padding: AppTheme.pageInsetsForWidth(width, top: 120, bottom: 24),
             children: [
               const _HeroCard(
                 title: 'จัดการผู้ใช้งาน',
                 subtitle: 'ดูรายชื่อผู้ใช้ ปรับสิทธิ์ และลบบัญชีได้จากหน้านี้',
-                icon: Icons.manage_accounts_outlined,
+                icon: LucideIcons.users,
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _MetricCard(
-                    label: 'ผู้ใช้ทั้งหมด',
-                    value: '${users.length}',
-                    icon: Icons.people_alt_outlined,
-                    color: AppTheme.primaryColor,
-                  ),
-                  _MetricCard(
-                    label: 'ผู้ดูแลระบบ',
-                    value: '$admins',
-                    icon: Icons.security_outlined,
-                    color: const Color(0xFF8A5CF6),
-                  ),
-                ],
+              const SizedBox(height: 18),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                  children: [
+                    _MetricCard(
+                      label: 'ผู้ใช้ทั้งหมด',
+                      value: '${users.length}',
+                      icon: LucideIcons.user,
+                      color: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 12),
+                    _MetricCard(
+                      label: 'ผู้ดูแลระบบ',
+                      value: '$admins',
+                      icon: LucideIcons.shieldCheck,
+                      color: const Color(0xFF8A5CF6),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               const _SectionHeader(
                 title: 'รายชื่อผู้ใช้',
-                subtitle: 'คุณไม่สามารถลบบัญชีหรือลดสิทธิ์ของตัวเองได้',
+                subtitle: 'คุณไม่สามารถจัดการบัญชีของตัวเองได้ที่นี่',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               ...users.map(
                     (user) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.elevatedCard(),
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(18),
+                        opacity: 0.1,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                CircleAvatar(
-                                  backgroundColor: AppTheme.pageTintStrong,
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                  ),
+                                  alignment: Alignment.center,
                                   child: Text(
                                     user.name.isNotEmpty
                                         ? user.name[0].toUpperCase()
                                         : 'U',
                                     style: const TextStyle(
                                       color: AppTheme.primaryColor,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 20,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,16 +345,18 @@ class _UsersTabState extends State<_UsersTab> {
                                       Text(
                                         user.name.isNotEmpty ? user.name : 'Unknown',
                                         style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w800,
                                           color: AppTheme.ink,
+                                          fontSize: 16,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 4),
                                       Text(
                                         'สมัครเมื่อ ${DateFormat('dd/MM/yyyy').format(user.joinedDate)}',
                                         style: const TextStyle(
-                                          fontSize: AppTheme.meta,
+                                          fontSize: 11,
                                           color: AppTheme.mutedText,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
@@ -343,13 +371,16 @@ class _UsersTabState extends State<_UsersTab> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 18),
                             if (user.uid == myUid)
-                              const Text(
-                                'บัญชีนี้คือบัญชีของคุณ',
-                                style: TextStyle(
-                                  fontSize: AppTheme.meta,
-                                  color: AppTheme.mutedText,
+                              const Center(
+                                child: Text(
+                                  'บัญชีของคุณ (แก้ไขได้ที่หน้าโปรไฟล์)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.mutedText,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               )
                             else
@@ -359,11 +390,14 @@ class _UsersTabState extends State<_UsersTab> {
                                     child: OutlinedButton.icon(
                                       onPressed: () =>
                                           _showRoleDialog(context, user, firestore, _loadData),
-                                      icon: const Icon(Icons.manage_accounts),
-                                      label: const Text('เปลี่ยนสิทธิ์'),
+                                      icon: const Icon(LucideIcons.userCog, size: 16),
+                                      label: const Text('ปรับสิทธิ์', style: TextStyle(fontWeight: FontWeight.w700)),
+                                      style: OutlinedButton.styleFrom(
+                                        backgroundColor: Colors.white.withValues(alpha: 0.4),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       style: _dialogPrimaryButtonStyle(
@@ -371,8 +405,8 @@ class _UsersTabState extends State<_UsersTab> {
                                       ),
                                       onPressed: () =>
                                           _showDeleteDialog(context, user, firestore, _loadData),
-                                      icon: const Icon(Icons.delete_outline),
-                                      label: const Text('ลบบัญชี'),
+                                      icon: const Icon(LucideIcons.trash2, size: 16),
+                                      label: const Text('ลบบัญชี', style: TextStyle(fontWeight: FontWeight.w800)),
                                     ),
                                   ),
                                 ],
@@ -400,19 +434,20 @@ class _FeatureChartCard extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final compact = AppTheme.isCompactWidth(width);
     final keys = data.keys.toList();
-    final maxVal = data.values.reduce((a, b) => a > b ? a : b).toDouble();
+    final maxVal = data.values.isNotEmpty ? data.values.reduce((a, b) => a > b ? a : b).toDouble() : 0.0;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.elevatedCard(),
+    return GlassCard(
+      padding: const EdgeInsets.all(22),
+      opacity: 0.18,
+      borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'ฟีเจอร์ที่ผู้ใช้ชอบ',
             style: TextStyle(
-              fontSize: AppTheme.title,
-              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -442,6 +477,7 @@ class _FeatureChartCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 10,
                           color: AppTheme.mutedText,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -468,6 +504,7 @@ class _FeatureChartCard extends StatelessWidget {
                               fontSize: 10,
                               color: AppTheme.mutedText,
                               height: 1.2,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         );
@@ -521,22 +558,24 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+    return GlassCard(
+      padding: const EdgeInsets.all(22),
+      opacity: 0.22,
+      borderColor: const Color(0xFFDDE8F4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
+              color: Colors.white.withValues(alpha: 0.96),
               shape: BoxShape.circle,
+              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
             ),
-            child: Icon(icon, color: AppTheme.primaryColor),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 24),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,8 +583,8 @@ class _HeroCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                     color: AppTheme.ink,
                   ),
                 ),
@@ -553,9 +592,10 @@ class _HeroCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: AppTheme.body,
+                    fontSize: 13,
                     color: AppTheme.mutedText,
                     height: 1.45,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -583,34 +623,39 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 190,
-      child: Container(
+      width: 180,
+      child: GlassCard(
         padding: const EdgeInsets.all(16),
-        decoration: AppTheme.elevatedCard(
-          borderColor: color.withValues(alpha: 0.14),
-          boxShadow: AppTheme.softShadow(color),
-        ),
+        opacity: 0.18,
+        borderColor: color.withValues(alpha: 0.24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 12),
             Text(
               label,
               style: const TextStyle(
-                fontSize: AppTheme.meta,
+                fontSize: 12,
                 color: AppTheme.mutedText,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               value,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
                 color: AppTheme.ink,
               ),
             ),
@@ -635,8 +680,8 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: AppTheme.title,
-            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
             color: AppTheme.ink,
           ),
         ),
@@ -644,8 +689,9 @@ class _SectionHeader extends StatelessWidget {
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: AppTheme.body,
+            fontSize: 12,
             color: AppTheme.mutedText,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -664,14 +710,15 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppTheme.pillRadius,
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: AppTheme.meta,
-          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
           color: color,
         ),
       ),
@@ -821,43 +868,41 @@ class _AdminMessageState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.elevatedCard(
-            borderColor: accent.withValues(alpha: 0.14),
-            boxShadow: AppTheme.softShadow(accent),
-          ),
+        child: GlassCard(
+          padding: const EdgeInsets.all(28),
+          opacity: 0.15,
+          borderColor: accent.withValues(alpha: 0.2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
+                  color: accent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: accent),
+                child: Icon(icon, color: accent, size: 32),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: AppTheme.title,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                   color: AppTheme.ink,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: AppTheme.body,
+                  fontSize: 14,
                   color: AppTheme.mutedText,
-                  height: 1.45,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

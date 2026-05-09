@@ -7,6 +7,8 @@ import '../app_theme.dart';
 import '../models/custom_food.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
 
 class CustomFoodScreen extends StatefulWidget {
   const CustomFoodScreen({super.key});
@@ -85,130 +87,145 @@ class _CustomFoodScreenState extends State<CustomFoodScreen> {
     final uid = _uid;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return Scaffold(
-      backgroundColor: AppTheme.pageBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('อาหารที่บันทึกไว้',
-            style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.bold)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.primaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.plus, color: AppTheme.primaryColor),
-            onPressed: () => _openForm(),
-            tooltip: 'เพิ่มอาหารใหม่',
+    return AnimatedPageWrapper(
+      child: Column(
+        children: [
+          AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text('อาหารที่บันทึกไว้',
+                style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900)),
+            leading: IconButton(
+              icon: const Icon(LucideIcons.chevronLeft, color: AppTheme.primaryColor),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(LucideIcons.plus, color: AppTheme.primaryColor),
+                onPressed: () => _openForm(),
+                tooltip: 'เพิ่มอาหารใหม่',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: uid == null
-          ? const Center(child: Text('กรุณาเข้าสู่ระบบ'))
-          : StreamBuilder<List<CustomFood>>(
-              stream: Provider.of<FirestoreService>(context, listen: false)
-                  .streamCustomFoods(uid),
-              builder: (context, snap) {
-                final foods = snap.data ?? [];
-                if (foods.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.bookMarked,
-                            size: 64, color: AppTheme.mutedText),
-                        const SizedBox(height: 16),
-                        const Text('ยังไม่มีอาหารที่บันทึกไว้',
-                            style: TextStyle(
-                                color: AppTheme.mutedText, fontSize: AppTheme.title)),
-                        const SizedBox(height: 8),
-                        const Text('กด + เพื่อเพิ่มรายการอาหารที่ใช้บ่อย',
-                            style: TextStyle(
-                                color: AppTheme.mutedText, fontSize: AppTheme.body)),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () => _openForm(),
-                          icon: const Icon(LucideIcons.plus),
-                          label: const Text('เพิ่มอาหาร'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
-                            foregroundColor: Colors.white,
+          Expanded(
+            child: uid == null
+                ? const Center(child: Text('กรุณาเข้าสู่ระบบ'))
+                : StreamBuilder<List<CustomFood>>(
+                    stream: Provider.of<FirestoreService>(context, listen: false)
+                        .streamCustomFoods(uid),
+                    builder: (context, snap) {
+                      final foods = snap.data ?? [];
+                      if (foods.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(LucideIcons.bookMarked,
+                                  size: 64, color: AppTheme.mutedText),
+                              const SizedBox(height: 16),
+                              const Text('ยังไม่มีอาหารที่บันทึกไว้',
+                                  style: TextStyle(
+                                      color: AppTheme.mutedText, fontSize: AppTheme.title, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 8),
+                              const Text('กด + เพื่อเพิ่มรายการอาหารที่ใช้บ่อย',
+                                  style: TextStyle(
+                                      color: AppTheme.mutedText, fontSize: AppTheme.body)),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () => _openForm(),
+                                icon: const Icon(LucideIcons.plus),
+                                label: const Text('เริ่มบันทึกอาหารแรก', style: TextStyle(fontWeight: FontWeight.w800)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(screenWidth)),
+                          child: ListView.builder(
+                            padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 80),
+                            itemCount: foods.length,
+                            itemBuilder: (ctx, i) => _buildTile(foods[i]),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                }
-
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(screenWidth)),
-                    child: ListView.builder(
-                      padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 32),
-                      itemCount: foods.length,
-                      itemBuilder: (ctx, i) => _buildTile(foods[i]),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        child: const Icon(LucideIcons.plus),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTile(CustomFood food) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: AppTheme.elevatedCard(
-        color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        opacity: 0.1,
         borderColor: food.isFavorite
-            ? AppTheme.warning.withValues(alpha: 0.25)
-            : const Color(0xFFE3ECFA),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withValues(alpha: 0.10),
-            shape: BoxShape.circle,
+            ? AppTheme.warning.withValues(alpha: 0.3)
+            : null,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.utensils, color: AppTheme.primaryColor, size: 20),
           ),
-          child: const Icon(LucideIcons.utensils, color: AppTheme.primaryColor, size: 20),
-        ),
-        title: Text(food.name,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink)),
-        subtitle: Text(
-          '${food.calories} kcal · P${food.protein} C${food.carbs} F${food.fat}  '
-          '(${food.servingSize.toStringAsFixed(0)} ${food.servingUnit}/serving)',
-          style: const TextStyle(fontSize: AppTheme.meta, color: AppTheme.mutedText),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(
-                food.isFavorite ? LucideIcons.star : LucideIcons.star,
-                color: food.isFavorite ? AppTheme.warning : AppTheme.mutedText,
-                size: 20,
+          title: Text(food.name,
+              style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.ink, fontSize: 15)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                '${food.calories} kcal · P${food.protein} C${food.carbs} F${food.fat}',
+                style: const TextStyle(fontSize: 12, color: AppTheme.mutedText, fontWeight: FontWeight.w600),
               ),
-              onPressed: () => _toggleFavorite(food),
-            ),
-            IconButton(
-              icon: const Icon(LucideIcons.pencil, size: 18, color: AppTheme.mutedText),
-              onPressed: () => _openForm(existing: food),
-            ),
-            IconButton(
-              icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.mutedText),
-              onPressed: () => _delete(food.id),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                'ต่อ ${food.servingSize.toStringAsFixed(0)} ${food.servingUnit}',
+                style: const TextStyle(fontSize: 10, color: AppTheme.mutedText, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  LucideIcons.star,
+                  color: food.isFavorite ? AppTheme.warning : AppTheme.mutedText.withValues(alpha: 0.4),
+                  size: 20,
+                ),
+                onPressed: () => _toggleFavorite(food),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.pencil, size: 18, color: AppTheme.mutedText),
+                onPressed: () => _openForm(existing: food),
+                visualDensity: VisualDensity.compact,
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.trash2, size: 18, color: AppTheme.mutedText),
+                onPressed: () => _delete(food.id),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -309,68 +326,96 @@ class _CustomFoodFormState extends State<_CustomFoodForm> {
     return Padding(
       padding: EdgeInsets.only(bottom: insets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, -5))
+          ],
         ),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 44, height: 5,
                     decoration: BoxDecoration(
-                        color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                        color: Colors.grey[300], borderRadius: BorderRadius.circular(99)),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  _isEdit ? 'แก้ไขอาหาร' : 'เพิ่มอาหารใหม่',
-                  style: const TextStyle(
-                      fontSize: AppTheme.title, fontWeight: FontWeight.w800, color: AppTheme.ink),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(LucideIcons.edit3, color: AppTheme.primaryColor, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      _isEdit ? 'แก้ไขรายการอาหาร' : 'บันทึกอาหารโปรด',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.ink),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _field(_nameCtrl, 'ชื่ออาหาร *', TextInputType.text),
-                const SizedBox(height: 10),
-                _field(_calCtrl, 'แคลอรี่ (kcal) *', TextInputType.number),
+                const SizedBox(height: 24),
+                _field(_nameCtrl, 'ชื่ออาหาร (เช่น สลัดอกไก่)', TextInputType.text, icon: LucideIcons.tag),
+                const SizedBox(height: 14),
+                _field(_calCtrl, 'พลังงาน (แคลอรี่)', TextInputType.number, icon: LucideIcons.zap, suffix: 'kcal'),
+                const SizedBox(height: 20),
+                const Text('ข้อมูลโภชนาการ (กรัม)', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.mutedText, fontSize: 12)),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Expanded(child: _field(_proteinCtrl, 'โปรตีน (g)', TextInputType.number)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _field(_carbsCtrl, 'คาร์บ (g)', TextInputType.number)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _field(_fatCtrl, 'ไขมัน (g)', TextInputType.number)),
+                    Expanded(child: _field(_proteinCtrl, 'โปรตีน', TextInputType.number)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _field(_carbsCtrl, 'คาร์บ', TextInputType.number)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _field(_fatCtrl, 'ไขมัน', TextInputType.number)),
                   ],
                 ),
+                const SizedBox(height: 20),
+                const Text('ขนาดต่อหนึ่งหน่วยบริโภค', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.mutedText, fontSize: 12)),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                         flex: 2,
-                        child: _field(_servingSizeCtrl, 'Serving size', TextInputType.number)),
-                    const SizedBox(width: 8),
+                        child: _field(_servingSizeCtrl, 'ปริมาณที่กิน', TextInputType.number)),
+                    const SizedBox(width: 10),
                     Expanded(
-                        child: _field(_servingUnitCtrl, 'หน่วย (g/ml)', TextInputType.text)),
+                        child: _field(_servingUnitCtrl, 'หน่วย (กรัม/มล.)', TextInputType.text)),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _isFavorite,
-                      onChanged: (v) => setState(() => _isFavorite = v ?? false),
-                      activeColor: AppTheme.warning,
+                const SizedBox(height: 20),
+                InkWell(
+                  onTap: () => setState(() => _isFavorite = !_isFavorite),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: _isFavorite,
+                          onChanged: (v) => setState(() => _isFavorite = v ?? false),
+                          activeColor: AppTheme.warning,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        ),
+                        const Text('บันทึกเป็นรายการโปรด ⭐', style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink)),
+                      ],
                     ),
-                    const Text('เพิ่มในรายการโปรด ⭐'),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -380,9 +425,10 @@ class _CustomFoodFormState extends State<_CustomFoodForm> {
                       foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
                       shape: const RoundedRectangleBorder(borderRadius: AppTheme.innerRadius),
+                      elevation: 0,
                     ),
-                    child: Text(_isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(_isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการนี้',
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                   ),
                 ),
               ],
@@ -393,17 +439,17 @@ class _CustomFoodFormState extends State<_CustomFoodForm> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String hint, TextInputType type) {
+  Widget _field(TextEditingController ctrl, String hint, TextInputType type, {IconData? icon, String? suffix}) {
     return TextField(
       controller: ctrl,
       keyboardType: type,
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
-        filled: true,
-        fillColor: AppTheme.pageTint,
-        border: const OutlineInputBorder(
-            borderRadius: AppTheme.innerRadius, borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        hintStyle: TextStyle(color: AppTheme.mutedText.withValues(alpha: 0.5), fontWeight: FontWeight.normal),
+        prefixIcon: icon != null ? Icon(icon, size: 18) : null,
+        suffixText: suffix,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }

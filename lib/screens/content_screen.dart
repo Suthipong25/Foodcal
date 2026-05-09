@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_theme.dart';
+import '../constants/enums.dart';
 import '../models/content_model.dart';
 import '../models/daily_log.dart';
 import '../services/auth_service.dart';
@@ -13,6 +14,8 @@ import '../services/firestore_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/datetime_utils.dart';
 import 'article_detail_screen.dart';
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
 
 class ContentScreen extends StatefulWidget {
   final DailyLog? log;
@@ -69,85 +72,89 @@ class _ContentScreenState extends State<ContentScreen> {
       return const Center(child: Text('กรุณาเข้าสู่ระบบ'));
     }
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
-        child: StreamBuilder<List<WorkoutVideo>>(
-          stream: _videosStream,
-          builder: (context, videosSnapshot) {
-            final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
-            final sourceVideos =
-                allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
-            final filteredVideos = filter == 'All'
-                ? sourceVideos
-                : sourceVideos.where((video) => video.level == filter).toList();
+    return AnimatedPageWrapper(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
+          child: StreamBuilder<List<WorkoutVideo>>(
+            stream: _videosStream,
+            builder: (context, videosSnapshot) {
+              final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
+              final sourceVideos =
+                  allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
+              final filteredVideos = filter == 'All'
+                  ? sourceVideos
+                  : sourceVideos.where((video) => video.level == filter).toList();
 
-            return StreamBuilder<Map<int, WorkoutSessionState>>(
-              stream: _sessionsStream,
-              builder: (context, sessionsSnapshot) {
-                final workoutSessions =
-                    sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
+              return StreamBuilder<Map<int, WorkoutSessionState>>(
+                stream: _sessionsStream,
+                builder: (context, sessionsSnapshot) {
+                  final workoutSessions =
+                      sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
 
-                return SingleChildScrollView(
-                  padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeroCard(filteredVideos.length, completedCount),
-                      const SizedBox(height: AppTheme.sectionGap),
-                      _buildSectionHeader(
-                        'บทความน่าอ่าน',
-                        'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildArticleList(isCompact),
-                      const SizedBox(height: AppTheme.sectionGap),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: _buildSectionHeader(
-                              'คลังวิดีโอ',
-                              'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
+                  return SingleChildScrollView(
+                    padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        _buildHeroCard(filteredVideos.length, completedCount),
+                        const SizedBox(height: AppTheme.sectionGap),
+                        _buildSectionHeader(
+                          'บทความน่าอ่าน',
+                          'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildArticleList(isCompact),
+                        const SizedBox(height: AppTheme.sectionGap),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: _buildSectionHeader(
+                                'คลังวิดีโอ',
+                                'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _buildFilterDropdown(),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        if (videosSnapshot.connectionState == ConnectionState.waiting)
+                          const Center(child: CircularProgressIndicator())
+                        else if (filteredVideos.isEmpty)
+                          const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
+                        else
+                          ...filteredVideos.map(
+                            (video) => _buildWorkoutCard(
+                              video,
+                              isCompact,
+                              session: workoutSessions[video.id],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          _buildFilterDropdown(),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (videosSnapshot.connectionState == ConnectionState.waiting)
-                        const Center(child: CircularProgressIndicator())
-                      else if (filteredVideos.isEmpty)
-                        const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
-                      else
-                        ...filteredVideos.map(
-                          (video) => _buildWorkoutCard(
-                            video,
-                            isCompact,
-                            session: workoutSessions[video.id],
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _buildArticleList(bool isCompact) {
-    final cardHeight = isCompact ? 264.0 : 256.0;
-    final cardWidth = isCompact ? 208.0 : 228.0;
-    final imageHeight = isCompact ? 88.0 : 96.0;
+    final cardHeight = isCompact ? 280.0 : 272.0;
+    final cardWidth = isCompact ? 220.0 : 240.0;
+    final imageHeight = isCompact ? 100.0 : 110.0;
 
     return SizedBox(
       height: cardHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
         itemCount: educationArticles.length,
         separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
@@ -164,100 +171,94 @@ class _ContentScreenState extends State<ContentScreen> {
                 ),
               );
             },
-            child: Container(
-              width: cardWidth,
-              decoration: AppTheme.elevatedCard(
-                borderColor: AppTheme.pageTintStrong,
-                boxShadow: AppTheme.softShadow(AppTheme.secondaryColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
-                    child: Image.network(
-                      article.imageUrl,
-                      height: imageHeight,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+            child: GlassCard(
+              padding: EdgeInsets.zero,
+              opacity: 0.1,
+              child: SizedBox(
+                width: cardWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                      child: Image.network(
+                        article.imageUrl,
                         height: imageHeight,
-                        color: AppTheme.pageTintStrong,
-                        child: const Icon(
-                          LucideIcons.image,
-                          color: AppTheme.secondaryColor,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: imageHeight,
+                          color: AppTheme.pageTintStrong,
+                          child: const Icon(
+                            LucideIcons.image,
+                            color: AppTheme.secondaryColor,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isCompact ? 14 : 16,
-                        14,
-                        isCompact ? 14 : 16,
-                        14,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.macroBg(AppTheme.primaryColor),
-                              borderRadius: AppTheme.pillRadius,
-                            ),
-                            child: Text(
-                              article.category,
-                              style: const TextStyle(
-                                fontSize: AppTheme.meta,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.primaryColor,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            article.title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: isCompact ? 14 : 15,
-                              color: AppTheme.ink,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const Spacer(),
-                          const SizedBox(height: 10),
-                          const Row(
-                            children: [
-                              Icon(
-                                LucideIcons.arrowUpRight,
-                                size: 14,
-                                color: AppTheme.primaryColor,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                borderRadius: AppTheme.pillRadius,
                               ),
-                              SizedBox(width: 6),
-                              Text(
-                                'แตะเพื่ออ่านต่อ',
-                                style: TextStyle(
+                              child: Text(
+                                article.category,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
                                   color: AppTheme.primaryColor,
-                                  fontSize: AppTheme.meta,
-                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              article.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: AppTheme.ink,
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Spacer(),
+                            const Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.arrowUpRight,
+                                  size: 14,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'แตะเพื่ออ่านต่อ',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -280,141 +281,70 @@ class _ContentScreenState extends State<ContentScreen> {
     final thumbUrl = 'https://img.youtube.com/vi/$videoId/mqdefault.jpg';
     final fallbackThumbUrl = 'https://img.youtube.com/vi/$videoId/default.jpg';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(AppTheme.cardPadding),
-      decoration: AppTheme.elevatedCard(
-        borderColor: hasCompletedToday
-            ? AppTheme.success.withValues(alpha: 0.18)
-            : AppTheme.pageTintStrong,
-        boxShadow: AppTheme.softShadow(
-          hasCompletedToday ? AppTheme.success : AppTheme.primaryColor,
-        ),
-      ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWorkoutThumbnail(
-                  video: video,
-                  thumbUrl: thumbUrl,
-                  fallbackThumbUrl: fallbackThumbUrl,
-                  session: session,
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        video.title,
-                        style: const TextStyle(
-                          fontSize: AppTheme.title,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.ink,
-                          height: 1.25,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildLevelPill(video.level),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildPill(video.duration, AppTheme.primaryColor),
-                    _buildPill(video.type, AppTheme.warning),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _workoutHint(video),
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
+      opacity: 0.12,
+      borderColor: hasCompletedToday
+          ? AppTheme.success.withValues(alpha: 0.2)
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildWorkoutThumbnail(
+            video: video,
+            thumbUrl: thumbUrl,
+            fallbackThumbUrl: fallbackThumbUrl,
+            session: session,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  video.title,
                   style: const TextStyle(
-                    fontSize: AppTheme.body,
-                    color: AppTheme.mutedText,
-                    height: 1.45,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.ink,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: _buildWorkoutAction(
-                    video,
-                    hasCompletedToday,
-                    isSubmitting,
-                    canFinish,
-                    session,
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWorkoutThumbnail(
-                  video: video,
-                  thumbUrl: thumbUrl,
-                  fallbackThumbUrl: fallbackThumbUrl,
-                  session: session,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              video.title,
-                              style: const TextStyle(
-                                fontSize: AppTheme.title,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.ink,
-                                height: 1.25,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildLevelPill(video.level),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildPill(video.duration, AppTheme.primaryColor),
-                          _buildPill(video.type, AppTheme.warning),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        _workoutHint(video),
-                        style: const TextStyle(
-                          fontSize: AppTheme.body,
-                          color: AppTheme.mutedText,
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-                SizedBox(
-                  width: 104,
-                  child: _buildWorkoutAction(
-                    video,
-                    hasCompletedToday,
-                    isSubmitting,
-                    canFinish,
-                    session,
-                  ),
-                ),
-              ],
+              ),
+              const SizedBox(width: 8),
+              _buildLevelPill(video.level),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPill(video.duration, AppTheme.primaryColor),
+              _buildPill(WorkoutType.fromString(video.type).displayName, AppTheme.warning),
+              if (hasCompletedToday)
+                _buildPill('บันทึกแล้ววันนี้', AppTheme.success),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _workoutHint(video),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppTheme.mutedText,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(height: 18),
+          _buildWorkoutAction(
+            video,
+            hasCompletedToday,
+            isSubmitting,
+            canFinish,
+            session,
+          ),
+        ],
+      ),
     );
   }
 
@@ -520,25 +450,25 @@ class _ContentScreenState extends State<ContentScreen> {
   }
 
   Widget _buildHeroCard(int filteredCount, int completedCount) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.tintedCard(AppTheme.secondaryColor),
+      opacity: 0.15,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white.withValues(alpha: 0.8),
               borderRadius: AppTheme.pillRadius,
             ),
             child: const Text(
               'Learn and Move',
               style: TextStyle(
                 color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w700,
-                fontSize: AppTheme.meta,
-                letterSpacing: 0.4,
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -547,7 +477,7 @@ class _ContentScreenState extends State<ContentScreen> {
             'เรียนรู้ให้เข้าใจ แล้วลงมือทำได้ทันที',
             style: TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
               height: 1.2,
             ),
@@ -556,25 +486,26 @@ class _ContentScreenState extends State<ContentScreen> {
           const Text(
             'รวมบทความสุขภาพและวิดีโอออกกำลังกายที่หยิบใช้ได้ทุกวัน ทั้งอ่านสั้นและฝึกตามจริงในหน้าเดียว',
             style: TextStyle(
-              fontSize: AppTheme.body,
+              fontSize: 14,
               color: AppTheme.mutedText,
               height: 1.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           Row(
             children: [
               Expanded(
                 child: _buildHeroStat(
                   '$filteredCount คลิป',
-                  'พร้อมสำหรับระดับที่เลือก',
+                  'พร้อมสำหรับคุณ',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildHeroStat(
                   '$completedCount รายการ',
-                  'workout ที่บันทึกวันนี้',
+                  'บันทึกแล้ววันนี้',
                 ),
               ),
             ],
@@ -588,9 +519,9 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.78),
+        color: Colors.white.withValues(alpha: 0.4),
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: Colors.white),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,7 +530,7 @@ class _ContentScreenState extends State<ContentScreen> {
             value,
             style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
@@ -607,9 +538,10 @@ class _ContentScreenState extends State<ContentScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontSize: AppTheme.meta,
+              fontSize: 11,
               color: AppTheme.mutedText,
               height: 1.4,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -625,7 +557,7 @@ class _ContentScreenState extends State<ContentScreen> {
           title,
           style: const TextStyle(
             fontSize: AppTheme.title,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
             color: AppTheme.ink,
           ),
         ),
@@ -633,9 +565,10 @@ class _ContentScreenState extends State<ContentScreen> {
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: AppTheme.body,
+            fontSize: 13,
             color: AppTheme.mutedText,
             height: 1.45,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -646,9 +579,9 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.6),
         borderRadius: AppTheme.pillRadius,
-        border: Border.all(color: AppTheme.pageTintStrong),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: DropdownButton<String>(
         value: filter,
@@ -667,7 +600,8 @@ class _ContentScreenState extends State<ContentScreen> {
                   item == 'All' ? 'ทั้งหมด' : item,
                   style: const TextStyle(
                     color: AppTheme.ink,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -682,14 +616,14 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.macroBg(color),
+        color: color.withValues(alpha: 0.1),
         borderRadius: AppTheme.pillRadius,
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTheme.meta,
-          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
           color: color,
         ),
       ),
@@ -697,12 +631,13 @@ class _ContentScreenState extends State<ContentScreen> {
   }
 
   Widget _buildLevelPill(String level) {
-    final color = switch (level) {
-      'Beginner' => AppTheme.success,
-      'Intermediate' => AppTheme.warning,
-      _ => AppTheme.primaryColor,
+    final diff = DifficultyLevel.fromString(level);
+    final color = switch (diff) {
+      DifficultyLevel.beginner => AppTheme.success,
+      DifficultyLevel.intermediate => AppTheme.warning,
+      DifficultyLevel.expert => AppTheme.primaryColor,
     };
-    return _buildPill(level, color);
+    return _buildPill(diff.displayName, color);
   }
 
   Widget _buildWorkoutAction(
@@ -721,7 +656,7 @@ class _ContentScreenState extends State<ContentScreen> {
                 ? 'รอให้ครบเวลา'
                 : hasCompletedToday
                     ? 'ทำอีกครั้ง'
-                    : 'เริ่มก่อน';
+                    : 'เริ่มเลย';
 
     return GestureDetector(
       onTap: isSubmitting
@@ -750,24 +685,26 @@ class _ContentScreenState extends State<ContentScreen> {
             },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: started && !canFinish
-              ? AppTheme.pageTintStrong
+          gradient: started && !canFinish
+              ? null
               : hasCompletedToday
-                  ? AppTheme.macroBg(AppTheme.success)
-                  : AppTheme.primaryColor,
-          borderRadius: AppTheme.innerRadius,
-          border: Border.all(
-            color: hasCompletedToday
-                ? AppTheme.success.withValues(alpha: 0.14)
-                : started && !canFinish
-                    ? AppTheme.pageTintStrong
-                    : AppTheme.primaryColor,
-          ),
+                  ? null
+                  : AppTheme.primaryGradient,
+          color: started && !canFinish
+              ? Colors.white.withValues(alpha: 0.4)
+              : hasCompletedToday
+                  ? AppTheme.success.withValues(alpha: 0.1)
+                  : null,
+          borderRadius: AppTheme.pillRadius,
+          boxShadow: (started && !canFinish) || hasCompletedToday
+              ? null
+              : AppTheme.softShadow(AppTheme.primaryColor),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               isSubmitting
@@ -786,7 +723,7 @@ class _ContentScreenState extends State<ContentScreen> {
                       : Colors.white,
               size: 20,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 10),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -796,8 +733,8 @@ class _ContentScreenState extends State<ContentScreen> {
                     : hasCompletedToday
                         ? AppTheme.success
                         : Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
               ),
             ),
           ],
@@ -805,6 +742,7 @@ class _ContentScreenState extends State<ContentScreen> {
       ),
     );
   }
+
 
   String _workoutHint(WorkoutVideo video) {
     return switch (video.type) {

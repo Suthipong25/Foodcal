@@ -8,6 +8,8 @@ import '../models/daily_log.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/edit_food_dialog.dart';
+import '../widgets/animated_page_wrapper.dart';
+import '../widgets/glass_card.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -23,56 +25,61 @@ class HistoryScreen extends StatelessWidget {
       return const Scaffold(body: Center(child: Text('กรุณาเข้าสู่ระบบ')));
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.pageBg,
-      appBar: AppBar(
-        title: const Text('ประวัติการบันทึก',
-            style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.primaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: StreamBuilder<List<DailyLog>>(
-        stream: firestoreService.streamDailyLogs(user.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('เกิดข้อผิดพลาด: ${snapshot.error}'));
-          }
-
-          final logs = snapshot.data ?? [];
-          if (logs.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.clipboardList, size: 64, color: AppTheme.mutedText),
-                  SizedBox(height: 16),
-                  Text('ยังไม่มีข้อมูลการบันทึก',
-                      style: TextStyle(color: AppTheme.mutedText, fontSize: AppTheme.title)),
-                ],
-              ),
-            );
-          }
-
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(screenWidth)),
-              child: ListView.builder(
-                padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 32),
-                itemCount: logs.length,
-                itemBuilder: (context, index) {
-                  return _HistoryCard(log: logs[index], uid: user.uid);
-                },
-              ),
+    return AnimatedPageWrapper(
+      child: Column(
+        children: [
+          AppBar(
+            title: const Text('ประวัติการบันทึก',
+                style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(LucideIcons.chevronLeft, color: AppTheme.primaryColor),
+              onPressed: () => Navigator.pop(context),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: StreamBuilder<List<DailyLog>>(
+              stream: firestoreService.streamDailyLogs(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('เกิดข้อผิดพลาด: ${snapshot.error}'));
+                }
+
+                final logs = snapshot.data ?? [];
+                if (logs.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.clipboardList, size: 64, color: AppTheme.mutedText),
+                        SizedBox(height: 16),
+                        Text('ยังไม่มีข้อมูลการบันทึก',
+                            style: TextStyle(color: AppTheme.mutedText, fontSize: AppTheme.title, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  );
+                }
+
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(screenWidth)),
+                    child: ListView.builder(
+                      padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 32),
+                      itemCount: logs.length,
+                      itemBuilder: (context, index) {
+                        return _HistoryCard(log: logs[index], uid: user.uid);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -124,95 +131,93 @@ class _HistoryCardState extends State<_HistoryCard> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppTheme.cardRadius,
-        boxShadow: AppTheme.softShadow(AppTheme.calorieColor),
-        border: Border.all(color: AppTheme.calorieColor.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: _expanded ? const BorderRadius.vertical(top: Radius.circular(24)) : AppTheme.cardRadius,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(formattedDate,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.ink)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.macroBg(AppTheme.calorieColor),
-                          borderRadius: AppTheme.innerRadius,
-                        ),
-                        child: Text('${widget.log.caloriesIn} kcal',
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        opacity: 0.1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              borderRadius: AppTheme.cardRadius,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(formattedDate,
                             style: const TextStyle(
-                                color: AppTheme.calorieColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildMacroInfo('🥩', '${widget.log.protein}g', AppTheme.proteinColor),
-                      const SizedBox(width: 8),
-                      _buildMacroInfo('🌾', '${widget.log.carbs}g', AppTheme.carbsColor),
-                      const SizedBox(width: 8),
-                      _buildMacroInfo('🥑', '${widget.log.fat}g', AppTheme.fatColor),
-                      const SizedBox(width: 8),
-                      _buildMacroInfo('🔥', '${widget.log.caloriesOut} kcal', AppTheme.warning),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: _editWater,
-                        child: _buildMacroInfo('💧', '${widget.log.waterGlasses}', AppTheme.waterColor),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Icon(_expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                        size: 20, color: AppTheme.mutedText),
-                  ),
-                ],
+                                fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.ink)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                            borderRadius: AppTheme.innerRadius,
+                          ),
+                          child: Text('${widget.log.caloriesIn} kcal',
+                              style: const TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        _buildMacroInfo('🥩', '${widget.log.protein}g', AppTheme.proteinColor),
+                        const SizedBox(width: 8),
+                        _buildMacroInfo('🌾', '${widget.log.carbs}g', AppTheme.carbsColor),
+                        const SizedBox(width: 8),
+                        _buildMacroInfo('🥑', '${widget.log.fat}g', AppTheme.fatColor),
+                        const SizedBox(width: 8),
+                        _buildMacroInfo('🔥', '${widget.log.caloriesOut}', AppTheme.warning),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _editWater,
+                          child: _buildMacroInfo('💧', '${widget.log.waterGlasses}', AppTheme.waterColor),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Icon(_expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                          size: 18, color: AppTheme.mutedText),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (_expanded) _buildExpandedContent(),
-        ],
+            if (_expanded) _buildExpandedContent(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildExpandedContent() {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('รายการอาหาร', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.ink)),
-          const SizedBox(height: 10),
+          const Text('รายการอาหาร', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.ink)),
+          const SizedBox(height: 12),
           if (widget.log.foods.isEmpty)
-            const Text('ไม่มีรายการอาหาร', style: TextStyle(color: AppTheme.mutedText, fontSize: AppTheme.body))
+            const Text('ไม่มีรายการอาหาร', style: TextStyle(color: AppTheme.mutedText, fontSize: 13, fontWeight: FontWeight.w600))
           else
             ...widget.log.foods.map((food) => _buildFoodTile(food)),
           
           if (widget.log.workouts.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text('การออกกำลังกาย', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.ink)),
-            const SizedBox(height: 10),
+            const Text('การออกกำลังกาย', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.ink)),
+            const SizedBox(height: 12),
             ...widget.log.workouts.map((w) => _buildWorkoutTile(w)),
           ],
         ],
@@ -227,7 +232,7 @@ class _HistoryCardState extends State<_HistoryCard> {
       background: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.only(right: 16),
-        decoration: const BoxDecoration(color: Colors.red, borderRadius: AppTheme.innerRadius),
+        decoration: BoxDecoration(color: AppTheme.error.withValues(alpha: 0.8), borderRadius: AppTheme.innerRadius),
         alignment: Alignment.centerRight,
         child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
       ),
@@ -249,9 +254,10 @@ class _HistoryCardState extends State<_HistoryCard> {
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
-            color: AppTheme.pageTint,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.4),
             borderRadius: AppTheme.innerRadius,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -259,14 +265,14 @@ class _HistoryCardState extends State<_HistoryCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(food.name, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink)),
+                    Text(food.name, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink)),
                     Text('${food.mealType} • P${food.protein} C${food.carbs} F${food.fat}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.mutedText)),
+                        style: const TextStyle(fontSize: 12, color: AppTheme.mutedText, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
               Text('${food.calories} kcal',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryColor)),
             ],
           ),
         ),
@@ -280,25 +286,25 @@ class _HistoryCardState extends State<_HistoryCard> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.pinkAccent.withValues(alpha: 0.05),
+        color: Colors.pinkAccent.withValues(alpha: 0.08),
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
           const Icon(LucideIcons.dumbbell, size: 18, color: Colors.pinkAccent),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(w.title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.ink)),
+                Text(w.title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink)),
                 Text('${w.type} • ${w.minutes} นาที',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.mutedText)),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.mutedText, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
-          Text('$burned kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.pinkAccent)),
+          Text('$burned kcal', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.pinkAccent)),
         ],
       ),
     );
@@ -307,16 +313,17 @@ class _HistoryCardState extends State<_HistoryCard> {
   Widget _buildMacroInfo(String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.white.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Text(label, style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color)),
+            const SizedBox(height: 6),
+            Text(value, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: color)),
           ],
         ),
       ),

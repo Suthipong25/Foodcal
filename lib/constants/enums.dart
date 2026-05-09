@@ -114,6 +114,23 @@ enum WorkoutType {
       orElse: () => WorkoutType.cardio,
     );
   }
+
+  String get displayName {
+    switch (this) {
+      case WorkoutType.cardio:
+        return 'คาร์ดิโอ';
+      case WorkoutType.strength:
+        return 'เวทเทรนนิ่ง';
+      case WorkoutType.hiit:
+        return 'HIIT';
+      case WorkoutType.yoga:
+        return 'โยคะ';
+      case WorkoutType.pilates:
+        return 'พิลาทิส';
+      case WorkoutType.stretch:
+        return 'ยืดเหยียด';
+    }
+  }
 }
 
 /// Difficulty levels for workouts and exercises.
@@ -130,5 +147,16 @@ enum DifficultyLevel {
       (e) => e.value == str,
       orElse: () => DifficultyLevel.beginner,
     );
+  }
+
+  String get displayName {
+    switch (this) {
+      case DifficultyLevel.beginner:
+        return 'ระดับเริ่มต้น';
+      case DifficultyLevel.intermediate:
+        return 'ระดับกลาง';
+      case DifficultyLevel.expert:
+        return 'ระดับสูง';
+    }
   }
 }

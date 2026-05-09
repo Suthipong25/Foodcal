@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../app_theme.dart';
 import '../models/content_model.dart';
+import '../widgets/glass_card.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final List<Article> articles;
@@ -133,13 +134,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   children: [
                     _buildHeadlineCard(article),
                     const SizedBox(height: 18),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(AppTheme.cardPadding),
-                      decoration: AppTheme.elevatedCard(
-                        color: Colors.white,
-                        borderColor: AppTheme.pageTintStrong,
-                      ),
+                    GlassCard(
+                      padding: const EdgeInsets.all(24),
+                      opacity: 0.1,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: _buildBodyContent(article.body),
@@ -157,40 +154,39 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   }
 
   Widget _buildHeadlineCard(Article article) {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.tintedCard(AppTheme.primaryColor),
+      opacity: 0.15,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white.withValues(alpha: 0.8),
               borderRadius: AppTheme.pillRadius,
             ),
             child: Text(
               article.category,
               style: const TextStyle(
                 color: AppTheme.primaryColor,
-                fontSize: AppTheme.meta,
+                fontSize: 10,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
+                letterSpacing: 0.5,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text(
             article.title,
             style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
               height: 1.18,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           const Wrap(
             spacing: 10,
             runSpacing: 10,

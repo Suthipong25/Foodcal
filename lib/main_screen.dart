@@ -15,7 +15,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/tracking_screen.dart';
-import 'screens/weight_screen.dart';
+import 'widgets/glass_card.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'utils/app_logger.dart';
@@ -208,8 +208,8 @@ class _MainScreenState extends State<MainScreen> {
             : NetworkImage(profile.photoUrl!));
 
     return AppBar(
-      toolbarHeight: 88,
-      backgroundColor: Colors.white.withValues(alpha: 0.94),
+      toolbarHeight: 94,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       leadingWidth: 0,
@@ -217,11 +217,11 @@ class _MainScreenState extends State<MainScreen> {
       title: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFDFF0FF), Color(0xFFECF5FF)],
+                colors: [Color(0xFFEAF6FF), Color(0xFFF8FBFF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -239,35 +239,42 @@ class _MainScreenState extends State<MainScreen> {
                           ? profile.name[0].toUpperCase()
                           : 'F',
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
                         color: AppTheme.primaryColor,
                       ),
                     ),
                   )
                 : null,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppTheme.pageTintStrong,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    'Foodcal',
-                    style: TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF2F8FF),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Foodcal',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -275,18 +282,19 @@ class _MainScreenState extends State<MainScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppTheme.ink,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                    height: 1.1,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'กลับมาดูภาพรวมสุขภาพของวันนี้กัน',
+                  'ยินดีต้อนรับกลับมาดูแลตัวเอง',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.blueGrey[400],
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -295,17 +303,6 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       actions: [
-        _buildTopAction(
-          icon: LucideIcons.scale,
-          tooltip: 'น้ำหนัก',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => WeightScreen(profile: profile)),
-            );
-          },
-        ),
-        const SizedBox(width: 4),
         _buildTopAction(
           icon: LucideIcons.history,
           tooltip: 'ประวัติ',
@@ -316,27 +313,29 @@ class _MainScreenState extends State<MainScreen> {
             );
           },
         ),
+        const SizedBox(width: 4),
         Container(
           margin: const EdgeInsets.fromLTRB(8, 18, 16, 18),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFFF4DD), Color(0xFFFFFBF1)],
+              colors: [Color(0xFFFFF6DE), Color(0xFFFFFDF5)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: const Color(0xFFFFD797)),
+            boxShadow: AppTheme.softShadow(AppTheme.warning),
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.flame, color: Colors.orange[500], size: 16),
-              const SizedBox(width: 4),
+              Icon(LucideIcons.flame, color: Colors.orange[600], size: 16),
+              const SizedBox(width: 6),
               Text(
                 '${profile.streak} วัน',
                 style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   color: AppTheme.ink,
                 ),
               ),
@@ -380,25 +379,16 @@ class _MainScreenState extends State<MainScreen> {
           isCompact ? 10 : 14,
           isCompact ? 10 : 14,
         ),
-        child: Container(
+        child: GlassCard(
           padding: EdgeInsets.fromLTRB(
             isCompact ? 8 : 12,
             isCompact ? 8 : 10,
             isCompact ? 8 : 12,
             isCompact ? 8 : 12,
           ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFE0EAF8)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withValues(alpha: 0.10),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
+          opacity: 0.95,
+          borderRadius: BorderRadius.circular(24),
+          borderColor: const Color(0xFFE6EEF8),
           child: Row(
             children: [
               Expanded(
@@ -483,12 +473,12 @@ class _MainScreenState extends State<MainScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: active
-                      ? const [Color(0xFF1F6FEB), Color(0xFF3C8CFF)]
-                      : const [Color(0xFF317AF0), Color(0xFF69B2FF)],
+                      ? const [Color(0xFF63B2FF), Color(0xFF90D2FF)]
+                      : const [Color(0xFF76BCFF), Color(0xFFA6DDFF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
               ),
               child: Row(
@@ -541,19 +531,19 @@ class _MainScreenState extends State<MainScreen> {
           vertical: compact ? 8 : 9,
         ),
         decoration: BoxDecoration(
-          color: active ? AppTheme.pageTintStrong : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
+          color: active ? const Color(0xFFF1F8FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: active ? 18 : 0,
-              height: 3,
+              width: active ? 20 : 0,
+              height: 4,
               margin: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
+                color: AppTheme.secondaryColor,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),

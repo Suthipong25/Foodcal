@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../utils/app_logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIService {
   // ใช้ API Key จาก Environment variables (เช่น --dart-define=GEMINI_API_KEY=xxx)
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+  static String get _apiKey =>
+      dotenv.env['GEMINI_API_KEY'] ?? const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
   static bool get isConfigured => _apiKey.isNotEmpty;
 
@@ -36,7 +38,7 @@ class AIService {
   ) async {
     if (imageBytes.isEmpty || !isConfigured) return null;
 
-    final prompt =
+    const prompt =
         'You are an expert nutritionist. Analyze the food in the image and estimate its calories and macronutrients. Return ONLY a valid JSON object with the following keys: "name" (string, concise name of the food in Thai), "calories" (int), "protein" (int, grams), "carbs" (int, grams), "fat" (int, grams). Do not include any markdown formatting like ```json.';
 
     try {
@@ -98,11 +100,11 @@ class AIService {
   static Future<http.Response> _postWithModelFallback(String body) async {
     const maxRetriesPerModel = 2;
     const baseDelay = Duration(seconds: 2);
-    
+
     for (final model in _models) {
       final url = Uri.parse(
           'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$_apiKey');
-          
+
       for (int i = 0; i < maxRetriesPerModel; i++) {
         try {
           final response = await http.post(
@@ -110,23 +112,27 @@ class AIService {
             headers: {'Content-Type': 'application/json'},
             body: body,
           );
-          
+
           if (response.statusCode == 200) {
             return response;
           }
-          
+
           if (response.statusCode == 503 || response.statusCode == 429) {
-            AppLogger.info('Gemini API ($model) ${response.statusCode}: Retrying in ${baseDelay.inSeconds * (i + 1)}s...');
+            AppLogger.info(
+                'Gemini API ($model) ${response.statusCode}: Retrying in ${baseDelay.inSeconds * (i + 1)}s...');
             await Future.delayed(baseDelay * (i + 1));
             continue; // retry same model
           }
-          
+
           if (response.statusCode == 404) {
-            AppLogger.info('Gemini API ($model) 404: Model not found. Falling back to next model...');
+            AppLogger.info(
+                'Gemini API ($model) 404: Model not found. Falling back to next model...');
             break; // Break inner loop to try next model
           }
-          
-          if (i == maxRetriesPerModel - 1) return response; // Let caller handle other errors
+
+          if (i == maxRetriesPerModel - 1) {
+            return response; // Let caller handle other errors
+          }
         } catch (e) {
           if (i == maxRetriesPerModel - 1) rethrow;
           await Future.delayed(baseDelay * (i + 1));

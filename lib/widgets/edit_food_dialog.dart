@@ -115,82 +115,92 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
     return Padding(
       padding: EdgeInsets.only(bottom: insets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, -5))
+          ],
         ),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle bar
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
+                    width: 44, height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                        color: Colors.grey[300], borderRadius: BorderRadius.circular(99)),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Row(
                   children: [
-                    Icon(
-                      _isEdit ? LucideIcons.pencil : LucideIcons.plus,
-                      color: AppTheme.primaryColor,
-                      size: 20,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _isEdit ? LucideIcons.pencil : LucideIcons.plus,
+                        color: AppTheme.primaryColor,
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 14),
                     Text(
                       _isEdit ? 'แก้ไขรายการอาหาร' : 'เพิ่มอาหาร',
                       style: const TextStyle(
-                          fontSize: AppTheme.title,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
                           color: AppTheme.ink),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _field(_nameCtrl, 'ชื่ออาหาร', TextInputType.text),
-                const SizedBox(height: 12),
-                _field(_calCtrl, 'แคลอรี่ (kcal)', TextInputType.number),
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
+                _field(_nameCtrl, 'ชื่ออาหาร', TextInputType.text, icon: LucideIcons.tag),
+                const SizedBox(height: 14),
+                _field(_calCtrl, 'พลังงาน (แคลอรี่)', TextInputType.number, icon: LucideIcons.zap, suffix: 'kcal'),
+                const SizedBox(height: 20),
+                const Text('ข้อมูลโภชนาการ (กรัม)', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.mutedText, fontSize: 12)),
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    Expanded(child: _field(_proteinCtrl, 'โปรตีน (g)', TextInputType.number)),
+                    Expanded(child: _field(_proteinCtrl, 'โปรตีน', TextInputType.number)),
                     const SizedBox(width: 10),
-                    Expanded(child: _field(_carbsCtrl, 'คาร์บ (g)', TextInputType.number)),
+                    Expanded(child: _field(_carbsCtrl, 'คาร์บ', TextInputType.number)),
                     const SizedBox(width: 10),
-                    Expanded(child: _field(_fatCtrl, 'ไขมัน (g)', TextInputType.number)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text('มื้ออาหาร',
-                    style: TextStyle(
-                        fontSize: AppTheme.meta,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.mutedText)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _mealChip(
-                        'เช้า', AppConfig.mealTypeBreakfast, LucideIcons.sunrise),
-                    _mealChip(
-                        'กลางวัน', AppConfig.mealTypeLunch, LucideIcons.sun),
-                    _mealChip(
-                        'เย็น', AppConfig.mealTypeDinner, LucideIcons.sunset),
-                    _mealChip(
-                        'ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
+                    Expanded(child: _field(_fatCtrl, 'ไขมัน', TextInputType.number)),
                   ],
                 ),
                 const SizedBox(height: 20),
+                const Text('มื้ออาหาร',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.mutedText)),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _mealChip('เช้า', AppConfig.mealTypeBreakfast, LucideIcons.sunrise),
+                      const SizedBox(width: 8),
+                      _mealChip('กลางวัน', AppConfig.mealTypeLunch, LucideIcons.sun),
+                      const SizedBox(width: 8),
+                      _mealChip('เย็น', AppConfig.mealTypeDinner, LucideIcons.sunset),
+                      const SizedBox(width: 8),
+                      _mealChip('ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -200,10 +210,11 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
                       foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(AppTheme.buttonHeight),
                       shape: const RoundedRectangleBorder(borderRadius: AppTheme.innerRadius),
+                      elevation: 0,
                     ),
                     child: Text(
                       _isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                     ),
                   ),
                 ),
@@ -215,35 +226,51 @@ class _EditFoodDialogState extends State<EditFoodDialog> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String hint, TextInputType type) {
+  Widget _field(TextEditingController ctrl, String hint, TextInputType type, {IconData? icon, String? suffix}) {
     return TextField(
       controller: ctrl,
       keyboardType: type,
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
-        filled: true,
-        fillColor: AppTheme.pageTint,
-        border: const OutlineInputBorder(
-          borderRadius: AppTheme.innerRadius,
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        hintStyle: TextStyle(color: AppTheme.mutedText.withValues(alpha: 0.5), fontWeight: FontWeight.normal),
+        prefixIcon: icon != null ? Icon(icon, size: 18) : null,
+        suffixText: suffix,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
 
   Widget _mealChip(String label, String value, IconData icon) {
     final selected = _mealType == value;
-    return FilterChip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      avatar: Icon(icon, size: 14),
-      selected: selected,
-      onSelected: (_) => setState(() => _mealType = value),
-      selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-      checkmarkColor: AppTheme.primaryColor,
-      labelStyle: TextStyle(
-        color: selected ? AppTheme.primaryColor : AppTheme.mutedText,
-        fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+    return GestureDetector(
+      onTap: () => setState(() => _mealType = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? AppTheme.primaryColor : Colors.grey[200]!,
+          ),
+          boxShadow: selected ? AppTheme.softShadow(AppTheme.primaryColor) : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: selected ? Colors.white : AppTheme.mutedText, size: 14),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : AppTheme.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
