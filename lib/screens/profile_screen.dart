@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
@@ -707,6 +708,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildEditCard(String label, TextEditingController ctrl) {
+    final allowDecimal =
+        identical(ctrl, _weightCtrl) ||
+        identical(ctrl, _heightCtrl) ||
+        identical(ctrl, _targetWeightCtrl);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -729,7 +735,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextField(
             controller: ctrl,
             textAlign: TextAlign.left,
-            keyboardType: TextInputType.number,
+            keyboardType: TextInputType.numberWithOptions(
+              decimal: allowDecimal,
+            ),
+            inputFormatters: [
+              if (allowDecimal)
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}'))
+              else
+                FilteringTextInputFormatter.digitsOnly,
+            ],
             style: const TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 22,
