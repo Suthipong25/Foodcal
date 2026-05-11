@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +14,10 @@ import '../services/firestore_service.dart';
 import '../utils/datetime_utils.dart';
 import '../widgets/reminder_banner.dart';
 import '../widgets/tube_progress_bar.dart';
-import '../widgets/glass_card.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_icon_bubble.dart';
+import '../widgets/app_section_header.dart';
+import '../widgets/app_stat_card.dart';
 import 'ai_coach_screen.dart';
 
 class TipItem {
@@ -266,9 +269,8 @@ class _HeroCard extends StatelessWidget {
     final isOver = remainingCalories < 0;
     final emphasis = isOver ? AppTheme.error : AppTheme.primaryColor;
 
-    return GlassCard(
+    return AppCard(
       padding: EdgeInsets.all(isCompact ? 18 : 22),
-      opacity: 0.18,
       borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,34 +302,50 @@ class _HeroCard extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 18),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            child: Row(
+          if (isCompact) ...[
+            Row(
               children: [
-                _StatChip(
-                  label: isOver ? 'เกินเป้า' : 'เหลืออีก',
-                  value: '${remainingCalories.abs()} kcal',
-                  icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
-                  color: emphasis,
+                Expanded(
+                  child: _StatChip(
+                    label: isOver ? 'เกินเป้า' : 'เหลืออีก',
+                    value: '${remainingCalories.abs()} kcal',
+                    icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
+                    color: emphasis,
+                  ),
                 ),
                 const SizedBox(width: 10),
-                _StatChip(
-                  label: 'เป้าหมายน้ำดื่ม',
-                  value: '${profile.targetWaterGlasses} แก้ว',
-                  icon: LucideIcons.droplet,
-                  color: AppTheme.waterColor,
-                ),
-                const SizedBox(width: 10),
-                _StatChip(
-                  label: 'Streak',
-                  value: '${profile.streak} วัน',
-                  icon: LucideIcons.flame,
-                  color: AppTheme.warning,
+                Expanded(
+                  child: _StatChip(
+                    label: 'เป้าหมายน้ำดื่ม',
+                    value: '${profile.targetWaterGlasses} แก้ว',
+                    icon: LucideIcons.droplet,
+                    color: AppTheme.waterColor,
+                  ),
                 ),
               ],
             ),
-          ),
+          ] else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                children: [
+                  _StatChip(
+                    label: isOver ? 'เกินเป้า' : 'เหลืออีก',
+                    value: '${remainingCalories.abs()} kcal',
+                    icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
+                    color: emphasis,
+                  ),
+                  const SizedBox(width: 10),
+                  _StatChip(
+                    label: 'เป้าหมายน้ำดื่ม',
+                    value: '${profile.targetWaterGlasses} แก้ว',
+                    icon: LucideIcons.droplet,
+                    color: AppTheme.waterColor,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -449,54 +467,11 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 186,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: const Color(0xFFDDE8F4)),
-          boxShadow: AppTheme.softShadow(color),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: AppTheme.meta,
-                      color: AppTheme.mutedText,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: AppTheme.body,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.ink,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppStatCard(
+      label: label,
+      value: value,
+      icon: icon,
+      color: color,
     );
   }
 }
@@ -509,36 +484,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppTheme.pageTintStrong,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: AppTheme.primaryColor.withValues(alpha: 0.10),
-            ),
-          ),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: AppTheme.meta,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: AppTheme.body,
-            color: AppTheme.mutedText,
-          ),
-        ),
-      ],
+    return AppSectionHeader(
+      title: title,
+      subtitle: subtitle,
     );
   }
 }
@@ -564,9 +512,8 @@ class _MacroCard extends StatelessWidget {
     final remaining = target - current;
     final isOver = remaining < 0;
 
-    return GlassCard(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      opacity: 0.16,
       borderColor: const Color(0xFFDDE8F4),
       child: SizedBox(
         width: 158,
@@ -575,10 +522,9 @@ class _MacroCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: AppTheme.iconBubble(color),
+                AppIconBubble(
+                  color: color,
+                  size: 32,
                   child: Icon(icon, color: color, size: 16),
                 ),
                 const SizedBox(width: 8),
@@ -692,9 +638,8 @@ class _WeeklyChart extends StatelessWidget {
             .reduce(math.max)
             .toDouble();
 
-    return GlassCard(
+    return AppCard(
       padding: const EdgeInsets.all(20),
-      opacity: 0.18,
       borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,46 +769,50 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 118,
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.subtleCard(
-          background: Colors.white,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 126),
+        child: AppCard(
+          padding: const EdgeInsets.all(16),
           borderColor: const Color(0xFFDDE8F4),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: AppTheme.iconBubble(color),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              AppIconBubble(
+                color: color,
+                size: 40,
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.ink,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: AppTheme.meta,
-                    color: AppTheme.mutedText,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: AppTheme.meta,
+                      color: AppTheme.mutedText,
+                      height: 1.35,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -884,27 +833,25 @@ class _WaterCard extends StatelessWidget {
     final progress =
         targetWater > 0 ? (currentWater / targetWater).clamp(0.0, 1.0) : 0.0;
 
-    return GlassCard(
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      opacity: 0.16,
       borderColor: const Color(0xFFDDE8F4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: AppTheme.iconBubble(AppTheme.waterColor),
-                child: const Icon(
+              AppIconBubble(
+                color: AppTheme.waterColor,
+                size: 36,
+                child: Icon(
                   LucideIcons.droplet,
                   color: AppTheme.waterColor,
                   size: 18,
                 ),
               ),
-              const SizedBox(width: 10),
-              const Expanded(
+              SizedBox(width: 10),
+              Expanded(
                 child: Text(
                   'น้ำดื่มวันนี้',
                   style: TextStyle(
@@ -956,16 +903,14 @@ class _TipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(18),
-      decoration: AppTheme.subtleCard(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: AppTheme.iconBubble(tip.color),
+          AppIconBubble(
+            color: tip.color,
+            size: 36,
             child: Icon(
               LucideIcons.lightbulb,
               color: tip.color,

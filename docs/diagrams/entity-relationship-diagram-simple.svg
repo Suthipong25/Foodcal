@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1380" height="900" viewBox="0 0 1380 900">
+  <defs>
+    <style>
+      .title { font: 700 26px Arial, sans-serif; fill: #111; }
+      .head { font: 700 18px Arial, sans-serif; fill: #111; }
+      .text { font: 15px Arial, sans-serif; fill: #111; }
+      .box { fill: #fff; stroke: #222; stroke-width: 1.5; }
+      .line { stroke: #222; stroke-width: 1.8; fill: none; }
+      .rel { font: 700 14px Arial, sans-serif; fill: #111; }
+    </style>
+  </defs>
+  <rect width="1380" height="900" fill="#fff"/>
+  <text x="60" y="55" class="title">Entity Relationship Diagram</text>
+
+  <g>
+    <rect x="70" y="130" width="230" height="150" class="box"/>
+    <line x1="70" y1="175" x2="300" y2="175" class="line"/>
+    <text x="185" y="158" text-anchor="middle" class="head">User</text>
+    <text x="90" y="205" class="text">PK uid</text>
+    <text x="90" y="230" class="text">name</text>
+    <text x="90" y="255" class="text">gender</text>
+  </g>
+
+  <g>
+    <rect x="390" y="90" width="270" height="250" class="box"/>
+    <line x1="390" y1="135" x2="660" y2="135" class="line"/>
+    <text x="525" y="118" text-anchor="middle" class="head">UserProfile</text>
+    <text x="410" y="165" class="text">PK profileId</text>
+    <text x="410" y="190" class="text">FK uid</text>
+    <text x="410" y="215" class="text">height</text>
+    <text x="410" y="240" class="text">weight</text>
+    <text x="410" y="265" class="text">goal</text>
+    <text x="410" y="290" class="text">targetCalories</text>
+  </g>
+
+  <g>
+    <rect x="760" y="90" width="280" height="270" class="box"/>
+    <line x1="760" y1="135" x2="1040" y2="135" class="line"/>
+    <text x="900" y="118" text-anchor="middle" class="head">DailyLog</text>
+    <text x="780" y="165" class="text">PK date</text>
+    <text x="780" y="190" class="text">FK uid</text>
+    <text x="780" y="215" class="text">caloriesIn</text>
+    <text x="780" y="240" class="text">caloriesOut</text>
+    <text x="780" y="265" class="text">protein, carbs, fat</text>
+    <text x="780" y="290" class="text">waterGlasses</text>
+    <text x="780" y="315" class="text">lastUpdated</text>
+  </g>
+
+  <g>
+    <rect x="1110" y="90" width="220" height="190" class="box"/>
+    <line x1="1110" y1="135" x2="1330" y2="135" class="line"/>
+    <text x="1220" y="118" text-anchor="middle" class="head">FoodItem</text>
+    <text x="1130" y="165" class="text">PK id</text>
+    <text x="1130" y="190" class="text">FK log/date</text>
+    <text x="1130" y="215" class="text">name</text>
+    <text x="1130" y="240" class="text">calories</text>
+  </g>
+
+  <g>
+    <rect x="1110" y="360" width="220" height="190" class="box"/>
+    <line x1="1110" y1="405" x2="1330" y2="405" class="line"/>
+    <text x="1220" y="388" text-anchor="middle" class="head">WorkoutItem</text>
+    <text x="1130" y="435" class="text">PK id</text>
+    <text x="1130" y="460" class="text">FK log/date</text>
+    <text x="1130" y="485" class="text">title</text>
+    <text x="1130" y="510" class="text">minutes</text>
+  </g>
+
+  <g>
+    <rect x="390" y="500" width="270" height="170" class="box"/>
+    <line x1="390" y1="545" x2="660" y2="545" class="line"/>
+    <text x="525" y="528" text-anchor="middle" class="head">WeightLog</text>
+    <text x="410" y="575" class="text">PK date</text>
+    <text x="410" y="600" class="text">FK uid</text>
+    <text x="410" y="625" class="text">weightKg</text>
+  </g>
+
+  <line x1="300" y1="205" x2="390" y2="205" class="line"/>
+  <text x="345" y="193" text-anchor="middle" class="rel">1 : 1</text>
+
+  <line x1="660" y1="220" x2="760" y2="220" class="line"/>
+  <text x="710" y="208" text-anchor="middle" class="rel">1 : many</text>
+
+  <line x1="1040" y1="200" x2="1110" y2="200" class="line"/>
+  <text x="1075" y="188" text-anchor="middle" class="rel">1 : many</text>
+
+  <line x1="1040" y1="455" x2="1110" y2="455" class="line"/>
+  <text x="1075" y="443" text-anchor="middle" class="rel">1 : many</text>
+
+  <path d="M185 280 C185 430, 300 585, 390 585" class="line"/>
+  <text x="260" y="470" class="rel">1 : many</text>
+</svg>

@@ -179,9 +179,9 @@ class AppTheme {
   static LinearGradient pageBackground() {
     return const LinearGradient(
         colors: [
-          Color(0xFFFFFCFF),
           Color(0xFFF8FBFF),
-          Color(0xFFF3F9FF),
+          Color(0xFFF2F7FE),
+          Color(0xFFECF3FC),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,

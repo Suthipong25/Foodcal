@@ -35,7 +35,7 @@ class AdminScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        extendBodyBehindAppBar: true,
+        extendBodyBehindAppBar: false,
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -98,6 +98,8 @@ class _FeedbackTabState extends State<_FeedbackTab> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final topContentPadding =
+        16.0;
 
     return FutureBuilder<List<FeedbackLog>>(
       future: _feedbackFuture,
@@ -124,7 +126,11 @@ class _FeedbackTabState extends State<_FeedbackTab> {
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: ListView(
-            padding: AppTheme.pageInsetsForWidth(width, top: 120, bottom: 24),
+            padding: AppTheme.pageInsetsForWidth(
+              width,
+              top: topContentPadding,
+              bottom: 24,
+            ),
             children: [
               const _HeroCard(
                 title: 'ภาพรวมผลตอบรับ',
@@ -164,10 +170,12 @@ class _FeedbackTabState extends State<_FeedbackTab> {
               ...logs.take(12).map(
                     (log) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
+                      child: Container(
                         padding: const EdgeInsets.all(18),
-                        opacity: 0.18,
-                        borderColor: const Color(0xFFDDE8F4),
+                        decoration: AppTheme.subtleCard(
+                          background: Colors.white,
+                          borderColor: const Color(0xFFDDE8F4),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -252,6 +260,8 @@ class _UsersTabState extends State<_UsersTab> {
     final firestore = Provider.of<FirestoreService>(context, listen: false);
     final myUid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
     final width = MediaQuery.sizeOf(context).width;
+    final topContentPadding =
+        16.0;
 
     return FutureBuilder<List<UserProfile>>(
       future: _usersFuture,
@@ -271,7 +281,11 @@ class _UsersTabState extends State<_UsersTab> {
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: ListView(
-            padding: AppTheme.pageInsetsForWidth(width, top: 120, bottom: 24),
+            padding: AppTheme.pageInsetsForWidth(
+              width,
+              top: topContentPadding,
+              bottom: 24,
+            ),
             children: [
               const _HeroCard(
                 title: 'จัดการผู้ใช้งาน',
@@ -436,10 +450,12 @@ class _FeatureChartCard extends StatelessWidget {
     final keys = data.keys.toList();
     final maxVal = data.values.isNotEmpty ? data.values.reduce((a, b) => a > b ? a : b).toDouble() : 0.0;
 
-    return GlassCard(
+    return Container(
       padding: const EdgeInsets.all(22),
-      opacity: 0.18,
-      borderColor: const Color(0xFFDDE8F4),
+      decoration: AppTheme.subtleCard(
+        background: Colors.white,
+        borderColor: const Color(0xFFDDE8F4),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -558,10 +574,12 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return Container(
       padding: const EdgeInsets.all(22),
-      opacity: 0.22,
-      borderColor: const Color(0xFFDDE8F4),
+      decoration: AppTheme.subtleCard(
+        background: Colors.white,
+        borderColor: const Color(0xFFDDE8F4),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -624,12 +642,17 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 180,
-      child: GlassCard(
+      height: 160,
+      child: Container(
         padding: const EdgeInsets.all(16),
-        opacity: 0.18,
-        borderColor: color.withValues(alpha: 0.24),
+        decoration: AppTheme.subtleCard(
+          background: Colors.white,
+          borderColor: color.withValues(alpha: 0.24),
+          boxShadow: AppTheme.softShadow(color),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
@@ -654,7 +677,7 @@ class _MetricCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: 34,
                 fontWeight: FontWeight.w900,
                 color: AppTheme.ink,
               ),

@@ -28,8 +28,11 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? AppTheme.cardRadius;
-    final int alpha = (opacity * 255).toInt().clamp(0, 255);
-    final int heavyAlpha = (opacity * 1.6 * 255).toInt().clamp(0, 255);
+    final effectiveOpacity = opacity < 0.16 ? 0.16 : opacity;
+    final int alpha = (effectiveOpacity * 255).toInt().clamp(0, 255);
+    final int heavyAlpha = (effectiveOpacity * 1.6 * 255).toInt().clamp(0, 255);
+    final resolvedBorderColor =
+        borderColor ?? const Color(0xFFDDE7F3);
 
     return Container(
       decoration: BoxDecoration(
@@ -55,8 +58,8 @@ class GlassCard extends StatelessWidget {
                   ),
               borderRadius: radius,
               border: Border.all(
-                color: borderColor ?? const Color(0x3DFFFFFF),
-                width: 1.2,
+                color: resolvedBorderColor,
+                width: 1.15,
               ),
             ),
             child: child,

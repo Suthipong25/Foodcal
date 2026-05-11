@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980">
+  <defs>
+    <style>
+      .title { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #17324d; }
+      .subtitle { font: 400 18px 'Segoe UI', Arial, sans-serif; fill: #52708c; }
+      .entityTitle { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #17324d; }
+      .field { font: 400 16px 'Segoe UI', Arial, sans-serif; fill: #35516c; }
+      .rel { font: 700 16px 'Segoe UI', Arial, sans-serif; fill: #1f4f7a; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#b6cbe2" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1500" height="980" fill="#f4f9ff"/>
+  <text x="80" y="70" class="title">Foodcal Entity Relationship Diagram</text>
+  <text x="80" y="105" class="subtitle">Core data entities for user account, profile, daily logs, meals, workouts, and weight tracking</text>
+
+  <g filter="url(#shadow)">
+    <rect x="90" y="180" rx="24" ry="24" width="260" height="220" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="90" y="180" rx="24" ry="24" width="260" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="220" y="217" text-anchor="middle" class="entityTitle">User</text>
+    <text x="115" y="270" class="field">PK uid</text>
+    <text x="115" y="302" class="field">email</text>
+    <text x="115" y="334" class="field">displayName</text>
+    <text x="115" y="366" class="field">createdAt</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="430" y="140" rx="24" ry="24" width="300" height="330" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="430" y="140" rx="24" ry="24" width="300" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="580" y="177" text-anchor="middle" class="entityTitle">UserProfile</text>
+    <text x="455" y="230" class="field">PK profileId</text>
+    <text x="455" y="262" class="field">FK uid</text>
+    <text x="455" y="294" class="field">name</text>
+    <text x="455" y="326" class="field">gender</text>
+    <text x="455" y="358" class="field">age</text>
+    <text x="455" y="390" class="field">weight</text>
+    <text x="455" y="422" class="field">height</text>
+    <text x="455" y="454" class="field">goalType</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="850" y="140" rx="24" ry="24" width="310" height="360" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="850" y="140" rx="24" ry="24" width="310" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="1005" y="177" text-anchor="middle" class="entityTitle">DailyLog</text>
+    <text x="875" y="230" class="field">PK logId</text>
+    <text x="875" y="262" class="field">FK uid</text>
+    <text x="875" y="294" class="field">date</text>
+    <text x="875" y="326" class="field">caloriesIn</text>
+    <text x="875" y="358" class="field">protein</text>
+    <text x="875" y="390" class="field">carbs</text>
+    <text x="875" y="422" class="field">fat</text>
+    <text x="875" y="454" class="field">waterGlasses</text>
+    <text x="875" y="486" class="field">lastUpdated</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1230" y="120" rx="24" ry="24" width="220" height="250" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="1230" y="120" rx="24" ry="24" width="220" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="1340" y="157" text-anchor="middle" class="entityTitle">FoodEntry</text>
+    <text x="1255" y="210" class="field">PK foodId</text>
+    <text x="1255" y="242" class="field">FK logId</text>
+    <text x="1255" y="274" class="field">name</text>
+    <text x="1255" y="306" class="field">calories</text>
+    <text x="1255" y="338" class="field">protein / carbs / fat</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1230" y="460" rx="24" ry="24" width="220" height="220" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="1230" y="460" rx="24" ry="24" width="220" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="1340" y="497" text-anchor="middle" class="entityTitle">WorkoutEntry</text>
+    <text x="1255" y="550" class="field">PK workoutId</text>
+    <text x="1255" y="582" class="field">FK logId</text>
+    <text x="1255" y="614" class="field">title</text>
+    <text x="1255" y="646" class="field">duration</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="430" y="610" rx="24" ry="24" width="300" height="240" fill="#ffffff" stroke="#b8d2ef" stroke-width="2"/>
+    <rect x="430" y="610" rx="24" ry="24" width="300" height="58" fill="#e8f2ff" stroke="#b8d2ef" stroke-width="2"/>
+    <text x="580" y="647" text-anchor="middle" class="entityTitle">WeightLog</text>
+    <text x="455" y="700" class="field">PK weightLogId</text>
+    <text x="455" y="732" class="field">FK uid</text>
+    <text x="455" y="764" class="field">date</text>
+    <text x="455" y="796" class="field">weight</text>
+  </g>
+
+  <line x1="350" y1="265" x2="430" y2="265" stroke="#4d86c6" stroke-width="3"/>
+  <text x="390" y="250" text-anchor="middle" class="rel">1 : 1</text>
+
+  <line x1="730" y1="320" x2="850" y2="320" stroke="#4d86c6" stroke-width="3"/>
+  <text x="790" y="305" text-anchor="middle" class="rel">1 : many</text>
+
+  <line x1="1090" y1="250" x2="1230" y2="250" stroke="#4d86c6" stroke-width="3"/>
+  <text x="1160" y="235" text-anchor="middle" class="rel">1 : many</text>
+
+  <line x1="1090" y1="560" x2="1230" y2="560" stroke="#4d86c6" stroke-width="3"/>
+  <text x="1160" y="545" text-anchor="middle" class="rel">1 : many</text>
+
+  <path d="M220 400 C220 560, 380 730, 430 730" fill="none" stroke="#4d86c6" stroke-width="3"/>
+  <text x="300" y="600" class="rel">1 : many</text>
+
+  <rect x="80" y="900" rx="24" ry="24" width="1340" height="46" fill="#ffffff" stroke="#d3e2f2" stroke-width="2"/>
+  <text x="105" y="929" class="field">Relationship summary: One user has one profile, many daily logs, and many weight logs. Each daily log can contain many food entries and many workout entries.</text>
+</svg>
