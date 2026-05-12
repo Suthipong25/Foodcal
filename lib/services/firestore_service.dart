@@ -286,6 +286,16 @@ class FirestoreService {
             snap.docs.map((doc) => DailyLog.fromMap(doc.data())).toList());
   }
 
+  Future<List<DailyLog>> getRecentDailyLogs(String uid, {int limit = 7}) async {
+    final snap = await _usersRef
+        .doc(uid)
+        .collection('daily_logs')
+        .orderBy('date', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map((doc) => DailyLog.fromMap(doc.data())).toList();
+  }
+
   Stream<List<WorkoutVideo>> streamWorkoutVideos() {
     return _db
         .collection('workout_videos')

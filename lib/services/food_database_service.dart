@@ -93,7 +93,7 @@ class FoodDatabaseService {
             'product_name,product_name_th,nutriments,serving_size,quantity',
       });
 
-      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;

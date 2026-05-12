@@ -30,10 +30,10 @@ class WorkoutVideo {
 const List<WorkoutVideo> fallbackWorkoutVideos = [
   WorkoutVideo(
     id: 1001,
-    title: 'คาร์ดิโอ 15 นาที สำหรับมือใหม่',
+    title: 'ออกกำลังกายทั่วร่างกาย 20 นาที',
     level: 'Beginner',
-    duration: '15 min',
-    type: 'Cardio',
+    duration: '20 min',
+    type: 'Strength',
     youtubeUrl: 'https://www.youtube.com/watch?v=IT94xC35u6k',
   ),
   WorkoutVideo(

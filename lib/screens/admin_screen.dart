@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
 import '../constants/enums.dart';
+import '../models/daily_log.dart';
 import '../models/feedback_log.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
@@ -98,8 +99,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final topContentPadding =
-        16.0;
+    const topContentPadding = 16.0;
 
     return FutureBuilder<List<FeedbackLog>>(
       future: _feedbackFuture,
@@ -241,6 +241,7 @@ class _UsersTab extends StatefulWidget {
 
 class _UsersTabState extends State<_UsersTab> {
   late Future<List<UserProfile>> _usersFuture;
+  static const String _unknownGoalKey = 'unknown';
 
   @override
   void initState() {
@@ -255,13 +256,139 @@ class _UsersTabState extends State<_UsersTab> {
     });
   }
 
+  String _normalizeGoal(String rawGoal) {
+    switch (rawGoal.trim().toLowerCase()) {
+      case 'lose':
+        return HealthGoal.lose.value;
+      case 'maintain':
+        return HealthGoal.maintain.value;
+      case 'gain':
+        return HealthGoal.gain.value;
+      default:
+        return _unknownGoalKey;
+    }
+  }
+
+  String _goalLabel(String rawGoal) {
+    switch (_normalizeGoal(rawGoal)) {
+      case 'lose':
+        return 'ลดน้ำหนัก';
+      case 'maintain':
+        return 'รักษาน้ำหนัก';
+      case 'gain':
+        return 'เพิ่มน้ำหนัก';
+      default:
+        return 'ไม่ระบุ';
+    }
+  }
+
+  Color _goalColor(String rawGoal) {
+    switch (_normalizeGoal(rawGoal)) {
+      case 'lose':
+        return AppTheme.primaryColor;
+      case 'maintain':
+        return AppTheme.success;
+      case 'gain':
+        return AppTheme.warning;
+      default:
+        return AppTheme.mutedText;
+    }
+  }
+
+  bool _hasMeaningfulLog(DailyLog log) {
+    return log.caloriesIn > 0 ||
+        log.waterGlasses > 0 ||
+        log.foods.isNotEmpty ||
+        log.workouts.isNotEmpty;
+  }
+
+  Future<Map<String, _GoalOutcome>> _loadGoalOutcomes(
+    FirestoreService firestore,
+    List<UserProfile> users,
+  ) async {
+    final entries = await Future.wait(
+      users.map((user) async {
+        final logs = await firestore.getRecentDailyLogs(user.uid, limit: 7);
+        return MapEntry(user.uid, _evaluateGoalOutcome(user, logs));
+      }),
+    );
+    return Map<String, _GoalOutcome>.fromEntries(entries);
+  }
+
+  _GoalOutcome _evaluateGoalOutcome(UserProfile user, List<DailyLog> logs) {
+    final normalizedGoal = _normalizeGoal(user.goal);
+    if (normalizedGoal == _unknownGoalKey) {
+      return const _GoalOutcome(
+        status: _GoalOutcomeStatus.unknown,
+        label: 'ไม่ระบุเป้าหมาย',
+        detail: 'ยังไม่สามารถประเมินผลย้อนหลัง 7 วันได้',
+      );
+    }
+
+    final List<DailyLog> meaningfulLogs = logs.where(_hasMeaningfulLog).toList();
+    if (meaningfulLogs.length < 4) {
+      return _GoalOutcome(
+        status: _GoalOutcomeStatus.insufficient,
+        label: 'ข้อมูลไม่พอ',
+        detail: 'มีข้อมูล ${meaningfulLogs.length}/7 วัน ยังประเมินไม่แม่นพอ',
+      );
+    }
+
+    final totalCalories = meaningfulLogs.fold<int>(
+      0,
+      (sum, log) => sum + log.caloriesIn,
+    );
+    final avgCalories = totalCalories / meaningfulLogs.length;
+    final target = user.targetCalories <= 0 ? 1 : user.targetCalories;
+
+    bool metDay(DailyLog log) {
+      switch (normalizedGoal) {
+        case 'lose':
+          return log.caloriesIn <= target * 1.05;
+        case 'maintain':
+          return (log.caloriesIn - target).abs() <= target * 0.08;
+        case 'gain':
+          return log.caloriesIn >= target * 0.95;
+        default:
+          return false;
+      }
+    }
+
+    final metDays = meaningfulLogs.where(metDay).length;
+    final successRate = metDays / meaningfulLogs.length;
+
+    if (successRate >= 0.7) {
+      return _GoalOutcome(
+        status: _GoalOutcomeStatus.reached,
+        label: 'ถึงเป้าหมาย',
+        detail:
+            '7 วันล่าสุดทำได้ $metDays/${meaningfulLogs.length} วัน ค่าเฉลี่ย ${avgCalories.toStringAsFixed(0)} kcal',
+      );
+    }
+
+    if (successRate >= 0.4) {
+      return _GoalOutcome(
+        status: _GoalOutcomeStatus.close,
+        label: 'ใกล้ถึงเป้าหมาย',
+        detail:
+            '7 วันล่าสุดทำได้ $metDays/${meaningfulLogs.length} วัน ค่าเฉลี่ย ${avgCalories.toStringAsFixed(0)} kcal',
+      );
+    }
+
+    return _GoalOutcome(
+      status: _GoalOutcomeStatus.notReached,
+      label: 'ยังไม่ถึงเป้าหมาย',
+      detail:
+          '7 วันล่าสุดทำได้ $metDays/${meaningfulLogs.length} วัน ค่าเฉลี่ย ${avgCalories.toStringAsFixed(0)} kcal',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final firestore = Provider.of<FirestoreService>(context, listen: false);
     final myUid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
     final width = MediaQuery.sizeOf(context).width;
-    final topContentPadding =
-        16.0;
+    const topContentPadding = 16.0;
 
     return FutureBuilder<List<UserProfile>>(
       future: _usersFuture,
@@ -270,26 +397,34 @@ class _UsersTabState extends State<_UsersTab> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('โหลดผู้ใช้ไม่สำเร็จ: ${snapshot.error}'));
+          return Center(child: Text('Failed to load users: ${snapshot.error}'));
         }
 
         final users = snapshot.data ?? [];
-        final admins = users
-            .where((e) => UserRole.fromString(e.role) == UserRole.admin)
-            .length;
+        final admins = users.where((e) => UserRole.fromString(e.role) == UserRole.admin).length;
+        final trackedUsers = users.where((e) => UserRole.fromString(e.role) == UserRole.user).toList();
+        final goalCounts = <String, int>{
+          HealthGoal.lose.value: 0,
+          HealthGoal.maintain.value: 0,
+          HealthGoal.gain.value: 0,
+          _unknownGoalKey: 0,
+        };
+
+        for (final user in trackedUsers) {
+          final normalizedGoal = _normalizeGoal(user.goal);
+          goalCounts[normalizedGoal] = (goalCounts[normalizedGoal] ?? 0) + 1;
+        }
+
+        final goalOutcomesFuture = _loadGoalOutcomes(firestore, trackedUsers);
 
         return RefreshIndicator(
           onRefresh: () async => _loadData(),
           child: ListView(
-            padding: AppTheme.pageInsetsForWidth(
-              width,
-              top: topContentPadding,
-              bottom: 24,
-            ),
+            padding: AppTheme.pageInsetsForWidth(width, top: topContentPadding, bottom: 24),
             children: [
               const _HeroCard(
-                title: 'จัดการผู้ใช้งาน',
-                subtitle: 'ดูรายชื่อผู้ใช้ ปรับสิทธิ์ และลบบัญชีได้จากหน้านี้',
+                title: 'User management',
+                subtitle: 'Review each user goal and check whether the latest 7-day result is on track',
                 icon: LucideIcons.users,
               ),
               const SizedBox(height: 18),
@@ -299,14 +434,14 @@ class _UsersTabState extends State<_UsersTab> {
                 child: Row(
                   children: [
                     _MetricCard(
-                      label: 'ผู้ใช้ทั้งหมด',
-                      value: '${users.length}',
+                      label: 'Users',
+                      value: '${trackedUsers.length}',
                       icon: LucideIcons.user,
                       color: AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 12),
                     _MetricCard(
-                      label: 'ผู้ดูแลระบบ',
+                      label: 'Admins',
                       value: '$admins',
                       icon: LucideIcons.shieldCheck,
                       color: const Color(0xFF8A5CF6),
@@ -316,125 +451,252 @@ class _UsersTabState extends State<_UsersTab> {
               ),
               const SizedBox(height: 18),
               const _SectionHeader(
-                title: 'รายชื่อผู้ใช้',
-                subtitle: 'คุณไม่สามารถจัดการบัญชีของตัวเองได้ที่นี่',
+                title: 'Goal summary',
+                subtitle: 'Count current goals for active users and group invalid values as unknown',
               ),
               const SizedBox(height: 14),
-              ...users.map(
-                    (user) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
-                        padding: const EdgeInsets.all(18),
-                        opacity: 0.1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    user.name.isNotEmpty
-                                        ? user.name[0].toUpperCase()
-                                        : 'U',
-                                    style: const TextStyle(
-                                      color: AppTheme.primaryColor,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user.name.isNotEmpty ? user.name : 'Unknown',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          color: AppTheme.ink,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'สมัครเมื่อ ${DateFormat('dd/MM/yyyy').format(user.joinedDate)}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppTheme.mutedText,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                _StatusPill(
-                                  text: user.role.toUpperCase(),
-                                  color: UserRole.fromString(user.role) ==
-                                          UserRole.admin
-                                      ? const Color(0xFF8A5CF6)
-                                      : AppTheme.success,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            if (user.uid == myUid)
-                              const Center(
-                                child: Text(
-                                  'บัญชีของคุณ (แก้ไขได้ที่หน้าโปรไฟล์)',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.mutedText,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              )
-                            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                  children: [
+                    _MetricCard(
+                      label: 'Lose',
+                      value: '${goalCounts[HealthGoal.lose.value] ?? 0}',
+                      icon: LucideIcons.trendingDown,
+                      color: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 12),
+                    _MetricCard(
+                      label: 'Maintain',
+                      value: '${goalCounts[HealthGoal.maintain.value] ?? 0}',
+                      icon: LucideIcons.target,
+                      color: AppTheme.success,
+                    ),
+                    const SizedBox(width: 12),
+                    _MetricCard(
+                      label: 'Gain',
+                      value: '${goalCounts[HealthGoal.gain.value] ?? 0}',
+                      icon: LucideIcons.trendingUp,
+                      color: AppTheme.warning,
+                    ),
+                    const SizedBox(width: 12),
+                    _MetricCard(
+                      label: 'Unknown',
+                      value: '${goalCounts[_unknownGoalKey] ?? 0}',
+                      icon: LucideIcons.helpCircle,
+                      color: AppTheme.mutedText,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionHeader(
+                title: 'User progress',
+                subtitle: 'Evaluate each user against the latest 7-day result',
+              ),
+              const SizedBox(height: 14),
+              FutureBuilder<Map<String, _GoalOutcome>>(
+                future: goalOutcomesFuture,
+                builder: (context, outcomeSnapshot) {
+                  if (outcomeSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final outcomes = outcomeSnapshot.data ?? const <String, _GoalOutcome>{};
+
+                  return Column(
+                    children: trackedUsers.map((user) {
+                      final outcome = outcomes[user.uid] ?? const _GoalOutcome(
+                        status: _GoalOutcomeStatus.unknown,
+                        label: 'Unknown',
+                        detail: 'No 7-day data available',
+                      );
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(18),
+                          opacity: 0.1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Row(
                                 children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _showRoleDialog(context, user, firestore, _loadData),
-                                      icon: const Icon(LucideIcons.userCog, size: 16),
-                                      label: const Text('ปรับสิทธิ์', style: TextStyle(fontWeight: FontWeight.w700)),
-                                      style: OutlinedButton.styleFrom(
-                                        backgroundColor: Colors.white.withValues(alpha: 0.4),
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                      style: const TextStyle(
+                                        color: AppTheme.primaryColor,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 20,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 16),
                                   Expanded(
-                                    child: ElevatedButton.icon(
-                                      style: _dialogPrimaryButtonStyle(
-                                        backgroundColor: AppTheme.error,
-                                      ),
-                                      onPressed: () =>
-                                          _showDeleteDialog(context, user, firestore, _loadData),
-                                      icon: const Icon(LucideIcons.trash2, size: 16),
-                                      label: const Text('ลบบัญชี', style: TextStyle(fontWeight: FontWeight.w800)),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          user.name.isNotEmpty ? user.name : 'Unknown',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: AppTheme.ink,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Joined ${DateFormat('dd/MM/yyyy').format(user.joinedDate)}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppTheme.mutedText,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  _StatusPill(
+                                    text: _goalLabel(user.goal),
+                                    color: _goalColor(user.goal),
                                   ),
                                 ],
                               ),
-                          ],
+                              const SizedBox(height: 14),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: outcome.color.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: outcome.color.withValues(alpha: 0.20)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(LucideIcons.calendarDays, size: 16, color: outcome.color),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Last 7 days: ${outcome.label}',
+                                          style: TextStyle(
+                                            color: outcome.color,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      outcome.detail,
+                                      style: const TextStyle(
+                                        color: AppTheme.mutedText,
+                                        fontSize: 12,
+                                        height: 1.4,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              if (user.uid == myUid)
+                                const Center(
+                                  child: Text(
+                                    'Your account can be edited from the profile screen',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppTheme.mutedText,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => _showRoleDialog(context, user, firestore, _loadData),
+                                        icon: const Icon(LucideIcons.userCog, size: 16),
+                                        label: const Text('Edit role', style: TextStyle(fontWeight: FontWeight.w700)),
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: Colors.white.withValues(alpha: 0.4),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: _dialogPrimaryButtonStyle(backgroundColor: AppTheme.error),
+                                        onPressed: () => _showDeleteDialog(context, user, firestore, _loadData),
+                                        icon: const Icon(LucideIcons.trash2, size: 16),
+                                        label: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w800)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
             ],
           ),
         );
       },
     );
+  }
+}
+
+enum _GoalOutcomeStatus {
+  reached,
+  close,
+  notReached,
+  insufficient,
+  unknown,
+}
+
+class _GoalOutcome {
+  final _GoalOutcomeStatus status;
+  final String label;
+  final String detail;
+
+  const _GoalOutcome({
+    required this.status,
+    required this.label,
+    required this.detail,
+  });
+
+  Color get color {
+    switch (status) {
+      case _GoalOutcomeStatus.reached:
+        return AppTheme.success;
+      case _GoalOutcomeStatus.close:
+        return AppTheme.warning;
+      case _GoalOutcomeStatus.notReached:
+        return AppTheme.error;
+      case _GoalOutcomeStatus.insufficient:
+      case _GoalOutcomeStatus.unknown:
+        return AppTheme.mutedText;
+    }
   }
 }
 
@@ -935,4 +1197,3 @@ class _AdminMessageState extends StatelessWidget {
     );
   }
 }
-

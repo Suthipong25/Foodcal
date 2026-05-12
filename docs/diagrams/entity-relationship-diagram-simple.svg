@@ -1,3 +1,4 @@
+<<<<<<< ours
 <svg xmlns="http://www.w3.org/2000/svg" width="1380" height="900" viewBox="0 0 1380 900">
   <defs>
     <style>
@@ -89,4 +90,104 @@
 
   <path d="M185 280 C185 430, 300 585, 390 585" class="line"/>
   <text x="260" y="470" class="rel">1 : many</text>
+=======
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="980" viewBox="0 0 1420 980">
+  <defs>
+    <linearGradient id="entityBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fafcff"/>
+      <stop offset="100%" stop-color="#eff5ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1d2a3a; }
+      .subtitle { font: 16px Arial, sans-serif; fill: #5d6b7c; }
+      .head { font: 700 19px Arial, sans-serif; fill: #203041; }
+      .text { font: 15px Arial, sans-serif; fill: #24384d; }
+      .entity { fill: url(#entityBg); stroke: #b9cfee; stroke-width: 2; rx: 22; ry: 22; }
+      .divider { stroke: #b9cfee; stroke-width: 1.5; }
+      .line { stroke: #7489a6; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .rel { font: 700 14px Arial, sans-serif; fill: #52657f; }
+    </style>
+  </defs>
+
+  <rect width="1420" height="980" fill="#ffffff"/>
+  <text x="70" y="68" class="title">Entity Relationship Diagram</text>
+  <text x="70" y="98" class="subtitle">Core data structure of the Foodcal application</text>
+
+  <g>
+    <rect x="100" y="340" width="260" height="180" class="entity"/>
+    <line x1="100" y1="388" x2="360" y2="388" class="divider"/>
+    <text x="230" y="370" text-anchor="middle" class="head">User</text>
+    <text x="122" y="420" class="text">PK uid</text>
+    <text x="122" y="448" class="text">name</text>
+    <text x="122" y="476" class="text">email</text>
+    <text x="122" y="504" class="text">role</text>
+  </g>
+
+  <g>
+    <rect x="470" y="120" width="320" height="220" class="entity"/>
+    <line x1="470" y1="168" x2="790" y2="168" class="divider"/>
+    <text x="630" y="150" text-anchor="middle" class="head">UserProfile</text>
+    <text x="492" y="200" class="text">PK profileId</text>
+    <text x="492" y="228" class="text">FK uid</text>
+    <text x="492" y="256" class="text">height</text>
+    <text x="492" y="284" class="text">weight</text>
+    <text x="492" y="312" class="text">goal</text>
+  </g>
+
+  <g>
+    <rect x="470" y="380" width="320" height="240" class="entity"/>
+    <line x1="470" y1="428" x2="790" y2="428" class="divider"/>
+    <text x="630" y="410" text-anchor="middle" class="head">DailyLog</text>
+    <text x="492" y="460" class="text">PK date</text>
+    <text x="492" y="488" class="text">FK uid</text>
+    <text x="492" y="516" class="text">caloriesIn</text>
+    <text x="492" y="544" class="text">protein</text>
+    <text x="492" y="572" class="text">carbs</text>
+    <text x="492" y="600" class="text">fat</text>
+  </g>
+
+  <g>
+    <rect x="470" y="690" width="320" height="180" class="entity"/>
+    <line x1="470" y1="738" x2="790" y2="738" class="divider"/>
+    <text x="630" y="720" text-anchor="middle" class="head">WeightLog</text>
+    <text x="492" y="770" class="text">PK date</text>
+    <text x="492" y="798" class="text">FK uid</text>
+    <text x="492" y="826" class="text">weightKg</text>
+  </g>
+
+  <g>
+    <rect x="960" y="190" width="300" height="190" class="entity"/>
+    <line x1="960" y1="238" x2="1260" y2="238" class="divider"/>
+    <text x="1110" y="220" text-anchor="middle" class="head">FoodItem</text>
+    <text x="982" y="270" class="text">PK id</text>
+    <text x="982" y="298" class="text">FK dailyLogDate</text>
+    <text x="982" y="326" class="text">name</text>
+    <text x="982" y="354" class="text">calories</text>
+  </g>
+
+  <g>
+    <rect x="960" y="540" width="300" height="190" class="entity"/>
+    <line x1="960" y1="588" x2="1260" y2="588" class="divider"/>
+    <text x="1110" y="570" text-anchor="middle" class="head">WorkoutItem</text>
+    <text x="982" y="620" class="text">PK id</text>
+    <text x="982" y="648" class="text">FK dailyLogDate</text>
+    <text x="982" y="676" class="text">title</text>
+    <text x="982" y="704" class="text">minutes</text>
+  </g>
+
+  <path d="M360 390 L415 390 L415 230 L470 230" class="line"/>
+  <text x="382" y="300" class="rel">1 : 1</text>
+
+  <path d="M360 430 L470 430" class="line"/>
+  <text x="390" y="418" class="rel">1 : many</text>
+
+  <path d="M360 470 L415 470 L415 780 L470 780" class="line"/>
+  <text x="382" y="640" class="rel">1 : many</text>
+
+  <path d="M790 500 L875 500 L875 285 L960 285" class="line"/>
+  <text x="845" y="382" class="rel">1 : many</text>
+
+  <path d="M790 550 L875 550 L875 635 L960 635" class="line"/>
+  <text x="845" y="610" class="rel">1 : many</text>
+>>>>>>> theirs
 </svg>

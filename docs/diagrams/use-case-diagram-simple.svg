@@ -1,3 +1,4 @@
+<<<<<<< ours
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820">
   <defs>
     <style>
@@ -60,5 +61,87 @@
     <line x1="225" y1="335" x2="920" y2="480"/>
     <line x1="225" y1="345" x2="485" y2="620"/>
     <line x1="225" y1="355" x2="810" y2="620"/>
+=======
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980">
+  <defs>
+    <linearGradient id="panelBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="100%" stop-color="#eef5ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #1d2a3a; }
+      .subtitle { font: 16px Arial, sans-serif; fill: #5d6b7c; }
+      .label { font: 16px Arial, sans-serif; fill: #233245; }
+      .actorText { font: 700 18px Arial, sans-serif; fill: #233245; }
+      .systemBox { fill: url(#panelBg); stroke: #bfd3ee; stroke-width: 2; rx: 26; ry: 26; }
+      .usecase { fill: #ffffff; stroke: #7aa6e8; stroke-width: 1.8; }
+      .line { stroke: #7a8ca5; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .actorStroke { stroke: #5477aa; stroke-width: 2; fill: none; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="980" fill="#ffffff"/>
+  <text x="70" y="68" class="title">Use Case Diagram</text>
+  <text x="70" y="98" class="subtitle">Foodcal application user interactions</text>
+
+  <rect x="320" y="130" width="1010" height="790" class="systemBox"/>
+  <text x="355" y="170" class="actorText">Foodcal System</text>
+
+  <circle cx="145" cy="290" r="26" class="actorStroke"/>
+  <line x1="145" y1="316" x2="145" y2="406" class="actorStroke"/>
+  <line x1="97" y1="348" x2="193" y2="348" class="actorStroke"/>
+  <line x1="145" y1="406" x2="110" y2="462" class="actorStroke"/>
+  <line x1="145" y1="406" x2="180" y2="462" class="actorStroke"/>
+  <text x="145" y="500" text-anchor="middle" class="actorText">User</text>
+
+  <line x1="230" y1="220" x2="230" y2="830" class="line"/>
+
+  <g>
+    <ellipse cx="610" cy="230" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="235" text-anchor="middle" class="label">Register</text>
+    <path d="M230 230 L445 230" class="line"/>
+
+    <ellipse cx="610" cy="310" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="315" text-anchor="middle" class="label">Login</text>
+    <path d="M230 310 L445 310" class="line"/>
+
+    <ellipse cx="610" cy="390" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="395" text-anchor="middle" class="label">Set Health Profile</text>
+    <path d="M230 390 L445 390" class="line"/>
+
+    <ellipse cx="610" cy="470" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="475" text-anchor="middle" class="label">View Dashboard</text>
+    <path d="M230 470 L445 470" class="line"/>
+
+    <ellipse cx="610" cy="550" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="555" text-anchor="middle" class="label">Track Food</text>
+    <path d="M230 550 L445 550" class="line"/>
+
+    <ellipse cx="610" cy="630" rx="165" ry="34" class="usecase"/>
+    <text x="610" y="635" text-anchor="middle" class="label">Log Water Intake</text>
+    <path d="M230 630 L445 630" class="line"/>
+  </g>
+
+  <g>
+    <ellipse cx="1040" cy="230" rx="175" ry="34" class="usecase"/>
+    <text x="1040" y="235" text-anchor="middle" class="label">Use AI Food Analysis</text>
+    <path d="M230 230 L820 230 L820 230 L865 230" class="line"/>
+
+    <ellipse cx="1040" cy="310" rx="175" ry="34" class="usecase"/>
+    <text x="1040" y="315" text-anchor="middle" class="label">View Learning Content</text>
+    <path d="M230 310 L820 310 L820 310 L865 310" class="line"/>
+
+    <ellipse cx="1040" cy="390" rx="175" ry="34" class="usecase"/>
+    <text x="1040" y="395" text-anchor="middle" class="label">Complete Workout</text>
+    <path d="M230 390 L820 390 L820 390 L865 390" class="line"/>
+
+    <ellipse cx="1040" cy="470" rx="175" ry="34" class="usecase"/>
+    <text x="1040" y="475" text-anchor="middle" class="label">Update Profile / Goals</text>
+    <path d="M230 470 L820 470 L820 470 L865 470" class="line"/>
+
+    <ellipse cx="1040" cy="550" rx="175" ry="34" class="usecase"/>
+    <text x="1040" y="555" text-anchor="middle" class="label">Upload Profile Picture</text>
+    <path d="M230 550 L820 550 L820 550 L865 550" class="line"/>
+>>>>>>> theirs
   </g>
 </svg>

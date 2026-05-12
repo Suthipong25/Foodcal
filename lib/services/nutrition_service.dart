@@ -141,9 +141,9 @@ Serving: ${dbResult.servingLabel}
 
   static const List<String> _models = [
     'gemini-2.5-flash',
+    'gemini-2.5-pro',
     'gemini-2.0-flash',
-    'gemini-1.5-pro',
-    'gemini-pro',
+    'gemini-2.0-pro',
   ];
 
   static Future<http.Response> _postWithFallback(String body) async {
@@ -162,11 +162,17 @@ Serving: ${dbResult.servingLabel}
             body: body,
           );
           if (res.statusCode == 200) return res;
+          
+          AppLogger.error('[Nutrition] Gemini API ($model) failed with ${res.statusCode}: ${res.body}');
+          
           if (res.statusCode == 503 || res.statusCode == 429) {
+            AppLogger.info('[Nutrition] Retrying in ${baseDelay.inSeconds * (i + 1)}s...');
             await Future.delayed(baseDelay * (i + 1));
             continue;
           }
-          if (res.statusCode == 404) break;
+          if (res.statusCode == 404) {
+            break;
+          }
           if (i == maxRetries - 1) return res;
         } catch (e) {
           if (i == maxRetries - 1) rethrow;
