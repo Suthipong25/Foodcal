@@ -18,10 +18,13 @@ import '../utils/datetime_utils.dart';
 import '../utils/input_validator.dart';
 import '../utils/app_logger.dart';
 import '../widgets/edit_food_dialog.dart';
+import '../widgets/app_icon_bubble.dart';
+import '../widgets/decorative_elements.dart';
 import '../widgets/nutrition_source_badge.dart';
 import '../widgets/tube_progress_bar.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/organic_page.dart';
 
 class TrackingScreen extends StatefulWidget {
   final DailyLog? log;
@@ -99,8 +102,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Future<bool> _confirmRemoveFood(FoodItem food) async {
     final authService = Provider.of<AuthService>(context, listen: false);
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-    
+    final firestoreService =
+        Provider.of<FirestoreService>(context, listen: false);
+
     final shouldDelete = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
@@ -495,21 +499,35 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
-    return Container(
-      decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: AppTheme.maxContentWidth(screenWidth),
-          ),
-          child: SingleChildScrollView(
-            padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 28),
-            child: Column(
+    return OrganicPage(
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
+                const SizedBox(height: AppTheme.sectionGap),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TrackingModeTile(
+                        icon: LucideIcons.search,
+                        title: 'พิมพ์ชื่ออาหาร',
+                        subtitle: 'ค้นหาและให้ AI ประเมิน',
+                        color: AppTheme.primaryColor,
+                        onTap: () => FocusScope.of(context).requestFocus(),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _TrackingModeTile(
+                        icon: LucideIcons.camera,
+                        title: 'สแกนจาน',
+                        subtitle: _isAnalyzing ? 'กำลังวิเคราะห์' : 'เปิดกล้องทันที',
+                        color: AppTheme.accentColor,
+                        onTap: _isAnalyzing ? null : _scanFood,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppTheme.sectionGap),
                 GlassCard(
                   padding: const EdgeInsets.all(AppTheme.cardPadding),
@@ -520,23 +538,26 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
+                          const Expanded(
                             child: Row(
                               children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
+                                AppIconBubble(
+                                  color: AppTheme.primaryColor,
+                                  size: 36,
+                                  child: Icon(
+                                    LucideIcons.utensils,
+                                    color: AppTheme.primaryColor,
+                                    size: 18,
                                   ),
-                                  child: const Icon(LucideIcons.utensils, color: AppTheme.primaryColor, size: 18),
                                 ),
-                                const SizedBox(width: 12),
-                                const Expanded(
+                                SizedBox(width: 12),
+                                Expanded(
                                   child: Text(
                                     'บันทึกอาหาร',
-                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.ink),
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                        color: AppTheme.ink),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -549,7 +570,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   )
                                 : const Icon(LucideIcons.camera, size: 18),
                             label: Text(_isAnalyzing ? 'วิเคราะห์...' : 'สแกน'),
@@ -559,7 +581,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       const SizedBox(height: 12),
                       const Text(
                         'กรอกเองหรือใช้ AI ช่วยประเมินค่าโภชนาการก็ได้',
-                        style: TextStyle(fontSize: AppTheme.body, color: AppTheme.mutedText),
+                        style: TextStyle(
+                            fontSize: AppTheme.body, color: AppTheme.mutedText),
                       ),
                       if (_lastNutritionResult != null) ...[
                         const SizedBox(height: 12),
@@ -575,16 +598,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           hintText: 'ชื่ออาหาร (เช่น ข้าวมันไก่)',
                           prefixIcon: const Icon(LucideIcons.search, size: 18),
                           suffixIcon: IconButton(
-                            icon: const Icon(LucideIcons.sparkles, color: Colors.amber, size: 20),
-                            onPressed: _isAnalyzing ? null : _estimateCaloriesText,
+                            icon: const Icon(LucideIcons.sparkles,
+                                color: Colors.amber, size: 20),
+                            onPressed:
+                                _isAnalyzing ? null : _estimateCaloriesText,
                           ),
                         ),
                       ),
-                      if (_customFoods.isNotEmpty || _recentFoods.isNotEmpty) ...[
+                      if (_customFoods.isNotEmpty ||
+                          _recentFoods.isNotEmpty) ...[
                         const SizedBox(height: 18),
                         const Text(
                           'อาหารที่ใช้บ่อย & บันทึกไว้',
-                          style: TextStyle(fontSize: AppTheme.meta, fontWeight: FontWeight.w700, color: AppTheme.mutedText),
+                          style: TextStyle(
+                              fontSize: AppTheme.meta,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.mutedText),
                         ),
                         const SizedBox(height: 10),
                         SizedBox(
@@ -598,9 +627,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                   padding: const EdgeInsets.only(right: 10.0),
                                   child: ActionChip(
                                     label: Text(food.name),
-                                    avatar: const Icon(LucideIcons.star, size: 14, color: AppTheme.warning),
+                                    avatar: const Icon(LucideIcons.star,
+                                        size: 14, color: AppTheme.warning),
                                     onPressed: () => _useCustomFood(food),
-                                    backgroundColor: Colors.white.withValues(alpha: 0.5),
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.5),
                                   ),
                                 ),
                               for (final food in _recentFoods)
@@ -608,9 +639,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                   padding: const EdgeInsets.only(right: 10.0),
                                   child: ActionChip(
                                     label: Text(food.name),
-                                    avatar: const Icon(LucideIcons.history, size: 14),
+                                    avatar: const Icon(LucideIcons.history,
+                                        size: 14),
                                     onPressed: () => _useRecentFood(food),
-                                    backgroundColor: Colors.white.withValues(alpha: 0.5),
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.5),
                                   ),
                                 ),
                             ],
@@ -620,7 +653,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       const SizedBox(height: 20),
                       const Text(
                         'โภชนาการโดยประมาณ',
-                        style: TextStyle(fontSize: AppTheme.meta, fontWeight: FontWeight.w700, color: AppTheme.mutedText),
+                        style: TextStyle(
+                            fontSize: AppTheme.meta,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.mutedText),
                       ),
                       const SizedBox(height: 10),
                       TextField(
@@ -634,17 +670,26 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: _buildMacroField(_proteinController, 'โปรตีน (g)')),
+                          Expanded(
+                              child: _buildMacroField(
+                                  _proteinController, 'โปรตีน (g)')),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildMacroField(_carbsController, 'คาร์บ (g)')),
+                          Expanded(
+                              child: _buildMacroField(
+                                  _carbsController, 'คาร์บ (g)')),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildMacroField(_fatController, 'ไขมัน (g)')),
+                          Expanded(
+                              child: _buildMacroField(
+                                  _fatController, 'ไขมัน (g)')),
                         ],
                       ),
                       const SizedBox(height: 20),
                       const Text(
                         'เลือกมื้ออาหาร',
-                        style: TextStyle(fontSize: AppTheme.meta, fontWeight: FontWeight.w700, color: AppTheme.mutedText),
+                        style: TextStyle(
+                            fontSize: AppTheme.meta,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.mutedText),
                       ),
                       const SizedBox(height: 10),
                       SingleChildScrollView(
@@ -652,13 +697,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         clipBehavior: Clip.none,
                         child: Row(
                           children: [
-                            _buildMealChip('เช้า', AppConfig.mealTypeBreakfast, LucideIcons.sunrise),
+                            _buildMealChip('เช้า', AppConfig.mealTypeBreakfast,
+                                LucideIcons.sunrise),
                             const SizedBox(width: 8),
-                            _buildMealChip('กลางวัน', AppConfig.mealTypeLunch, LucideIcons.sun),
+                            _buildMealChip('กลางวัน', AppConfig.mealTypeLunch,
+                                LucideIcons.sun),
                             const SizedBox(width: 8),
-                            _buildMealChip('เย็น', AppConfig.mealTypeDinner, LucideIcons.sunset),
+                            _buildMealChip('เย็น', AppConfig.mealTypeDinner,
+                                LucideIcons.sunset),
                             const SizedBox(width: 8),
-                            _buildMealChip('ว่าง', AppConfig.mealTypeSnack, LucideIcons.coffee),
+                            _buildMealChip('ว่าง', AppConfig.mealTypeSnack,
+                                LucideIcons.coffee),
                           ],
                         ),
                       ),
@@ -668,7 +717,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         icon: LucideIcons.plusCircle,
                         onPressed: _addFood,
                       ),
-                      if (widget.log != null && widget.log!.foods.isNotEmpty) ...[
+                      if (widget.log != null &&
+                          widget.log!.foods.isNotEmpty) ...[
                         const SizedBox(height: 24),
                         const Divider(),
                         const SizedBox(height: 20),
@@ -676,29 +726,39 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           children: [
                             const Text(
                               'มื้อวันนี้',
-                              style: TextStyle(fontSize: AppTheme.title, fontWeight: FontWeight.w800, color: AppTheme.ink),
+                              style: TextStyle(
+                                  fontSize: AppTheme.title,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTheme.ink),
                             ),
                             const Spacer(),
                             Text(
                               '${widget.log!.foods.length} รายการ',
-                              style: const TextStyle(fontSize: AppTheme.meta, color: AppTheme.mutedText, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                  fontSize: AppTheme.meta,
+                                  color: AppTheme.mutedText,
+                                  fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
                         const SizedBox(height: 14),
                         ...widget.log!.foods.reversed.take(5).map(
                               (food) => Dismissible(
-                                key: Key(food.id.isNotEmpty ? food.id : food.name + food.time.toString()),
+                                key: Key(food.id.isNotEmpty
+                                    ? food.id
+                                    : food.name + food.time.toString()),
                                 direction: DismissDirection.endToStart,
                                 background: Container(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.error.withValues(alpha: 0.8),
+                                    color:
+                                        AppTheme.error.withValues(alpha: 0.8),
                                     borderRadius: AppTheme.innerRadius,
                                   ),
                                   alignment: Alignment.centerRight,
                                   padding: const EdgeInsets.only(right: 20),
-                                  child: const Icon(LucideIcons.trash2, color: Colors.white),
+                                  child: const Icon(LucideIcons.trash2,
+                                      color: Colors.white),
                                 ),
                                 confirmDismiss: (_) => _confirmRemoveFood(food),
                                 child: _FoodItemTile(food: food),
@@ -721,20 +781,23 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           Expanded(
                             child: Row(
                               children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.waterColor.withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
+                                const AppIconBubble(
+                                  color: AppTheme.waterColor,
+                                  size: 36,
+                                  child: Icon(
+                                    LucideIcons.droplet,
+                                    color: AppTheme.waterColor,
+                                    size: 18,
                                   ),
-                                  child: const Icon(LucideIcons.droplet, color: AppTheme.waterColor, size: 18),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     'ดื่มน้ำ (เป้าหมาย ${widget.profile.targetWaterGlasses} แก้ว)',
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.ink),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                        color: AppTheme.ink),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -743,17 +806,24 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           ),
                           Text(
                             '${widget.log?.waterGlasses ?? 0}',
-                            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.waterColor),
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                color: AppTheme.waterColor),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
                       TubeProgressBar(
                         progress: (widget.profile.targetWaterGlasses > 0
-                                ? (widget.log?.waterGlasses ?? 0) / widget.profile.targetWaterGlasses
+                                ? (widget.log?.waterGlasses ?? 0) /
+                                    widget.profile.targetWaterGlasses
                                 : 0.0)
                             .clamp(0.0, 1.0),
-                        colors: const [AppTheme.secondaryColor, AppTheme.waterColor],
+                        colors: const [
+                          AppTheme.secondaryColor,
+                          AppTheme.waterColor
+                        ],
                         height: 12,
                         borderRadius: 999,
                       ),
@@ -793,9 +863,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -804,17 +871,42 @@ class _TrackingScreenState extends State<TrackingScreen> {
     return const GlassCard(
       padding: EdgeInsets.all(22),
       opacity: 0.2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(
-            'บันทึกประจำวัน',
-            style: TextStyle(fontSize: AppTheme.largeTitle, fontWeight: FontWeight.w800, color: AppTheme.ink),
+          OrganicCircleDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.warmPeach,
+            size: 96,
+            opacity: 0.34,
           ),
-          SizedBox(height: 8),
-          Text(
-            'เพิ่มอาหารและน้ำดื่มเพื่อติดตามความก้าวหน้าของคุณในวันนี้',
-            style: TextStyle(fontSize: AppTheme.body, color: AppTheme.mutedText, height: 1.45),
+          LeafDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.leafGreen,
+            size: 58,
+            opacity: 0.14,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'บันทึกประจำวัน',
+                style: TextStyle(
+                  fontSize: AppTheme.largeTitle,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.ink,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'เพิ่มอาหารและน้ำดื่มเพื่อติดตามความก้าวหน้าของคุณในวันนี้',
+                style: TextStyle(
+                  fontSize: AppTheme.body,
+                  color: AppTheme.mutedText,
+                  height: 1.45,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -823,29 +915,29 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildMealChip(String label, String value, IconData icon) {
     final selected = _selectedMeal == value;
+    final mealColor = _mealColor(value);
     return GestureDetector(
       onTap: () => setState(() => _selectedMeal = value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: AppTheme.subtleCard(
-          background: selected ? AppTheme.primaryColor : Colors.white,
-          borderColor: selected
-              ? AppTheme.primaryColor
-              : const Color(0xFFE7EDF4),
-          boxShadow: selected ? AppTheme.softShadow(AppTheme.primaryColor) : const [],
-        ).copyWith(
+        decoration: BoxDecoration(
+          color: selected ? mealColor : mealColor.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? mealColor : mealColor.withValues(alpha: 0.2),
+          ),
+          boxShadow: selected ? AppTheme.softShadow(mealColor) : const [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: selected ? Colors.white : AppTheme.mutedText, size: 16),
+            Icon(icon, color: selected ? Colors.white : mealColor, size: 16),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : AppTheme.ink,
+                color: selected ? Colors.white : mealColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -856,17 +948,87 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
+  Color _mealColor(String value) {
+    if (value == AppConfig.mealTypeBreakfast) return AppTheme.warmOrange;
+    if (value == AppConfig.mealTypeLunch) return AppTheme.warning;
+    if (value == AppConfig.mealTypeDinner) return AppTheme.accentColor;
+    return AppTheme.mutedText;
+  }
+
   Widget _buildMacroField(TextEditingController controller, String hint) {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.ink),
+      style: const TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.ink),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.4),
+      ),
+    );
+  }
+}
+
+class _TrackingModeTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _TrackingModeTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        opacity: 0.13,
+        padding: const EdgeInsets.all(14),
+        borderColor: color.withValues(alpha: 0.18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppIconBubble(
+              color: color,
+              size: 38,
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.mutedText,
+                fontSize: 11,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -883,9 +1045,11 @@ class _FoodItemTile extends StatelessWidget {
       onTap: () async {
         final edited = await EditFoodDialog.show(context, existing: food);
         if (edited != null && context.mounted) {
-          final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+          final uid =
+              Provider.of<AuthService>(context, listen: false).currentUser?.uid;
           if (uid != null && edited.id.isNotEmpty) {
-            await Provider.of<FirestoreService>(context, listen: false).updateFoodItem(uid, edited);
+            await Provider.of<FirestoreService>(context, listen: false)
+                .updateFoodItem(uid, edited);
           }
         }
       },
@@ -903,7 +1067,8 @@ class _FoodItemTile extends StatelessWidget {
                   color: AppTheme.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.utensils, color: AppTheme.primaryColor, size: 22),
+                child: const Icon(LucideIcons.utensils,
+                    color: AppTheme.primaryColor, size: 22),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -912,12 +1077,18 @@ class _FoodItemTile extends StatelessWidget {
                   children: [
                     Text(
                       food.name,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.ink),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.ink),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${food.mealType} · P ${food.protein}g / C ${food.carbs}g / F ${food.fat}g',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.mutedText, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.mutedText,
+                          fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -927,11 +1098,17 @@ class _FoodItemTile extends StatelessWidget {
                 children: [
                   Text(
                     '${food.calories}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.primaryColor),
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryColor),
                   ),
                   const Text(
                     'kcal',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primaryColor),
                   ),
                 ],
               ),
@@ -966,8 +1143,10 @@ class _WaterActionBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isOutline ? Colors.transparent : color,
-          borderRadius: AppTheme.cardRadius,
-          border: isOutline ? Border.all(color: color.withValues(alpha: 0.3), width: 2) : null,
+          borderRadius: AppTheme.innerRadius,
+          border: isOutline
+              ? Border.all(color: color.withValues(alpha: 0.3), width: 2)
+              : null,
           boxShadow: isOutline ? null : AppTheme.softShadow(color),
         ),
         child: Row(

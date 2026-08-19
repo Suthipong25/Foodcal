@@ -7,6 +7,7 @@ import '../app_theme.dart';
 import '../services/auth_service.dart';
 
 import '../widgets/animated_page_wrapper.dart';
+import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 
@@ -92,7 +93,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(LucideIcons.arrowLeft, size: 18),
-                    label: const Text('กลับ', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: const Text('กลับ',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                   const SizedBox(height: 8),
                   _buildHero(isCompact),
@@ -100,78 +102,97 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   GlassCard(
                     padding: EdgeInsets.all(isCompact ? 20 : 28),
                     opacity: 0.15,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        Text(
-                          'สร้างบัญชีใหม่',
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        const LeafDecoration(
+                          alignment: Alignment.bottomRight,
+                          color: AppTheme.leafGreen,
+                          size: 54,
+                          opacity: 0.12,
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'เริ่มต้นติดตามเป้าหมายสุขภาพของคุณด้วยโปรไฟล์เดียว',
-                          style: TextStyle(
-                            color: AppTheme.mutedText,
-                            fontSize: AppTheme.body,
-                          ),
+                        const OrganicCircleDecoration(
+                          alignment: Alignment.bottomRight,
+                          color: AppTheme.coralLight,
+                          size: 76,
+                          opacity: 0.2,
                         ),
-                        if (error != null) ...[
-                          const SizedBox(height: 18),
-                          _buildErrorBanner(error!),
-                        ],
-                        const SizedBox(height: 22),
-                        _buildLabel('อีเมล'),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            hintText: 'hello@example.com',
-                            prefixIcon: Icon(LucideIcons.mail, size: 18),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _buildLabel('รหัสผ่าน'),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            hintText: '••••••••',
-                            prefixIcon: Icon(LucideIcons.lock, size: 18),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _buildLabel('ยืนยันรหัสผ่าน'),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _confirmPasswordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            hintText: '••••••••',
-                            prefixIcon: Icon(
-                              LucideIcons.shieldCheck,
-                              size: 18,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'สร้างบัญชีใหม่',
+                              style: Theme.of(context).textTheme.headlineMedium,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        GradientButton(
-                          text: 'สมัครสมาชิก',
-                          icon: LucideIcons.userPlus,
-                          isLoading: loading,
-                          onPressed: loading ? null : () => _handleRegister(context),
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          width: double.infinity,
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'เริ่มต้นติดตามเป้าหมายสุขภาพของคุณด้วยโปรไฟล์เดียว',
+                              style: TextStyle(
+                                color: AppTheme.mutedText,
+                                fontSize: AppTheme.body,
+                              ),
                             ),
-                          ),
+                            if (error != null) ...[
+                              const SizedBox(height: 18),
+                              _buildErrorBanner(error!),
+                            ],
+                            const SizedBox(height: 22),
+                            _buildLabel('อีเมล'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                hintText: 'hello@example.com',
+                                prefixIcon: Icon(LucideIcons.mail, size: 18),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            _buildLabel('รหัสผ่าน'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                hintText: '••••••••',
+                                prefixIcon: Icon(LucideIcons.lock, size: 18),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            _buildLabel('ยืนยันรหัสผ่าน'),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _confirmPasswordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                hintText: '••••••••',
+                                prefixIcon: Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            GradientButton(
+                              text: 'สมัครสมาชิก',
+                              icon: LucideIcons.userPlus,
+                              isLoading: loading,
+                              onPressed: loading
+                                  ? null
+                                  : () => _handleRegister(context),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -189,46 +210,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return GlassCard(
       padding: EdgeInsets.all(isCompact ? 20 : 24),
       opacity: 0.2,
-      child: Row(
+      gradient: AppTheme.glassGradient(opacity: 0.18),
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Container(
-            width: isCompact ? 68 : 78,
-            height: isCompact ? 68 : 78,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEFF8E9), Color(0xFFFFF1D8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-            ),
-            child: const Icon(
-              LucideIcons.sparkles,
-              color: AppTheme.primaryColor,
-              size: 30,
-            ),
+          const OrganicCircleDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.warmMint,
+            size: 90,
+            opacity: 0.8,
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'เริ่มต้นดูแลตัวเอง',
-                  style: Theme.of(context).textTheme.headlineMedium,
+          const LeafDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.warmOrange,
+            size: 44,
+            opacity: 0.16,
+            angle: -0.35,
+          ),
+          Row(
+            children: [
+              Container(
+                width: isCompact ? 68 : 78,
+                height: isCompact ? 68 : 78,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.heroGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'เริ่มต้นวางเป้าหมายสุขภาพในแอปเดียว',
-                  style: TextStyle(
-                    color: AppTheme.mutedText,
-                    fontSize: AppTheme.body,
-                    height: 1.4,
-                  ),
+                child: const Icon(
+                  LucideIcons.sparkles,
+                  color: AppTheme.primaryColor,
+                  size: 30,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'เริ่มต้นดูแลตัวเอง',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'เริ่มต้นวางเป้าหมายสุขภาพในแอปเดียว',
+                      style: TextStyle(
+                        color: AppTheme.mutedText,
+                        fontSize: AppTheme.body,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

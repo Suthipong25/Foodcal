@@ -15,7 +15,9 @@ import '../utils/app_logger.dart';
 import '../utils/datetime_utils.dart';
 import 'article_detail_screen.dart';
 import '../widgets/animated_page_wrapper.dart';
+import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/organic_page.dart';
 
 class ContentScreen extends StatefulWidget {
   final DailyLog? log;
@@ -30,7 +32,7 @@ class _ContentScreenState extends State<ContentScreen> {
   String filter = 'All';
   final Set<int> _submittingWorkoutIds = <int>{};
   Timer? _refreshTimer;
-  
+
   Stream<List<WorkoutVideo>>? _videosStream;
   Stream<Map<int, WorkoutSessionState>>? _sessionsStream;
 
@@ -73,10 +75,8 @@ class _ContentScreenState extends State<ContentScreen> {
     }
 
     return AnimatedPageWrapper(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
-          child: StreamBuilder<List<WorkoutVideo>>(
+      child: OrganicPage(
+        child: StreamBuilder<List<WorkoutVideo>>(
             stream: _videosStream,
             builder: (context, videosSnapshot) {
               final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
@@ -84,21 +84,26 @@ class _ContentScreenState extends State<ContentScreen> {
                   allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
               final filteredVideos = filter == 'All'
                   ? sourceVideos
-                  : sourceVideos.where((video) => video.level == filter).toList();
+                  : sourceVideos
+                      .where((video) => video.level == filter)
+                      .toList();
 
               return StreamBuilder<Map<int, WorkoutSessionState>>(
                 stream: _sessionsStream,
                 builder: (context, sessionsSnapshot) {
-                  final workoutSessions =
-                      sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
+                  final workoutSessions = sessionsSnapshot.data ??
+                      const <int, WorkoutSessionState>{};
 
-                  return SingleChildScrollView(
-                    padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
-                    child: Column(
+                  return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 12),
                         _buildHeroCard(filteredVideos.length, completedCount),
+                        const SizedBox(height: 12),
+                        _buildLearningRail(
+                          articles: educationArticles.length,
+                          workouts: filteredVideos.length,
+                          completed: completedCount,
+                        ),
                         const SizedBox(height: AppTheme.sectionGap),
                         _buildSectionHeader(
                           'บทความน่าอ่าน',
@@ -121,7 +126,8 @@ class _ContentScreenState extends State<ContentScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        if (videosSnapshot.connectionState == ConnectionState.waiting)
+                        if (videosSnapshot.connectionState ==
+                            ConnectionState.waiting)
                           const Center(child: CircularProgressIndicator())
                         else if (filteredVideos.isEmpty)
                           const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
@@ -134,13 +140,11 @@ class _ContentScreenState extends State<ContentScreen> {
                             ),
                           ),
                       ],
-                    ),
-                  );
+                    );
                 },
               );
             },
           ),
-        ),
       ),
     );
   }
@@ -174,96 +178,145 @@ class _ContentScreenState extends State<ContentScreen> {
             child: GlassCard(
               padding: EdgeInsets.zero,
               opacity: 0.1,
-              child: SizedBox(
-                width: cardWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(32),
-                      ),
-                      child: Image.network(
-                        article.imageUrl,
-                        height: imageHeight,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: imageHeight,
-                          color: AppTheme.pageTintStrong,
-                          child: const Icon(
-                            LucideIcons.image,
-                            color: AppTheme.secondaryColor,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const LeafDecoration(
+                    alignment: Alignment.bottomRight,
+                    color: AppTheme.leafGreen,
+                    size: 36,
+                    opacity: 0.1,
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24),
+                          ),
+                          child: Image.network(
+                            article.imageUrl,
+                            height: imageHeight,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: imageHeight,
+                              color: AppTheme.pageTintStrong,
+                              child: const Icon(
+                                LucideIcons.image,
+                                color: AppTheme.secondaryColor,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                borderRadius: AppTheme.pillRadius,
-                              ),
-                              child: Text(
-                                article.category,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              article.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: AppTheme.ink,
-                                height: 1.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Spacer(),
-                            const Row(
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  LucideIcons.arrowUpRight,
-                                  size: 14,
-                                  color: AppTheme.primaryColor,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'แตะเพื่ออ่านต่อ',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
                                   ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: AppTheme.pillRadius,
+                                  ),
+                                  child: Text(
+                                    article.category,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  article.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    color: AppTheme.ink,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const Spacer(),
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.arrowUpRight,
+                                      size: 14,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'แตะเพื่ออ่านต่อ',
+                                      style: TextStyle(
+                                        color: AppTheme.primaryColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildLearningRail({
+    required int articles,
+    required int workouts,
+    required int completed,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: _LearningRailItem(
+            icon: LucideIcons.bookOpen,
+            value: '$articles',
+            label: 'บทความ',
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _LearningRailItem(
+            icon: LucideIcons.play,
+            value: '$workouts',
+            label: 'คลิป',
+            color: AppTheme.warmOrange,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _LearningRailItem(
+            icon: LucideIcons.badgeCheck,
+            value: '$completed',
+            label: 'วันนี้',
+            color: AppTheme.success,
+          ),
+        ),
+      ],
     );
   }
 
@@ -284,9 +337,8 @@ class _ContentScreenState extends State<ContentScreen> {
     return GlassCard(
       padding: const EdgeInsets.all(18),
       opacity: 0.12,
-      borderColor: hasCompletedToday
-          ? AppTheme.success.withValues(alpha: 0.2)
-          : null,
+      borderColor:
+          hasCompletedToday ? AppTheme.success.withValues(alpha: 0.2) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -320,7 +372,8 @@ class _ContentScreenState extends State<ContentScreen> {
             runSpacing: 8,
             children: [
               _buildPill(video.duration, AppTheme.primaryColor),
-              _buildPill(WorkoutType.fromString(video.type).displayName, AppTheme.warning),
+              _buildPill(WorkoutType.fromString(video.type).displayName,
+                  AppTheme.warning),
               if (hasCompletedToday)
                 _buildPill('บันทึกแล้ววันนี้', AppTheme.success),
             ],
@@ -453,60 +506,78 @@ class _ContentScreenState extends State<ContentScreen> {
     return GlassCard(
       padding: const EdgeInsets.all(24),
       opacity: 0.15,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
-              borderRadius: AppTheme.pillRadius,
-            ),
-            child: const Text(
-              'Learn and Move',
-              style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
-                letterSpacing: 0.5,
-              ),
-            ),
+          const OrganicCircleDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.warmMint,
+            size: 110,
+            opacity: 0.38,
           ),
-          const SizedBox(height: 18),
-          const Text(
-            'เรียนรู้ให้เข้าใจ แล้วลงมือทำได้ทันที',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: AppTheme.ink,
-              height: 1.2,
-            ),
+          const LeafDecoration(
+            alignment: Alignment.bottomRight,
+            color: AppTheme.leafGreen,
+            size: 62,
+            opacity: 0.12,
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'รวมบทความสุขภาพและวิดีโอออกกำลังกายที่หยิบใช้ได้ทุกวัน ทั้งอ่านสั้นและฝึกตามจริงในหน้าเดียว',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.mutedText,
-              height: 1.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildHeroStat(
-                  '$filteredCount คลิป',
-                  'พร้อมสำหรับคุณ',
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  borderRadius: AppTheme.pillRadius,
+                ),
+                child: const Text(
+                  'Learn and Move',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildHeroStat(
-                  '$completedCount รายการ',
-                  'บันทึกแล้ววันนี้',
+              const SizedBox(height: 18),
+              const Text(
+                'เรียนรู้และขยับ',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.ink,
+                  height: 1.2,
                 ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'รวมบทความสุขภาพและวิดีโอออกกำลังกายที่หยิบใช้ได้ทุกวัน ทั้งอ่านสั้นและฝึกตามจริงในหน้าเดียว',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.mutedText,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildHeroStat(
+                      '$filteredCount คลิป',
+                      'พร้อมสำหรับคุณ',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildHeroStat(
+                      '$completedCount รายการ',
+                      'บันทึกแล้ววันนี้',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -743,7 +814,6 @@ class _ContentScreenState extends State<ContentScreen> {
     );
   }
 
-
   String _workoutHint(WorkoutVideo video) {
     return switch (video.type) {
       'Cardio' => 'เหมาะกับวันที่อยากขยับตัวและเร่งการเผาผลาญแบบต่อเนื่อง',
@@ -783,5 +853,51 @@ class _ContentScreenState extends State<ContentScreen> {
       return match.group(7)!;
     }
     return '';
+  }
+}
+
+class _LearningRailItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _LearningRailItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      opacity: 0.12,
+      padding: const EdgeInsets.all(14),
+      borderColor: color.withValues(alpha: 0.16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

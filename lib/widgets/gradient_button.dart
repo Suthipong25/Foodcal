@@ -21,7 +21,8 @@ class GradientButton extends StatefulWidget {
   State<GradientButton> createState() => _GradientButtonState();
 }
 
-class _GradientButtonState extends State<GradientButton> with SingleTickerProviderStateMixin {
+class _GradientButtonState extends State<GradientButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -30,8 +31,8 @@ class _GradientButtonState extends State<GradientButton> with SingleTickerProvid
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.95,
+      duration: const Duration(milliseconds: 150),
+      lowerBound: 0.97,
       upperBound: 1.0,
     );
     _scaleAnimation = _controller;
@@ -110,11 +111,12 @@ class _GradientButtonState extends State<GradientButton> with SingleTickerProvid
                       ],
                       Text(
                         widget.text,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.2,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
                       ),
                     ],
                   ),

@@ -13,7 +13,10 @@ import '../services/firestore_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/datetime_utils.dart';
 import '../widgets/reminder_banner.dart';
+import '../widgets/app_icon_bubble.dart';
+import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/organic_page.dart';
 import 'admin_screen.dart';
 import 'feedback_screen.dart';
 
@@ -209,21 +212,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
-    return Container(
-      decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: AppTheme.maxContentWidth(screenWidth),
-          ),
-          child: SingleChildScrollView(
-            padding: AppTheme.pageInsetsForWidth(screenWidth, bottom: 28),
-            child: Column(
+    return OrganicPage(
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeroCard(),
+                const SizedBox(height: AppTheme.sectionGap),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ProfileIdentityTile(
+                        icon: LucideIcons.target,
+                        label: 'เป้าหมาย',
+                        value: _getGoalLabel(
+                            isEditing ? _selectedGoal : widget.profile.goal),
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ProfileIdentityTile(
+                        icon: LucideIcons.badgeCheck,
+                        label: 'สตรีก',
+                        value: '${widget.profile.streak} วัน',
+                        color: AppTheme.warning,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppTheme.sectionGap),
                 _buildSectionHeader(
                   'ภาพรวมของคุณ',
@@ -274,16 +290,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildReminderSettings(),
                 const SizedBox(height: AppTheme.sectionGap),
                 _buildFeedbackCard(context),
-                if (UserRole.fromString(widget.profile.role) == UserRole.admin) ...[
+                if (UserRole.fromString(widget.profile.role) ==
+                    UserRole.admin) ...[
                   const SizedBox(height: 12),
                   _buildAdminCard(context),
                 ],
                 const SizedBox(height: AppTheme.sectionGap),
                 _buildLogoutCard(),
               ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -292,158 +306,196 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GlassCard(
       padding: const EdgeInsets.all(24),
       opacity: 0.15,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
-            children: [
-              const Spacer(),
-              _buildEditButton(),
-            ],
+          const OrganicCircleDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.warmPeach,
+            size: 120,
+            opacity: 0.32,
           ),
-          const SizedBox(height: 4),
-          Row(
+          const OrganicCircleDecoration(
+            alignment: Alignment.bottomLeft,
+            color: AppTheme.warmMint,
+            size: 92,
+            opacity: 0.36,
+          ),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 3),
-                        image: _localImageBytes != null
-                            ? DecorationImage(
-                                image: MemoryImage(_localImageBytes!),
-                                fit: BoxFit.cover,
-                              )
-                            : _localPhotoUrl != null
-                                ? DecorationImage(
-                                    image: _localPhotoUrl!.startsWith('data:')
-                                        ? MemoryImage(base64Decode(_localPhotoUrl!.split(',')[1])) as ImageProvider
-                                        : NetworkImage(_localPhotoUrl!),
-                                    fit: BoxFit.cover,
+              Row(
+                children: [
+                  const Spacer(),
+                  _buildEditButton(),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.heroGradient,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow:
+                                AppTheme.softShadow(AppTheme.primaryColor),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              image: _localImageBytes != null
+                                  ? DecorationImage(
+                                      image: MemoryImage(_localImageBytes!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : _localPhotoUrl != null
+                                      ? DecorationImage(
+                                          image: _localPhotoUrl!
+                                                  .startsWith('data:')
+                                              ? MemoryImage(base64Decode(
+                                                      _localPhotoUrl!
+                                                          .split(',')[1]))
+                                                  as ImageProvider
+                                              : NetworkImage(_localPhotoUrl!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                            ),
+                            child: (_localImageBytes == null &&
+                                    _localPhotoUrl == null)
+                                ? Center(
+                                    child: Text(
+                                      widget.profile.name.isNotEmpty
+                                          ? widget.profile.name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
                                   )
                                 : null,
-                        boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-                      ),
-                      child: (_localImageBytes == null && _localPhotoUrl == null)
-                          ? Center(
-                              child: Text(
-                                widget.profile.name.isNotEmpty ? widget.profile.name[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            )
-                          : null,
-                    ),
-                    if (_isUploading)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
                           ),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
+                        ),
+                        if (_isUploading)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    Positioned(
-                      right: 4,
-                      bottom: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.profile.name,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.ink,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'เป้าหมาย: ${_getGoalLabel(isEditing ? _selectedGoal : widget.profile.goal)}',
-                      style: const TextStyle(
-                        color: AppTheme.mutedText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (!isEditing && widget.profile.estimatedGoalDays > 0) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'คาดว่าจะถึงในอีก ${widget.profile.estimatedGoalDays} วัน',
-                        style: const TextStyle(
-                          color: AppTheme.success,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      opacity: 0.1,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.sparkles,
-                            size: 14,
-                            color: AppTheme.primaryColor,
+                        Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(
+                              LucideIcons.camera,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _goalSummary(isEditing ? _selectedGoal : widget.profile.goal),
-                              style: const TextStyle(
-                                color: AppTheme.ink,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.profile.name,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.ink,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'เป้าหมาย: ${_getGoalLabel(isEditing ? _selectedGoal : widget.profile.goal)}',
+                          style: const TextStyle(
+                            color: AppTheme.mutedText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (!isEditing &&
+                            widget.profile.estimatedGoalDays > 0) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'คาดว่าจะถึงในอีก ${widget.profile.estimatedGoalDays} วัน',
+                            style: const TextStyle(
+                              color: AppTheme.success,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
                             ),
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 16),
+                        GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          opacity: 0.1,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                LucideIcons.sparkles,
+                                size: 14,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _goalSummary(isEditing
+                                      ? _selectedGoal
+                                      : widget.profile.goal),
+                                  style: const TextStyle(
+                                    color: AppTheme.ink,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -526,7 +578,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, String hint, IconData icon, Color color) {
+  Widget _buildMetricCard(
+      String label, String value, String hint, IconData icon, Color color) {
     return GlassCard(
       padding: const EdgeInsets.all(18),
       opacity: 0.08,
@@ -534,12 +587,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
+          AppIconBubble(
+            color: color,
+            size: 38,
             child: Icon(icon, color: color, size: 18),
           ),
           const Spacer(),
@@ -597,7 +647,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 GestureDetector(
                   onTap: _save,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       gradient: AppTheme.primaryGradient,
                       borderRadius: AppTheme.pillRadius,
@@ -641,7 +692,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               isEditing
                   ? _buildEditCard('น้ำหนัก (kg)', _weightCtrl)
-                  : _buildInfoCard('น้ำหนัก', '${widget.profile.weight} kg', LucideIcons.scale),
+                  : _buildInfoCard('น้ำหนัก', '${widget.profile.weight} kg',
+                      LucideIcons.scale),
               isEditing
                   ? _buildEditCard('ส่วนสูง (cm)', _heightCtrl)
                   : _buildInfoCard(
@@ -653,8 +705,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildEditCard('เป้าหมาย (kg)', _targetWeightCtrl),
                 _buildEditCard('ปีเกิด (ค.ศ.)', _birthYearCtrl),
               ] else ...[
-                _buildInfoCard('น้ำหนักเป้าหมาย', '${widget.profile.targetWeight ?? '-'} kg', LucideIcons.target),
-                _buildInfoCard('อายุ', '${widget.profile.age} ปี', LucideIcons.calendar),
+                _buildInfoCard(
+                    'น้ำหนักเป้าหมาย',
+                    '${widget.profile.targetWeight ?? '-'} kg',
+                    LucideIcons.target),
+                _buildInfoCard(
+                    'อายุ', '${widget.profile.age} ปี', LucideIcons.calendar),
               ],
               _buildGoalCard(),
             ],
@@ -675,12 +731,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
+          AppIconBubble(
+            color: AppTheme.primaryColor,
+            size: 34,
             child: Icon(icon, color: AppTheme.primaryColor, size: 16),
           ),
           const Spacer(),
@@ -707,8 +760,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildEditCard(String label, TextEditingController ctrl) {
-    final allowDecimal =
-        identical(ctrl, _weightCtrl) ||
+    final allowDecimal = identical(ctrl, _weightCtrl) ||
         identical(ctrl, _heightCtrl) ||
         identical(ctrl, _targetWeightCtrl);
 
@@ -767,7 +819,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.8),
           borderRadius: AppTheme.innerRadius,
-          border: Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.3)),
+          border:
+              Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -881,9 +934,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('ส่งข้อเสนอแนะ', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.ink, fontSize: 16)),
+                  Text('ส่งข้อเสนอแนะ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink,
+                          fontSize: 16)),
                   SizedBox(height: 4),
-                  Text('ช่วยเราปรับปรุงแอปให้ดีขึ้น', style: TextStyle(color: AppTheme.mutedText, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('ช่วยเราปรับปรุงแอปให้ดีขึ้น',
+                      style: TextStyle(
+                          color: AppTheme.mutedText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -899,7 +960,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => AdminScreen(profile: widget.profile)),
+          MaterialPageRoute(
+              builder: (_) => AdminScreen(profile: widget.profile)),
         );
       },
       child: GlassCard(
@@ -914,9 +976,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Admin Dashboard', style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.ink, fontSize: 16)),
+                  Text('Admin Dashboard',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.ink,
+                          fontSize: 16)),
                   SizedBox(height: 4),
-                  Text('จัดการระบบและข้อมูลผู้ใช้', style: TextStyle(color: AppTheme.mutedText, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('จัดการระบบและข้อมูลผู้ใช้',
+                      style: TextStyle(
+                          color: AppTheme.mutedText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -966,11 +1036,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildToggle('เตือนดื่มน้ำ', 'water', LucideIcons.droplet, AppTheme.waterColor),
+          _buildToggle('เตือนดื่มน้ำ', 'water', LucideIcons.droplet,
+              AppTheme.waterColor),
           const Divider(height: 24),
-          _buildToggle('เตือนบันทึกอาหาร', 'food', LucideIcons.utensils, AppTheme.primaryColor),
+          _buildToggle('เตือนบันทึกอาหาร', 'food', LucideIcons.utensils,
+              AppTheme.primaryColor),
           const Divider(height: 24),
-          _buildToggle('เตือนชั่งน้ำหนัก', 'weight', LucideIcons.scale, AppTheme.success),
+          _buildToggle('เตือนชั่งน้ำหนัก', 'weight', LucideIcons.scale,
+              AppTheme.success),
         ],
       ),
     );
@@ -981,16 +1054,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       contentPadding: EdgeInsets.zero,
       title: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
+          AppIconBubble(
+            color: color,
+            size: 34,
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 14),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink, fontSize: 15)),
+          Text(label,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink,
+                  fontSize: 15)),
         ],
       ),
       value: _reminderSettings[key] ?? true,
@@ -1003,3 +1077,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+class _ProfileIdentityTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _ProfileIdentityTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      opacity: 0.13,
+      padding: const EdgeInsets.all(16),
+      borderColor: color.withValues(alpha: 0.18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIconBubble(
+            color: color,
+            size: 38,
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

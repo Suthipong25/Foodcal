@@ -6,6 +6,7 @@ import '../services/ai_service.dart';
 import 'feedback_screen.dart';
 
 import '../widgets/animated_page_wrapper.dart';
+import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 
 class AICoachScreen extends StatefulWidget {
@@ -169,7 +170,8 @@ class _AICoachScreenState extends State<AICoachScreen> {
               borderColor: const Color(0xFFE7EDF4),
               boxShadow: const [],
             ).copyWith(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SafeArea(
               top: false,
@@ -196,12 +198,14 @@ class _AICoachScreenState extends State<AICoachScreen> {
                             fillColor: Colors.white,
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
-                              borderSide: const BorderSide(color: Color(0xFFE3EAF2)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFFE3EAF2)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.28),
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.28),
                               ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
@@ -216,12 +220,13 @@ class _AICoachScreenState extends State<AICoachScreen> {
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         decoration: BoxDecoration(
-                          gradient: _isLoading
-                              ? null
-                              : AppTheme.primaryGradient,
+                          gradient:
+                              _isLoading ? null : AppTheme.primaryGradient,
                           color: _isLoading ? AppTheme.pageTintStrong : null,
                           shape: BoxShape.circle,
-                          boxShadow: _isLoading ? null : AppTheme.softShadow(AppTheme.primaryColor),
+                          boxShadow: _isLoading
+                              ? null
+                              : AppTheme.softShadow(AppTheme.primaryColor),
                         ),
                         child: IconButton(
                           onPressed: _isLoading ? null : _sendMessage,
@@ -248,44 +253,54 @@ class _AICoachScreenState extends State<AICoachScreen> {
     return GlassCard(
       padding: EdgeInsets.all(isCompact ? 18 : 20),
       opacity: 0.15,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: const Stack(
+        clipBehavior: Clip.none,
         children: [
-          Row(
+          SparkleDecoration(
+            alignment: Alignment.topRight,
+            color: AppTheme.aiColor,
+            size: 76,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _CoachIconCard(),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'โค้ชส่วนตัวสำหรับการกิน การดื่มน้ำ และการปรับแผนสุขภาพ',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.ink,
-                    height: 1.35,
+              Row(
+                children: [
+                  _CoachIconCard(),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'AI Coach ของคุณ',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.ink,
+                        height: 1.25,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Text(
+                'พิมพ์ปัญหาที่เจอได้ตรง ๆ เช่น น้ำหนักคงที่ กินเกินเป้า หรืออยากเพิ่มโปรตีน แล้ว AI จะช่วยแนะนำแนวทางที่ทำต่อได้จริง',
+                style: TextStyle(
+                  fontSize: AppTheme.body,
+                  color: AppTheme.mutedText,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text(
-            'พิมพ์ปัญหาที่เจอได้ตรง ๆ เช่น น้ำหนักคงที่ กินเกินเป้า หรืออยากเพิ่มโปรตีน แล้ว AI จะช่วยแนะนำแนวทางที่ทำต่อได้จริง',
-            style: TextStyle(
-              fontSize: AppTheme.body,
-              color: AppTheme.mutedText,
-              height: 1.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _CoachPill(icon: LucideIcons.scale, label: 'น้ำหนักคงที่'),
-              _CoachPill(icon: LucideIcons.beef, label: 'โปรตีนไม่ถึง'),
-              _CoachPill(icon: LucideIcons.droplets, label: 'ดื่มน้ำน้อย'),
+              SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _CoachPill(icon: LucideIcons.scale, label: 'น้ำหนักคงที่'),
+                  _CoachPill(icon: LucideIcons.beef, label: 'โปรตีนไม่ถึง'),
+                  _CoachPill(icon: LucideIcons.droplets, label: 'ดื่มน้ำน้อย'),
+                ],
+              ),
             ],
           ),
         ],
@@ -386,7 +401,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.8,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           gradient: isUser ? AppTheme.primaryGradient : null,
           color: isError
@@ -394,9 +409,11 @@ class _AICoachScreenState extends State<AICoachScreen> {
               : !isUser
                   ? Colors.white
                   : null,
-          borderRadius: BorderRadius.circular(22).copyWith(
-            bottomRight: isUser ? Radius.zero : const Radius.circular(22),
-            bottomLeft: !isUser ? Radius.zero : const Radius.circular(22),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isUser ? 18 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
           border: isUser
               ? null
@@ -407,7 +424,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 ),
           boxShadow: isUser
               ? AppTheme.softShadow(AppTheme.primaryColor)
-              : AppTheme.softShadow(AppTheme.primaryColor),
+              : AppTheme.softShadow(AppTheme.aiColor),
         ),
         child: Text(
           msg['content'] ?? '',
@@ -435,15 +452,15 @@ class _CoachIconCard extends StatelessWidget {
     return Container(
       width: 48,
       height: 48,
-      decoration: AppTheme.subtleCard(
-        background: Colors.white,
-        borderColor: const Color(0xFFE7EDF4),
-      ).copyWith(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: AppTheme.aiGradient,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.softShadow(AppTheme.aiColor),
       ),
       child: const Icon(
         LucideIcons.sparkles,
-        color: AppTheme.primaryColor,
+        color: Colors.white,
         size: 24,
       ),
     );
@@ -464,21 +481,21 @@ class _CoachPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.pageTintStrong,
+        color: AppTheme.aiColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.12),
+          color: AppTheme.aiColor.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.primaryColor),
+          Icon(icon, size: 14, color: AppTheme.aiColor),
           const SizedBox(width: 8),
           Text(
             label,
             style: const TextStyle(
-              color: AppTheme.ink,
+              color: AppTheme.aiColor,
               fontWeight: FontWeight.w800,
               fontSize: 12,
             ),

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,8 @@ import '../widgets/tube_progress_bar.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon_bubble.dart';
 import '../widgets/app_section_header.dart';
-import '../widgets/app_stat_card.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/organic_page.dart';
 import 'ai_coach_screen.dart';
 
 class TipItem {
@@ -67,8 +68,8 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isCompact = AppTheme.isCompactWidth(width);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = AppTheme.isCompactWidth(screenWidth);
     final caloriesIn = log?.caloriesIn ?? 0;
     final targetCalories = profile.targetCalories;
     final remainingCalories = targetCalories - caloriesIn;
@@ -81,307 +82,159 @@ class DashboardScreen extends StatelessWidget {
         : 0.0;
     final todayTip = _tips[DateTimeUtils.now().day % _tips.length];
 
-    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid ?? '';
+    final uid =
+        Provider.of<AuthService>(context, listen: false).currentUser?.uid ?? '';
     final fs = Provider.of<FirestoreService>(context, listen: false);
 
-    return Container(
-      decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
-      child: Center(
-        child: ConstrainedBox(
-          constraints:
-              BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
-          child: SingleChildScrollView(
-            padding: AppTheme.pageInsetsForWidth(width, bottom: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StreamBuilder<List<dynamic>>(
-                  stream: fs.streamWeightLogs(uid, limit: 1),
-                  builder: (context, snap) {
-                    final logs = snap.data ?? [];
-                    final hasWeight = logs.isNotEmpty && logs.first.date == FirestoreService.dateKey();
-                    return DailyReminderColumn(
-                      waterGlasses: currentWater,
-                      targetWater: profile.targetWaterGlasses,
-                      hasFoodToday: caloriesIn > 0,
-                      hasWeightToday: hasWeight,
-                    );
-                  },
-                ),
-                _HeroCard(
-                  profile: profile,
-                  caloriesIn: caloriesIn,
-                  targetCalories: targetCalories,
-                  remainingCalories: remainingCalories,
-                  progress: progress,
-                  isCompact: isCompact,
-                ),
-                const SizedBox(height: AppTheme.sectionGap),
-                const _SectionHeader(
-                  title: 'ภาพรวมสารอาหาร',
-                  subtitle: 'ดูว่าวันนี้เราเข้าใกล้เป้าหมายมากแค่ไหน',
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
-                  child: Row(
-                    children: [
-                      _MacroCard(
-                        title: 'โปรตีน',
-                        current: currentProtein,
-                        target: profile.targetProtein,
-                        color: AppTheme.proteinColor,
-                        icon: LucideIcons.beef,
-                      ),
-                      const SizedBox(width: 12),
-                      _MacroCard(
-                        title: 'คาร์บ',
-                        current: currentCarbs,
-                        target: profile.targetCarbs,
-                        color: AppTheme.carbsColor,
-                        icon: LucideIcons.sun,
-                      ),
-                      const SizedBox(width: 12),
-                      _MacroCard(
-                        title: 'ไขมัน',
-                        current: currentFat,
-                        target: profile.targetFat,
-                        color: AppTheme.fatColor,
-                        icon: LucideIcons.moon,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppTheme.sectionGap),
-                const _SectionHeader(
-                  title: 'ทางลัดประจำวัน',
-                  subtitle: 'เข้าถึงสิ่งที่ใช้บ่อยให้เร็วขึ้น',
-                ),
-                const SizedBox(height: 12),
-                if (isCompact) ...[
-                  _ActionCard(
-                    icon: LucideIcons.plus,
-                    title: 'เพิ่มอาหาร',
-                    subtitle: 'บันทึกมื้อใหม่',
-                    color: AppTheme.primaryColor,
-                    onTap: () => onSwitchTab(1),
-                  ),
-                  const SizedBox(height: 12),
-                  _ActionCard(
-                    icon: LucideIcons.play,
-                    title: 'ออกกำลังกาย',
-                    subtitle: 'เปิดคลังวิดีโอ',
-                    color: AppTheme.warning,
-                    onTap: () => onSwitchTab(2),
-                  ),
-                ] else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          icon: LucideIcons.plus,
-                          title: 'เพิ่มอาหาร',
-                          subtitle: 'บันทึกมื้อใหม่',
-                          color: AppTheme.primaryColor,
-                          onTap: () => onSwitchTab(1),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          icon: LucideIcons.play,
-                          title: 'ออกกำลังกาย',
-                          subtitle: 'เปิดคลังวิดีโอ',
-                          color: AppTheme.warning,
-                          onTap: () => onSwitchTab(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 12),
-                _ActionCard(
-                  icon: LucideIcons.messageSquare,
-                  title: 'AI Coach',
-                  subtitle: 'รับคำแนะนำเรื่องอาหาร พฤติกรรม และการฟื้นตัว',
-                  color: AppTheme.aiColor,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AICoachScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: AppTheme.sectionGap),
-                _WeeklyChart(profile: profile, weeklyLogs: weeklyLogs),
-                const SizedBox(height: AppTheme.sectionGap),
-                if (isCompact) ...[
-                  _WaterCard(
-                    currentWater: currentWater,
-                    targetWater: profile.targetWaterGlasses,
-                  ),
-                  const SizedBox(height: 12),
-                  _TipCard(tip: todayTip),
-                ] else
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _WaterCard(
-                          currentWater: currentWater,
-                          targetWater: profile.targetWaterGlasses,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: _TipCard(tip: todayTip)),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroCard extends StatelessWidget {
-  final UserProfile profile;
-  final int caloriesIn;
-  final int targetCalories;
-  final int remainingCalories;
-  final double progress;
-  final bool isCompact;
-
-  const _HeroCard({
-    required this.profile,
-    required this.caloriesIn,
-    required this.targetCalories,
-    required this.remainingCalories,
-    required this.progress,
-    required this.isCompact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isOver = remainingCalories < 0;
-    final emphasis = isOver ? AppTheme.error : AppTheme.primaryColor;
-
-    return AppCard(
-      padding: EdgeInsets.all(isCompact ? 18 : 22),
-      borderColor: const Color(0xFFE5F0DE),
+    return OrganicPage(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          StreamBuilder<List<dynamic>>(
+            stream: fs.streamWeightLogs(uid, limit: 1),
+            builder: (context, snap) {
+              final logs = snap.data ?? [];
+              final hasWeight =
+                  logs.isNotEmpty && logs.first.date == FirestoreService.dateKey();
+              if (caloriesIn > 0 &&
+                  currentWater >= profile.targetWaterGlasses &&
+                  hasWeight) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: DailyReminderColumn(
+                  waterGlasses: currentWater,
+                  targetWater: profile.targetWaterGlasses,
+                  hasFoodToday: caloriesIn > 0,
+                  hasWeightToday: hasWeight,
+                ),
+              );
+            },
+          ),
+          OrganicHeroPanel(
+            eyebrow: 'วันนี้ของคุณ',
+            title: remainingCalories < 0
+                ? 'ค่อย ๆ กลับมาสมดุลได้'
+                : 'ยังมีพื้นที่ให้กินอย่างสบายใจ',
+            subtitle: remainingCalories < 0
+                ? 'เกินเป้าไป ${remainingCalories.abs()} kcal แล้ว ลองเลือกมื้อเบาและเติมน้ำให้พอในช่วงที่เหลือ'
+                : 'เหลืออีก $remainingCalories kcal จากเป้าหมาย $targetCalories kcal วันนี้',
+            icon: LucideIcons.heart,
+            color: remainingCalories < 0 ? AppTheme.accentColor : AppTheme.primaryColor,
+            trailing: _HeroRing(
+              progress: progress,
+              caloriesIn: caloriesIn,
+              targetCalories: targetCalories,
+              emphasis:
+                  remainingCalories < 0 ? AppTheme.error : AppTheme.primaryColor,
+              compact: true,
+            ),
+            footer: [
+              OrganicPill(
+                label: '${profile.streak} วันต่อเนื่อง',
+                icon: LucideIcons.flame,
+                color: AppTheme.warning,
+              ),
+              OrganicPill(
+                label: '$currentWater/${profile.targetWaterGlasses} แก้ว',
+                icon: LucideIcons.droplet,
+                color: AppTheme.waterColor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           if (isCompact) ...[
-            _HeroText(isOver: isOver),
-            const SizedBox(height: 18),
-            Center(
-              child: _HeroRing(
-                progress: progress,
-                caloriesIn: caloriesIn,
-                targetCalories: targetCalories,
-                emphasis: emphasis,
-                compact: true,
+            OrganicActionTile(
+              icon: LucideIcons.plus,
+              title: 'บันทึกอาหาร',
+              subtitle: 'เพิ่มมื้อใหม่หรือสแกนด้วย AI',
+              color: AppTheme.primaryColor,
+              onTap: () => onSwitchTab(1),
+            ),
+            const SizedBox(height: 10),
+            OrganicActionTile(
+              icon: LucideIcons.play,
+              title: 'ขยับร่างกาย',
+              subtitle: 'เปิดบทความและวิดีโอสุขภาพ',
+              color: AppTheme.warmOrange,
+              onTap: () => onSwitchTab(2),
+            ),
+            const SizedBox(height: 10),
+            OrganicActionTile(
+              icon: LucideIcons.messageCircle,
+              title: 'ถาม AI Coach',
+              subtitle: 'ให้ช่วยคิดเมนูหรือปรับแผนวันนี้',
+              color: AppTheme.aiColor,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AICoachScreen()),
               ),
             ),
           ] else
             Row(
               children: [
-                Expanded(child: _HeroText(isOver: isOver)),
-                const SizedBox(width: 18),
-                _HeroRing(
-                  progress: progress,
-                  caloriesIn: caloriesIn,
-                  targetCalories: targetCalories,
-                  emphasis: emphasis,
-                  compact: false,
-                ),
-              ],
-            ),
-          const SizedBox(height: 18),
-          if (isCompact) ...[
-            Row(
-              children: [
                 Expanded(
-                  child: _StatChip(
-                    label: isOver ? 'เกินเป้า' : 'เหลืออีก',
-                    value: '${remainingCalories.abs()} kcal',
-                    icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
-                    color: emphasis,
+                  child: OrganicActionTile(
+                    icon: LucideIcons.plus,
+                    title: 'บันทึกอาหาร',
+                    subtitle: 'เพิ่มมื้อใหม่หรือสแกนด้วย AI',
+                    color: AppTheme.primaryColor,
+                    onTap: () => onSwitchTab(1),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _StatChip(
-                    label: 'เป้าหมายน้ำดื่ม',
-                    value: '${profile.targetWaterGlasses} แก้ว',
-                    icon: LucideIcons.droplet,
-                    color: AppTheme.waterColor,
+                  child: OrganicActionTile(
+                    icon: LucideIcons.play,
+                    title: 'ขยับร่างกาย',
+                    subtitle: 'เปิดบทความและวิดีโอสุขภาพ',
+                    color: AppTheme.warmOrange,
+                    onTap: () => onSwitchTab(2),
                   ),
                 ),
               ],
             ),
-          ] else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              child: Row(
-                children: [
-                  _StatChip(
-                    label: isOver ? 'เกินเป้า' : 'เหลืออีก',
-                    value: '${remainingCalories.abs()} kcal',
-                    icon: isOver ? LucideIcons.alertTriangle : LucideIcons.target,
-                    color: emphasis,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatChip(
-                    label: 'เป้าหมายน้ำดื่ม',
-                    value: '${profile.targetWaterGlasses} แก้ว',
-                    icon: LucideIcons.droplet,
-                    color: AppTheme.waterColor,
-                  ),
-                ],
-              ),
+          const SizedBox(height: AppTheme.sectionGap),
+          const _SectionHeader(
+            title: 'สวนสารอาหาร',
+            subtitle: 'แถบแต่ละสีคือสิ่งที่ร่างกายได้รับวันนี้',
+          ),
+          const SizedBox(height: 12),
+          _MacroGarden(
+            protein: currentProtein,
+            proteinTarget: profile.targetProtein,
+            carbs: currentCarbs,
+            carbsTarget: profile.targetCarbs,
+            fat: currentFat,
+            fatTarget: profile.targetFat,
+          ),
+          const SizedBox(height: AppTheme.sectionGap),
+          if (isCompact) ...[
+            _WaterCard(
+              currentWater: currentWater,
+              targetWater: profile.targetWaterGlasses,
             ),
+            const SizedBox(height: 12),
+            _TipCard(tip: todayTip),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _WaterCard(
+                    currentWater: currentWater,
+                    targetWater: profile.targetWaterGlasses,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: _TipCard(tip: todayTip)),
+              ],
+            ),
+          const SizedBox(height: AppTheme.sectionGap),
+          _WeeklyChart(profile: profile, weeklyLogs: weeklyLogs),
         ],
       ),
-    );
-  }
-}
-
-class _HeroText extends StatelessWidget {
-  final bool isOver;
-
-  const _HeroText({required this.isOver});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'แดชบอร์ดวันนี้',
-          style: TextStyle(
-            fontSize: AppTheme.largeTitle,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.ink,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          isOver
-              ? 'วันนี้เกินเป้าหมายแล้ว ลองบาลานซ์มื้อถัดไปให้เบาขึ้น'
-              : 'ยังเหลือพลังงานสำหรับการกินอย่างสมดุลในวันนี้',
-          style: const TextStyle(
-            fontSize: AppTheme.body,
-            color: AppTheme.mutedText,
-            height: 1.4,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -411,16 +264,11 @@ class _HeroRing extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const CircularProgressIndicator(
-            value: 1,
-            strokeWidth: 14,
-            valueColor: AlwaysStoppedAnimation(AppTheme.pageTintStrong),
-          ),
-          CircularProgressIndicator(
-            value: progress,
-            strokeWidth: 14,
-            strokeCap: StrokeCap.round,
-            valueColor: AlwaysStoppedAnimation(emphasis),
+          CustomPaint(
+            painter: _CalorieRingPainter(
+              progress: progress,
+              isOver: emphasis == AppTheme.error,
+            ),
           ),
           Center(
             child: Column(
@@ -452,27 +300,44 @@ class _HeroRing extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
+class _CalorieRingPainter extends CustomPainter {
+  final double progress;
+  final bool isOver;
 
-  const _StatChip({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
+  const _CalorieRingPainter({
+    required this.progress,
+    required this.isOver,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return AppStatCard(
-      label: label,
-      value: value,
-      icon: icon,
-      color: color,
-    );
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 14.0;
+    final rect = Offset.zero & size;
+    final ringRect = rect.deflate(strokeWidth / 2);
+    const startAngle = -math.pi / 2;
+    final sweep = math.pi * 2 * progress.clamp(0.0, 1.0);
+
+    final bgPaint = Paint()
+      ..color = AppTheme.pageTintStrong
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(ringRect, 0, math.pi * 2, false, bgPaint);
+
+    final progressPaint = Paint()
+      ..shader = (isOver
+              ? const LinearGradient(colors: [AppTheme.error, AppTheme.warning])
+              : AppTheme.calorieRingGradient)
+          .createShader(ringRect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(ringRect, startAngle, sweep, false, progressPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CalorieRingPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.isOver != isOver;
   }
 }
 
@@ -491,84 +356,136 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _MacroCard extends StatelessWidget {
-  final String title;
-  final int current;
-  final int target;
-  final Color color;
-  final IconData icon;
+class _MacroGarden extends StatelessWidget {
+  final int protein;
+  final int proteinTarget;
+  final int carbs;
+  final int carbsTarget;
+  final int fat;
+  final int fatTarget;
 
-  const _MacroCard({
-    required this.title,
-    required this.current,
-    required this.target,
-    required this.color,
-    required this.icon,
+  const _MacroGarden({
+    required this.protein,
+    required this.proteinTarget,
+    required this.carbs,
+    required this.carbsTarget,
+    required this.fat,
+    required this.fatTarget,
   });
 
   @override
   Widget build(BuildContext context) {
-    final progress = target > 0 ? (current / target).clamp(0.0, 1.0) : 0.0;
-    final remaining = target - current;
-    final isOver = remaining < 0;
+    return GlassCard(
+      opacity: 0.14,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          _MacroGardenRow(
+            label: 'โปรตีน',
+            value: protein,
+            target: proteinTarget,
+            icon: LucideIcons.beef,
+            color: AppTheme.proteinColor,
+          ),
+          const SizedBox(height: 16),
+          _MacroGardenRow(
+            label: 'คาร์บ',
+            value: carbs,
+            target: carbsTarget,
+            icon: LucideIcons.sun,
+            color: AppTheme.carbsColor,
+          ),
+          const SizedBox(height: 16),
+          _MacroGardenRow(
+            label: 'ไขมัน',
+            value: fat,
+            target: fatTarget,
+            icon: LucideIcons.moon,
+            color: AppTheme.fatColor,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: const Color(0xFFE5F0DE),
-      child: SizedBox(
-        width: 158,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AppIconBubble(
-                  color: color,
-                  size: 32,
-                  child: Icon(icon, color: color, size: 16),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.ink,
+class _MacroGardenRow extends StatelessWidget {
+  final String label;
+  final int value;
+  final int target;
+  final IconData icon;
+  final Color color;
+
+  const _MacroGardenRow({
+    required this.label,
+    required this.value,
+    required this.target,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = target > 0 ? (value / target).clamp(0.0, 1.0) : 0.0;
+    final remaining = target - value;
+
+    return Row(
+      children: [
+        AppIconBubble(
+          color: color,
+          size: 42,
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
+                  Text(
+                    '$value / $target g',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TubeProgressBar(
+                progress: progress,
+                colors: [color.withValues(alpha: 0.55), color],
+                backgroundColor: color.withValues(alpha: 0.1),
+                height: 10,
+                borderRadius: 999,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                remaining < 0
+                    ? 'เกิน ${remaining.abs()} g'
+                    : 'เหลือ $remaining g',
+                style: TextStyle(
+                  color: remaining < 0 ? AppTheme.error : AppTheme.mutedText,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '$current / $target g',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.ink,
               ),
-            ),
-            const SizedBox(height: 10),
-            TubeProgressBar(
-              progress: progress,
-              colors: [color.withValues(alpha: 0.55), color],
-              backgroundColor: color.withValues(alpha: 0.10),
-              height: 6,
-              borderRadius: 999,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isOver ? 'เกิน ${remaining.abs()} g' : 'เหลือ $remaining g',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: isOver ? AppTheme.error : AppTheme.mutedText,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -640,7 +557,7 @@ class _WeeklyChart extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(20),
-      borderColor: const Color(0xFFE5F0DE),
+      borderColor: AppTheme.cardBorder,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -683,15 +600,15 @@ class _WeeklyChart extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE5F0DE)),
+              border: Border.all(color: AppTheme.cardBorder),
             ),
             child: AspectRatio(
               aspectRatio: 1.85,
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
-                  maxY:
-                      math.max(maxLog, profile.targetCalories.toDouble()) * 1.25,
+                  maxY: math.max(maxLog, profile.targetCalories.toDouble()) *
+                      1.25,
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
@@ -750,75 +667,6 @@ class _WeeklyChart extends StatelessWidget {
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 126),
-        child: AppCard(
-          padding: const EdgeInsets.all(16),
-          borderColor: const Color(0xFFE5F0DE),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              AppIconBubble(
-                color: color,
-                size: 40,
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(height: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: AppTheme.meta,
-                      color: AppTheme.mutedText,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _WaterCard extends StatelessWidget {
   final int currentWater;
   final int targetWater;
@@ -835,7 +683,7 @@ class _WaterCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(18),
-      borderColor: const Color(0xFFE5F0DE),
+      borderColor: AppTheme.cardBorder,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

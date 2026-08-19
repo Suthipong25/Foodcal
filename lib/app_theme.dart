@@ -23,6 +23,14 @@ class AppTheme {
   static const Color error = Color(0xFFFF6F7D);
   static const Color aiColor = Color(0xFF8B73FF);
   static const Color aiBgColor = Color(0xFFF4F0FF);
+  static const Color cardBorder = Color(0xFFE5F0DE);
+
+  static const Color warmPeach = Color(0xFFFFEEE9);
+  static const Color warmMint = Color(0xFFE9F8EF);
+  static const Color leafGreen = Color(0xFF6BBF8A);
+  static const Color leafDark = Color(0xFF2D8A5E);
+  static const Color coralLight = Color(0xFFFFD4CC);
+  static const Color warmOrange = Color(0xFFFFA85C);
 
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF4CBF83), Color(0xFFA7E8C4)],
@@ -38,6 +46,16 @@ class AppTheme {
 
   static const LinearGradient aiGradient = LinearGradient(
     colors: [Color(0xFFA58CFF), aiColor],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient calorieRingGradient = LinearGradient(
+    colors: [Color(0xFF4CBF83), Color(0xFFA7E8C4), Color(0xFFFFB066)],
+  );
+
+  static const LinearGradient heroGradient = LinearGradient(
+    colors: [warmPeach, pageTintStrong],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -130,7 +148,7 @@ class AppTheme {
 
   static BoxDecoration elevatedCard({
     Color color = surface,
-    Color borderColor = const Color(0xFFE5F0DE),
+    Color borderColor = cardBorder,
     List<BoxShadow>? boxShadow,
   }) {
     return BoxDecoration(
@@ -159,7 +177,7 @@ class AppTheme {
 
   static BoxDecoration subtleCard({
     Color background = Colors.white,
-    Color borderColor = const Color(0xFFE5F0DE),
+    Color borderColor = cardBorder,
     List<BoxShadow>? boxShadow,
   }) {
     return BoxDecoration(
@@ -179,13 +197,13 @@ class AppTheme {
 
   static LinearGradient pageBackground() {
     return const LinearGradient(
-        colors: [
-          Color(0xFFF8FCF4),
-          Color(0xFFF5FAEF),
-          Color(0xFFEFF8E9),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+      colors: [
+        Color(0xFFFBF8F0),
+        Color(0xFFF8F5EC),
+        Color(0xFFF2F8ED),
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
     );
   }
 
@@ -266,7 +284,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: cardRadius,
-          side: BorderSide(color: Color(0xFFE5F0DE)),
+          side: BorderSide(color: cardBorder),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -287,7 +305,7 @@ class AppTheme {
         ),
         enabledBorder: const OutlineInputBorder(
           borderRadius: innerRadius,
-          borderSide: BorderSide(color: Color(0xFFE5F0DE)),
+          borderSide: BorderSide(color: cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: innerRadius,
@@ -356,7 +374,7 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
-      dividerColor: const Color(0xFFE5F0DE),
+      dividerColor: cardBorder,
       splashColor: primaryColor.withValues(alpha: 0.06),
       highlightColor: primaryColor.withValues(alpha: 0.03),
     );

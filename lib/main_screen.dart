@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:foodcal/app_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -10,7 +8,6 @@ import 'constants/enums.dart';
 import 'models/user_profile.dart';
 import 'screens/admin_screen.dart';
 import 'screens/content_screen.dart';
-import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_screen.dart';
@@ -184,7 +181,7 @@ class _MainScreenState extends State<MainScreen> {
 
             return Scaffold(
               backgroundColor: AppTheme.pageBg,
-              appBar: _currentIndex == 0 ? _buildHomeAppBar(userProfile) : null,
+              appBar: null,
               body: SafeArea(
                 bottom: false,
                 child: IndexedStack(
@@ -197,150 +194,6 @@ class _MainScreenState extends State<MainScreen> {
           },
         );
       },
-    );
-  }
-
-  PreferredSizeWidget _buildHomeAppBar(UserProfile profile) {
-    final avatarImage = profile.photoUrl == null
-        ? null
-        : (profile.photoUrl!.startsWith('data:')
-            ? MemoryImage(base64Decode(profile.photoUrl!.split(',')[1]))
-                as ImageProvider
-            : NetworkImage(profile.photoUrl!));
-
-    return AppBar(
-      toolbarHeight: 94,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      leadingWidth: 0,
-      titleSpacing: 16,
-      title: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE8F8DF), Color(0xFFFFFFFF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-              image: avatarImage == null
-                  ? null
-                  : DecorationImage(image: avatarImage, fit: BoxFit.cover),
-            ),
-            child: avatarImage == null
-                ? Center(
-                    child: Text(
-                      profile.name.isNotEmpty
-                          ? profile.name[0].toUpperCase()
-                          : 'F',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'สวัสดี, คุณ${profile.name}',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppTheme.ink,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'ยินดีต้อนรับกลับมาดูแลตัวเอง',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.mutedText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        _buildTopAction(
-          icon: LucideIcons.history,
-          tooltip: 'ประวัติ',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HistoryScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 4),
-        Container(
-          margin: const EdgeInsets.fromLTRB(8, 18, 16, 18),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFF2DF), Color(0xFFFFFFFF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppTheme.warning),
-            boxShadow: AppTheme.softShadow(AppTheme.warning),
-          ),
-          child: Row(
-            children: [
-              Icon(LucideIcons.flame, color: AppTheme.warning, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                '${profile.streak} วัน',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.ink,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopAction({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 18),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFE5F0DE)),
-        boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
-      ),
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: Icon(icon, color: AppTheme.primaryColor, size: 18),
-      ),
     );
   }
 
@@ -363,32 +216,36 @@ class _MainScreenState extends State<MainScreen> {
             isCompact ? 8 : 12,
             isCompact ? 8 : 12,
           ),
-          opacity: 0.95,
+          opacity: 0.25,
+          blur: 16,
           borderRadius: BorderRadius.circular(24),
-          borderColor: const Color(0xFFE5F0DE),
+          borderColor: AppTheme.cardBorder,
           child: Row(
             children: [
               Expanded(
                 child: _buildNavItem(
-                  LucideIcons.activity,
-                  'หน้าหลัก',
+                  LucideIcons.home,
+                  'หน้าแรก',
                   0,
                   compact: isCompact,
                 ),
               ),
               Expanded(
                 child: _buildNavItem(
-                  LucideIcons.utensils,
+                  LucideIcons.bookOpen,
                   'บันทึก',
                   1,
                   compact: isCompact,
                 ),
               ),
-              Expanded(child: _buildScanNavAction(isCompact)),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8),
+                child: _buildScanNavAction(isCompact),
+              ),
               Expanded(
                 child: _buildNavItem(
-                  LucideIcons.play,
-                  'เรียนรู้',
+                  LucideIcons.bookMarked,
+                  'เนื้อหา',
                   2,
                   compact: isCompact,
                 ),
@@ -427,10 +284,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildScanNavAction(bool compact) {
-    final active = _currentIndex == 1;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 4),
+    return Transform.translate(
+      offset: const Offset(0, -8),
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -438,57 +293,21 @@ class _MainScreenState extends State<MainScreen> {
             _scanRequestVersion++;
           });
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final showLabel = !compact && constraints.maxWidth >= 88;
-
-            return AnimatedContainer(
+        child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
-              height: compact ? 50 : 58,
-              padding: EdgeInsets.symmetric(horizontal: showLabel ? 14 : 10),
+              width: compact ? 52 : 56,
+              height: compact ? 52 : 56,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: active
-                      ? const [Color(0xFF23A36E), Color(0xFF77D99C)]
-                      : const [Color(0xFF77D99C), Color(0xFFEAF5E4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
+                gradient: AppTheme.primaryGradient,
+                shape: BoxShape.circle,
                 boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    LucideIcons.camera,
-                    color: active ? Colors.white : AppTheme.primaryColor,
-                    size: 18,
-                  ),
-                  if (showLabel) ...[
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'สแกน',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: active ? Colors.white : AppTheme.primaryColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
+          child: const Icon(
+            LucideIcons.scan,
+            color: Colors.white,
+            size: 24,
+          ),
         ),
       ),
     );
@@ -511,18 +330,14 @@ class _MainScreenState extends State<MainScreen> {
           horizontal: compact ? 2 : 6,
           vertical: compact ? 8 : 9,
         ),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFEAF5E4) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: active ? 20 : 0,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 6),
+              width: active ? 28 : 0,
+              height: 3,
+              margin: const EdgeInsets.only(bottom: 5),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor,
                 borderRadius: BorderRadius.circular(999),

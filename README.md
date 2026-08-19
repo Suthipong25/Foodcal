@@ -1,401 +1,544 @@
 # Foodcal
 
-แอป Flutter สำหรับติดตามอาหาร น้ำดื่ม การออกกำลังกาย และเป้าหมายสุขภาพรายวัน พร้อมฟีเจอร์ AI ช่วยประมาณแคลอรี่และ AI Coach
+Foodcal คือแอป Flutter สำหรับช่วยผู้ใช้ดูแลสุขภาพรายวันในที่เดียว: บันทึกอาหารและน้ำ, ติดตามแคลอรี่/สารอาหาร, ดูวิดีโอออกกำลังกาย, เก็บน้ำหนัก, และคุยกับ AI Coach เพื่อขอคำแนะนำแบบสั้น ๆ เป็นภาษาไทย
 
-เอกสารนี้เขียนสำหรับ **นักพัฒนาที่มาทำต่อ** — ครอบคลุมสิ่งที่ต้องติดตั้ง วิธีรันแอป และภาพรวมว่าระบบทำงานอย่างไร
+เอกสารนี้เป็นคู่มือสำหรับคนที่เพิ่งเปิดโปรเจกต์ครั้งแรก ให้เห็นภาพรวมการทำงาน วิธีติดตั้ง วิธีตั้งค่า และวิธีรันแอปจนใช้งานได้
 
 ---
 
 ## สารบัญ
 
-1. [Tech Stack](#tech-stack)
-2. [สิ่งที่ต้องติดตั้ง](#สิ่งที่ต้องติดตั้ง)
-3. [Setup โปรเจกต์ครั้งแรก](#setup-โปรเจกต์ครั้งแรก)
-4. [รันแอปและเทส](#รันแอปและเทส)
-5. [แอปทำงานอย่างไร](#แอปทำงานอย่างไร)
-6. [โครงสร้างโปรเจกต์](#โครงสร้างโปรเจกต์)
-7. [Firebase และ Cloud Functions](#firebase-และ-cloud-functions)
-8. [CI/CD](#cicd)
-9. [Build Release (Android)](#build-release-android)
-10. [เอกสารอ้างอิงเพิ่มเติม](#เอกสารอ้างอิงเพิ่มเติม)
-11. [ปัญหาที่พบบ่อย](#ปัญหาที่พบบ่อย)
+1. [ฟีเจอร์หลัก](#ฟีเจอร์หลัก)
+2. [Tech Stack](#tech-stack)
+3. [สิ่งที่ต้องติดตั้ง](#สิ่งที่ต้องติดตั้ง)
+4. [ติดตั้งโปรเจกต์](#ติดตั้งโปรเจกต์)
+5. [ตั้งค่า Firebase](#ตั้งค่า-firebase)
+6. [ตั้งค่า AI](#ตั้งค่า-ai)
+7. [รันแอป](#รันแอป)
+8. [ทดสอบและตรวจโค้ด](#ทดสอบและตรวจโค้ด)
+9. [ภาพรวมการทำงาน](#ภาพรวมการทำงาน)
+10. [โครงสร้างโปรเจกต์](#โครงสร้างโปรเจกต์)
+11. [Cloud Functions และ Deploy](#cloud-functions-และ-deploy)
+12. [Build Release](#build-release)
+13. [Troubleshooting](#troubleshooting)
+14. [เอกสารเพิ่มเติม](#เอกสารเพิ่มเติม)
+
+---
+
+## ฟีเจอร์หลัก
+
+- สมัครสมาชิก / เข้าสู่ระบบด้วย Firebase Auth
+- Onboarding เพื่อกรอกข้อมูลร่างกายและคำนวณเป้าหมายสุขภาพ
+- Dashboard รายวัน: แคลอรี่, สารอาหาร, น้ำดื่ม, streak, กราฟ 7 วัน
+- บันทึกอาหารด้วยตัวเอง, ใช้อาหารที่เคยบันทึก, หรือให้ AI ช่วยประมาณ
+- วิเคราะห์อาหารจากรูปภาพด้วย Gemini API
+- บันทึกน้ำแบบ quick actions
+- คลังบทความและวิดีโอออกกำลังกาย
+- Profile สำหรับแก้ไขน้ำหนัก ส่วนสูง เป้าหมาย รูปโปรไฟล์ และ reminder settings
+- AI Coach สำหรับถามคำแนะนำเรื่องอาหาร น้ำหนัก โปรตีน น้ำดื่ม และพฤติกรรมสุขภาพ
+- Admin dashboard สำหรับผู้ใช้ที่มี role เป็น `admin`
 
 ---
 
 ## Tech Stack
 
-| ชั้น | เทคโนโลยี |
-|------|-----------|
-| Frontend | Flutter (Dart SDK `^3.5.3`) |
-| State | Provider |
+| ส่วน | เทคโนโลยี |
+| --- | --- |
+| App | Flutter / Dart SDK `^3.5.3` |
+| State Management | Provider |
 | Backend | Firebase Auth, Cloud Firestore, Firebase Storage |
-| Serverless | Cloud Functions (Node.js 20) |
+| Serverless | Firebase Cloud Functions, Node.js |
 | AI | Google Gemini API |
-| Charts / UI | fl_chart, lucide_icons, google_fonts |
+| UI | Material 3, Bai Jamjuree, Lucide Icons |
+| Chart | `fl_chart` |
+| Local config | `flutter_dotenv` |
 
 ---
 
 ## สิ่งที่ต้องติดตั้ง
 
-### จำเป็น
+ติดตั้งเครื่องมือเหล่านี้ก่อนเริ่ม:
 
-- **Flutter SDK** (stable channel) — [https://docs.flutter.dev/get-started/install](https://docs.flutter.dev/get-started/install)
-- **Git**
-- **Android Studio** หรือ **VS Code** + Flutter extension
-- สำหรับ Android: Android SDK + emulator/device
-- สำหรับ iOS (macOS เท่านั้น): Xcode + CocoaPods
+- Flutter SDK: [Flutter installation guide](https://docs.flutter.dev/get-started/install)
+- Git
+- Android Studio หรือ VS Code พร้อม Flutter extension
+- Android SDK และ emulator/device สำหรับรัน Android
+- Xcode และ CocoaPods ถ้าจะรัน iOS บน macOS
+- Node.js และ npm ถ้าจะ deploy Cloud Functions
+- Firebase CLI ถ้าจะ deploy rules/functions
 
-### สำหรับ Firebase
+ติดตั้ง Firebase CLI:
 
-- **Firebase CLI**: `npm install -g firebase-tools`
-- สิทธิ์เข้าถึง Firebase project `foodcal-b63fc` (หรือ project ที่ทีมใช้จริง)
-- ไฟล์ config จาก Firebase Console (ดูด้านล่าง — **ไม่ commit ขึ้น Git**)
+```bash
+npm install -g firebase-tools
+```
 
-### สำหรับ AI (ฟีเจอร์ประมาณแคลอรี่ / AI Coach)
+ตรวจ environment:
 
-- **Gemini API Key** จาก [Google AI Studio](https://aistudio.google.com/)
+```bash
+flutter doctor
+```
 
 ---
 
-## Setup โปรเจกต์ครั้งแรก
+## ติดตั้งโปรเจกต์
 
-### 1. Clone และติดตั้ง dependencies
+Clone โปรเจกต์:
 
 ```bash
 git clone <repo-url>
 cd Foodcal
+```
+
+ติดตั้ง dependencies:
+
+```bash
 flutter pub get
 ```
 
-### 2. ไฟล์ Firebase (ต้องมีก่อนรัน)
+ถ้ามีปัญหา dependency/cache:
 
-ไฟล์เหล่านี้อยู่ใน `.gitignore` — ต้องขอจากทีมหรือดาวน์โหลดจาก Firebase Console
+```bash
+flutter clean
+flutter pub get
+```
 
-| ไฟล์ | ตำแหน่ง |
-|------|---------|
-| `google-services.json` | `android/app/google-services.json` |
-| `GoogleService-Info.plist` | `ios/Runner/GoogleService-Info.plist` |
+---
 
-Config ฝั่ง Dart ถูก generate ไว้แล้วที่ `lib/firebase_options.dart` (project id: `foodcal-b63fc`)
+## ตั้งค่า Firebase
 
-### 3. Environment variables
+โปรเจกต์นี้ใช้ Firebase เป็น backend หลัก ต้องมี config ของ Firebase ก่อนรันแอปจริง
 
-สร้างไฟล์ `assets/.env` (อย่า commit):
+### ไฟล์ที่ต้องมี
+
+ไฟล์เหล่านี้มักไม่ควรถูก commit ขึ้น Git ให้ขอจากทีม หรือดาวน์โหลดจาก Firebase Console:
+
+| Platform | ไฟล์ | ตำแหน่ง |
+| --- | --- | --- |
+| Android | `google-services.json` | `android/app/google-services.json` |
+| iOS | `GoogleService-Info.plist` | `ios/Runner/GoogleService-Info.plist` |
+
+ไฟล์ Dart config อยู่ที่:
+
+```text
+lib/firebase_options.dart
+```
+
+### เปิด Authentication Providers
+
+ใน Firebase Console ให้เปิด:
+
+- Email/Password
+- Google Sign-In
+
+สำหรับ Google Sign-In:
+
+- Android: เพิ่ม SHA-1 / SHA-256 ของ debug/release keystore ใน Firebase Console
+- iOS: ตรวจ URL Scheme จาก `REVERSED_CLIENT_ID`
+- Web: ตรวจ `authDomain` ให้ตรงกับ Firebase project
+
+### Firestore / Storage Rules
+
+Rules อยู่ที่:
+
+```text
+firestore.rules
+storage.rules
+```
+
+Deploy rules:
+
+```bash
+firebase login
+firebase use <firebase-project-id>
+firebase deploy --only firestore:rules
+firebase deploy --only storage:rules
+```
+
+---
+
+## ตั้งค่า AI
+
+ฟีเจอร์ AI ใช้ Gemini API key
+
+สร้างไฟล์:
+
+```text
+assets/.env
+```
+
+ใส่ค่า:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-แอปโหลดไฟล์นี้ตอน startup ใน `lib/main.dart` ผ่าน `flutter_dotenv`
-
-**ทางเลือก:** ส่ง key ผ่าน build flag แทนได้
+หรือส่งผ่าน build flag:
 
 ```bash
-flutter run --dart-define=GEMINI_API_KEY=your_key_here
+flutter run --dart-define=GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-ถ้าไม่มี key ฟีเจอร์ต่อไปนี้จะใช้งานไม่ได้หรือจำกัด:
+ถ้าไม่ได้ตั้งค่า API key ฟีเจอร์เหล่านี้จะไม่ทำงานหรือทำงานแบบจำกัด:
 
-- ค้นหาแคลอรี่จากชื่ออาหาร (AI fallback)
+- ประมาณแคลอรี่ด้วย AI
 - วิเคราะห์อาหารจากรูปภาพ
 - AI Coach
 
-เมนูไทยที่รู้จัก (เช่น กะเพรา, ข้าวผัด) ยังประมาณได้จาก baseline ใน `NutritionService` แม้ไม่มี API key
-
-### 4. Firebase Authentication
-
-เปิด provider ใน Firebase Console:
-
-- Email/Password
-- Google Sign-In
-
-**Google Sign-In เพิ่มเติม:**
-
-- **Android:** ใส่ SHA-1 / SHA-256 ของ keystore ใน Firebase Console
-- **iOS:** ตั้ง URL Scheme จาก `REVERSED_CLIENT_ID` ใน `GoogleService-Info.plist`
-- **Web:** ตรวจ `authDomain` ให้ตรงกับ `firebase_options.dart`
-
-### 5. (Optional) Firebase CLI login
-
-```bash
-firebase login
-firebase use foodcal-b63fc
-```
+หมายเหตุ: `docs/AI_BACKEND_SETUP.md` เป็นเอกสารแนวทางสำหรับย้าย AI key ไปไว้ที่ backend/proxy ในอนาคต แต่โค้ด Flutter ปัจจุบันยังอ่าน `GEMINI_API_KEY` จาก client ผ่าน `flutter_dotenv` หรือ `--dart-define`
 
 ---
 
-## รันแอปและเทส
+## รันแอป
+
+ดู device ที่พร้อมใช้งาน:
 
 ```bash
-# ตรวจว่า environment พร้อม
-flutter doctor
+flutter devices
+```
 
-# รันแอป (เลือก device/emulator)
+รันบน device/emulator:
+
+```bash
 flutter run
+```
 
-# วิเคราะห์โค้ด
-flutter analyze
+รันพร้อม Gemini key:
 
-# รัน unit/widget tests ทั้งหมด
-flutter test
+```bash
+flutter run --dart-define=GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-# รันเฉพาะ nutrition tests
-flutter test test/nutrition_service_test.dart
+รันบน Chrome:
+
+```bash
+flutter run -d chrome
+```
+
+รันบน Windows desktop:
+
+```bash
+flutter run -d windows
 ```
 
 ---
 
-## แอปทำงานอย่างไร
+## ทดสอบและตรวจโค้ด
 
-### Flow เริ่มต้น
+Format โค้ด:
 
+```bash
+dart format lib test
 ```
+
+Analyze:
+
+```bash
+flutter analyze
+```
+
+รัน tests ทั้งหมด:
+
+```bash
+flutter test
+```
+
+รัน test เฉพาะไฟล์:
+
+```bash
+flutter test test/nutrition_service_test.dart
+flutter test test/input_validator_test.dart
+```
+
+---
+
+## ภาพรวมการทำงาน
+
+Flow เริ่มต้น:
+
+```text
 main.dart
-  → โหลด assets/.env
-  → Firebase.initializeApp()
-  → AuthWrapper (StreamBuilder จาก Firebase Auth)
-       ├─ ไม่ login → LoginScreen / RegisterScreen
-       └─ login แล้ว → MainScreen
+  -> โหลด assets/.env
+  -> Firebase.initializeApp()
+  -> AuthWrapper
+       -> ยังไม่ login: LoginScreen / RegisterScreen
+       -> login แล้ว: MainScreen
 ```
 
-### หน้าหลัก (MainScreen)
+ถ้าผู้ใช้ login แล้วแต่ยังไม่มี profile ใน Firestore แอปจะเปิด Onboarding เพื่อเก็บข้อมูลพื้นฐาน:
 
-Bottom navigation 4 แท็บ:
+- ชื่อ
+- เพศ
+- วันเกิด
+- ส่วนสูง / น้ำหนัก / น้ำหนักเป้าหมาย
+- ระดับกิจกรรม
+- เป้าหมายสุขภาพ
 
-| แท็บ | ไฟล์ | หน้าที่ |
-|------|------|--------|
-| หน้าแรก | `home_screen.dart` | Dashboard แคลอรี่วันนี้, กราฟ 7 วัน, streak |
-| บันทึก | `tracking_screen.dart` | บันทึกอาหาร, น้ำ, สแกนรูป, ค้นหาแคลอรี่ |
-| เนื้อหา | `content_screen.dart` | บทความสุขภาพ + วิดีโอ workout |
-| โปรไฟล์ | `profile_screen.dart` | แก้ไขข้อมูลส่วนตัว, เป้าหมาย, รูปโปรไฟล์ |
+จากนั้นระบบคำนวณ:
 
-**ผู้ใช้ใหม่:** ถ้ายังไม่มีโปรไฟล์ใน Firestore → ไป `onboarding_screen.dart` เพื่อกรอกข้อมูลร่างกายและคำนวณเป้าแคลอรี่
+- TDEE
+- Target calories
+- Protein / carbs / fat target
+- Target water glasses
 
-**Admin:** ถ้า `users/{uid}.role == "admin"` → เข้า `admin_screen.dart` โดยตรง
+### Main Tabs
 
-### การคำนวณเป้าหมายสุขภาพ
+| Tab | ไฟล์ | หน้าที่ |
+| --- | --- | --- |
+| หน้าแรก | `lib/screens/home_screen.dart` | Dashboard, แคลอรี่, macro, น้ำ, trend |
+| บันทึก | `lib/screens/tracking_screen.dart` | บันทึกอาหาร, สแกนรูป, บันทึกน้ำ |
+| เนื้อหา | `lib/screens/content_screen.dart` | บทความและวิดีโอ workout |
+| โปรไฟล์ | `lib/screens/profile_screen.dart` | ข้อมูลส่วนตัว เป้าหมาย reminder รูปโปรไฟล์ |
 
-Logic อยู่ใน `lib/utils/health_profile_stats.dart`:
+ถ้า `users/{uid}.role == "admin"` ผู้ใช้จะเข้า `AdminScreen` แทนหน้าหลัก
 
-- คำนวณ BMR → TDEE จาก activity level
-- ปรับตาม goal (ลดน้ำหนัก / รักษา / เพิ่มกล้ามเนื้อ)
-- ก distrib macros (protein, fat, carbs)
+### การประมาณโภชนาการ
 
-### การประมาณแคลอรี่ (สำคัญ)
+หน้า Tracking เรียก:
 
-หน้า Tracking เรียก `NutritionService` — **ไม่ใช่** `AIService` โดยตรง
-
-```
-NutritionService.lookupFood(ชื่ออาหาร)
-  1. Thai baseline (_estimateThaiFoodBaseline)     ← เมนูไทยที่รู้จัก เช่น กะเพรา, ข้าวผัด
-  2. FoodDatabaseService (Open Food Facts + Firestore cache)
-  3. Gemini AI estimate (fallback)
-  4. clamp ถ้า AI ให้ค่าสูงเกิน baseline มากกว่า ~30%
-```
-
-```
-NutritionService.analyzeImage(รูป)
-  → Gemini Vision + Thai food prompt
-  → clamp ด้วย baseline ถ้ามี
+```text
+NutritionService.lookupFood(foodName)
+NutritionService.analyzeImage(imageBytes)
 ```
 
-**AI Coach** ใช้ `AIService.askCoach()` แยกต่างหาก (เรียก Gemini จาก client)
+ลำดับการทำงานโดยย่อ:
 
-> **หมายเหตุด้านสถาปัตยกรรม:** โฟลเดอร์ `functions/` มี Cloud Functions สำหรับ `estimateFood`, `analyzeFoodImage`, `askCoach` อยู่แล้ว แต่ **แอป Flutter ปัจจุบันยังเรียก Gemini จาก client** ผ่าน `NutritionService` / `AIService` โดยตรง ไม่ได้เรียก functions เหล่านี้ ถ้าจะย้าย key ไปฝั่ง server ให้ดู `docs/AI_BACKEND_SETUP.md` เป็นทิศทาง (เอกสารนั้นอธิบายแนว backend proxy — ยังไม่ได้ wire เข้าแอปเต็มรูปแบบ)
-
-### การบันทึกข้อมูล
-
-`FirestoreService` เป็นชั้นกลางอ่าน/เขียน Firestore:
-
-| การกระทำ | วิธีเก็บ |
-|----------|----------|
-| บันทึกอาหาร | Transaction ที่ `users/{uid}/daily_logs/{dateKey}` |
-| บันทึกน้ำ | อัปเดต `waterGlasses` ใน daily log |
-| Workout | `workout_sessions` + อัปเดต `caloriesOut` |
-| โปรไฟล์ | `users/{uid}` |
-| อาหารที่สร้างเอง | `users/{uid}/custom_foods` |
-| น้ำหนัก | `users/{uid}/weight_logs` |
-| Feedback | collection `feedback` |
-
-**Timezone:** ใช้เวลาไทย (UTC+7) สำหรับ `dateKey` ผ่าน `DateTimeUtils` / `AppConfig.bangkokUtcOffsetHours`
-
-**Admin-only operations** เรียก Cloud Functions:
-
-- `setAdminRole`
-- `deleteUserAccount`
-
-### โครงสร้างข้อมูล Firestore (ย่อ)
-
+```text
+ชื่ออาหาร
+  -> FoodDatabaseService / cache
+  -> AI enrichment หรือ AI fallback
+  -> NutritionResult
 ```
+
+รูปภาพ:
+
+```text
+รูปอาหาร
+  -> Gemini Vision
+  -> JSON nutrition result
+  -> NutritionResult
+```
+
+AI Coach เรียก:
+
+```text
+AIService.askCoach(message, history)
+```
+
+### การเก็บข้อมูล
+
+ข้อมูลหลักเก็บใน Firestore:
+
+```text
 users/{uid}
-  ├── name, gender, height, weight, goal, targetCalories, streak, role, ...
-  ├── daily_logs/{YYYY-MM-DD}
-  │     ├── caloriesIn, caloriesOut, protein, carbs, fat, waterGlasses
-  │     ├── foods: [FoodItem]
-  │     └── workouts: [WorkoutItem]
-  ├── custom_foods/{id}
-  ├── weight_logs/{id}
-  └── workout_sessions/{id}
+  daily_logs/{YYYY-MM-DD}
+  custom_foods/{id}
+  weight_logs/{id}
+  workout_sessions/{id}
 
-food_cache/{normalized_name}     ← cache จาก Open Food Facts (TTL 30 วัน)
-workout_videos/{id}              ← วิดีโอ workout
-feedback/{id}                    ← feedback จากผู้ใช้
+food_cache/{normalized_name}
+workout_videos/{id}
+feedback/{id}
 ```
 
-Security rules อยู่ที่ `firestore.rules` และ `storage.rules`
+วันที่ใช้ `dateKey` ตามเวลาไทยผ่าน `DateTimeUtils`
 
 ---
 
 ## โครงสร้างโปรเจกต์
 
-```
+```text
 Foodcal/
 ├── lib/
-│   ├── main.dart                 # Entry point
-│   ├── main_screen.dart          # Bottom nav + routing หลัง login
-│   ├── models/                   # Data models
-│   ├── screens/                  # UI แต่ละหน้า
-│   ├── services/                 # Business logic / API
-│   │   ├── auth_service.dart
-│   │   ├── firestore_service.dart
-│   │   ├── nutrition_service.dart   ← ประมาณแคลอรี่ (หลัก)
-│   │   ├── ai_service.dart          ← AI Coach
-│   │   ├── food_database_service.dart
-│   │   └── storage_service.dart
-│   ├── widgets/                  # UI components ใช้ซ้ำ
-│   ├── utils/                    # Helpers, validators
-│   └── constants/                # AppConfig, enums
-├── test/                         # Unit / widget tests
-├── functions/                    # Firebase Cloud Functions (Node.js)
-├── docs/                         # เอกสารระบบ + diagrams
-├── assets/.env                   # Secret (local only, ไม่ commit)
+│   ├── main.dart
+│   ├── main_screen.dart
+│   ├── app_theme.dart
+│   ├── constants/
+│   ├── models/
+│   ├── screens/
+│   ├── services/
+│   ├── utils/
+│   └── widgets/
+├── test/
+├── functions/
+├── docs/
+├── assets/
+├── android/
+├── ios/
+├── web/
 ├── firebase.json
 ├── firestore.rules
-└── storage.rules
+├── storage.rules
+├── pubspec.yaml
+└── README.md
 ```
 
-รายละเอียดไฟล์แต่ละตัว → ดู `PROJECT_STRUCTURE.md`
+ไฟล์สำคัญ:
+
+| ไฟล์/โฟลเดอร์ | ความหมาย |
+| --- | --- |
+| `lib/app_theme.dart` | Theme, colors, typography, gradients |
+| `lib/main_screen.dart` | Shell หลัง login, bottom navigation, routing |
+| `lib/screens/` | หน้าจอหลักของแอป |
+| `lib/widgets/` | UI components ใช้ซ้ำ |
+| `lib/services/auth_service.dart` | Firebase Auth |
+| `lib/services/firestore_service.dart` | อ่าน/เขียน Firestore |
+| `lib/services/nutrition_service.dart` | ค้นหา/ประมาณโภชนาการ |
+| `lib/services/ai_service.dart` | AI Coach |
+| `functions/` | Firebase Cloud Functions |
+| `test/` | Unit/widget tests |
+| `docs/` | เอกสารออกแบบและวิเคราะห์ระบบ |
 
 ---
 
-## Firebase และ Cloud Functions
+## Cloud Functions และ Deploy
 
-### Deploy rules
-
-```bash
-firebase deploy --only firestore:rules
-firebase deploy --only storage:rules
-```
-
-### Deploy Cloud Functions
+ติดตั้ง dependencies ของ functions:
 
 ```bash
 cd functions
 npm install
 cd ..
-firebase deploy --only functions
 ```
 
-Functions ใช้ secret `GEMINI_API_KEY` (ตั้งผ่าน Firebase CLI):
+ตั้งค่า Gemini secret สำหรับ functions:
 
 ```bash
 firebase functions:secrets:set GEMINI_API_KEY
 ```
 
----
-
-## CI/CD
-
-GitHub Actions (`.github/workflows/flutter.yml`) รันเมื่อ push/PR ไป `main`:
-
-1. `flutter pub get`
-2. `flutter analyze`
-3. `flutter test`
-4. Deploy Firestore + Storage rules
-
-**Secrets ที่ต้องตั้งใน GitHub Repository:**
-
-| Secret | 用途 |
-|--------|------|
-| `FIREBASE_PROJECT` | Project ID |
-| `FIREBASE_TOKEN` | Token จาก `firebase login:ci` |
-
----
-
-## Build Release (Android)
-
-1. สร้าง keystore:
+Deploy functions:
 
 ```bash
-keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-alias
+firebase deploy --only functions
 ```
 
-2. สร้าง `android/key.properties` (ไม่ commit):
+Functions ที่มีในโปรเจกต์ เช่น:
+
+- `estimateFood`
+- `analyzeFoodImage`
+- `askCoach`
+- `recordDailyVisit`
+- `appendFood`
+- `updateWater`
+- admin operations
+
+หมายเหตุ: บาง function เป็น backend capability ที่เตรียมไว้ แต่ client Flutter บางส่วนยังเรียก service/client flow เดิมอยู่ ให้ตรวจโค้ดใน `lib/services/` ก่อนเปลี่ยน architecture
+
+---
+
+## Build Release
+
+### Android App Bundle
+
+สร้าง keystore:
+
+```bash
+keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias foodcal
+```
+
+สร้างไฟล์ `android/key.properties`:
 
 ```properties
-storePassword=your_password
-keyPassword=your_password
-keyAlias=my-alias
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=foodcal
 storeFile=../release.jks
 ```
 
-3. Build:
+Build:
 
 ```bash
 flutter build appbundle --release
 ```
 
----
+### Android APK
 
-## เอกสารอ้างอิงเพิ่มเติม
-
-| ไฟล์ | เนื้อหา |
-|------|---------|
-| `PROJECT_STRUCTURE.md` | อธิบายไฟล์ใน `lib/` ทีละไฟล์ |
-| `docs/SYSTEM_ANALYSIS_TH.md` | Data flow, use case, วิเคราะห์ระบบ |
-| `docs/AI_BACKEND_SETUP.md` | แนวทางย้าย AI ไป backend (legacy/planned) |
-| `docs/diagrams/` | ERD, use case, data flow diagrams |
+```bash
+flutter build apk --release
+```
 
 ---
 
-## ปัญหาที่พบบ่อย
+## Troubleshooting
 
-### แอปขึ้น "เกิดข้อผิดพลาดในการเริ่มต้นระบบ"
+### `flutter` หรือ `dart` command not found
 
-- ตรวจว่ามี `android/app/google-services.json`
-- รัน `flutter clean && flutter pub get`
+ติดตั้ง Flutter SDK และเพิ่ม path นี้ใน PATH:
 
-### ฟีเจอร์ AI ไม่ทำงาน
+```text
+<flutter-sdk>/bin
+```
 
-- ตรวจ `assets/.env` มี `GEMINI_API_KEY=...`
-- ตรวจว่า `pubspec.yaml` มี `assets/.env` ใน `flutter.assets`
-- ดู log ใน console (`AppLogger`)
+จากนั้นเปิด terminal ใหม่และรัน:
 
-### แคลอรี่อาหารไทยสูง/ต่ำผิดปกติ
+```bash
+flutter doctor
+```
 
-- ดู flow ใน `NutritionService.lookupFood()`
-- เมนูไทยที่รู้จักใช้ `_estimateThaiFoodBaseline()` ก่อน AI
-- แก้ค่า baseline หรือ prompt ใน `_thaiFoodBaseline` ที่ `lib/services/nutrition_service.dart`
-- มี tests ใน `test/nutrition_service_test.dart`
+### `Missing paths to code to format`
 
-### Google Sign-In ล้มเหลว (Android)
+แปลว่าเรียก `dart format` โดยไม่ส่ง path ให้ใช้:
 
-- ใส่ SHA-1 debug/release keystore ใน Firebase Console
-- ดาวน์โหลด `google-services.json` ใหม่
+```bash
+dart format lib test
+```
 
-### `flutter` command not found
+### แอปเริ่มไม่ได้หลัง clone
 
-- ติดตั้ง Flutter SDK แล้วเพิ่ม `flutter/bin` ใน PATH
-- รัน `flutter doctor` ตรวจสภาพ environment
+ตรวจสิ่งเหล่านี้:
+
+- รัน `flutter pub get` แล้ว
+- มี `android/app/google-services.json`
+- มี `assets/.env` ถ้าต้องใช้ AI
+- Firebase project ตรงกับ `lib/firebase_options.dart`
+
+### Google Sign-In ล้มเหลว
+
+- Android: ใส่ SHA-1/SHA-256 ใน Firebase Console
+- ดาวน์โหลด `google-services.json` ใหม่หลังแก้ SHA
+- ตรวจว่าเปิด Google provider ใน Firebase Authentication แล้ว
+
+### AI ไม่ตอบ / วิเคราะห์รูปไม่ได้
+
+- ตรวจ `assets/.env` มี `GEMINI_API_KEY`
+- หรือรันด้วย `--dart-define=GEMINI_API_KEY=...`
+- ตรวจ internet connection
+- ดู console log จาก `AppLogger`
+
+### Firestore permission denied
+
+- ตรวจว่า login แล้ว
+- ตรวจ `firestore.rules`
+- Deploy rules ล่าสุด:
+
+```bash
+firebase deploy --only firestore:rules
+```
 
 ---
 
-## Quick checklist สำหรับ dev ใหม่
+## เอกสารเพิ่มเติม
 
-- [ ] ติดตั้ง Flutter SDK + รัน `flutter doctor` ผ่าน
-- [ ] `flutter pub get`
-- [ ] วาง `google-services.json` (และ `GoogleService-Info.plist` ถ้าทำ iOS)
+| ไฟล์ | รายละเอียด |
+| --- | --- |
+| `PROJECT_STRUCTURE.md` | อธิบายโครงสร้างไฟล์ในโปรเจกต์ |
+| `docs/SYSTEM_ANALYSIS_TH.md` | วิเคราะห์ระบบ use case, data flow, ERD |
+| `docs/APP_FLOW_PRESENTATION.md` | สรุป flow แอป |
+| `docs/AI_BACKEND_SETUP.md` | แนวทาง backend/proxy สำหรับ AI |
+| `docs/UI_DESIGN_SPEC_STYLE_A.md` | สเปก UI/UX Organic & Warm |
+| `docs/diagrams/` | ไฟล์ diagram ของระบบ |
+
+---
+
+## Quick Start Checklist
+
+- [ ] ติดตั้ง Flutter และรัน `flutter doctor`
+- [ ] Clone repo
+- [ ] รัน `flutter pub get`
+- [ ] วาง Firebase config files
 - [ ] สร้าง `assets/.env` พร้อม `GEMINI_API_KEY`
-- [ ] เปิด Firebase Auth (Email + Google)
-- [ ] `flutter run` ทดสอบ login + บันทึกอาหาร
-- [ ] `flutter test` ผ่านก่อน push
+- [ ] เปิด Firebase Auth providers
+- [ ] รัน `flutter run`
+- [ ] รัน `flutter analyze`
+- [ ] รัน `flutter test`

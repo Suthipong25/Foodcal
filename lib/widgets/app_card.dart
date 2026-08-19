@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import 'glass_card.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
@@ -22,14 +23,22 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassCard(
       padding: padding,
-      decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white,
-        borderRadius: borderRadius ?? AppTheme.cardRadius,
-        border: Border.all(color: borderColor ?? const Color(0xFFE5F0DE)),
-        boxShadow: boxShadow ?? AppTheme.softShadow(AppTheme.primaryColor),
-      ),
+      opacity: backgroundColor == null ? 0.14 : 0.18,
+      borderRadius: borderRadius,
+      borderColor: borderColor ?? AppTheme.cardBorder,
+      boxShadow: boxShadow,
+      gradient: backgroundColor == null
+          ? null
+          : LinearGradient(
+              colors: [
+                backgroundColor!,
+                backgroundColor!.withValues(alpha: 0.74),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
       child: child,
     );
   }

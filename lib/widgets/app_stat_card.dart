@@ -23,9 +23,10 @@ class AppStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       borderRadius: AppTheme.innerRadius,
-      borderColor: const Color(0xFFE5F0DE),
+      borderColor: AppTheme.cardBorder,
       boxShadow: AppTheme.softShadow(color),
       child: Row(
         mainAxisSize: MainAxisSize.min,
