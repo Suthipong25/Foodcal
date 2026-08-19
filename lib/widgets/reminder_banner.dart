@@ -64,7 +64,7 @@ class _ReminderBannerState extends State<ReminderBanner> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.surface,
           borderRadius: AppTheme.cardRadius,
           border: Border.all(color: widget.color.withValues(alpha: 0.16)),
           boxShadow: AppTheme.softShadow(widget.color),
@@ -97,7 +97,7 @@ class _ReminderBannerState extends State<ReminderBanner> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F8FC),
+                  color: AppTheme.pageTint,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Icon(

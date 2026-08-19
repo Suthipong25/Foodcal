@@ -28,31 +28,29 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? AppTheme.cardRadius;
-    final effectiveOpacity = opacity.clamp(0.08, 0.25);
-    final int alpha = (effectiveOpacity * 255).toInt().clamp(0, 255);
-    final int heavyAlpha = (effectiveOpacity * 1.6 * 255).toInt().clamp(0, 255);
-    final resolvedBorderColor = borderColor ?? const Color(0x3DFFFFFF);
+    final resolvedBorderColor = borderColor ?? AppTheme.cardBorder;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: boxShadow ?? AppTheme.softShadow(AppTheme.primaryColor),
+        boxShadow: boxShadow ?? AppTheme.softShadow(AppTheme.ink),
       ),
       child: ClipRRect(
         borderRadius: radius,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          filter: ImageFilter.blur(
+            sigmaX: blur.clamp(0, 10).toDouble(),
+            sigmaY: blur.clamp(0, 10).toDouble(),
+          ),
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: gradient == null
-                  ? Color.fromARGB(alpha, 255, 255, 255)
-                  : null,
+              color: gradient == null ? AppTheme.surface : null,
               gradient: gradient ??
-                  LinearGradient(
+                  const LinearGradient(
                     colors: [
-                      Color.fromARGB(heavyAlpha, 255, 255, 255),
-                      Color.fromARGB(alpha, 255, 255, 255),
+                      AppTheme.surface,
+                      Color(0xFF0B0D11),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -60,7 +58,7 @@ class GlassCard extends StatelessWidget {
               borderRadius: radius,
               border: Border.all(
                 color: resolvedBorderColor,
-                width: 1.5,
+                width: 1,
               ),
             ),
             child: child,

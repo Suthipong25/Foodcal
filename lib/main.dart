@@ -129,12 +129,12 @@ class AuthWrapper extends StatelessWidget {
         }
 
         return const Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: Colors.blueAccent),
+        backgroundColor: AppTheme.pageBg,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+                CircularProgressIndicator(color: AppTheme.primaryColor),
                 SizedBox(height: 16),
                 Text(
                   'กำลังโหลดข้อมูล...',

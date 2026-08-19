@@ -15,7 +15,8 @@ class AnimatedPageWrapper extends StatefulWidget {
   State<AnimatedPageWrapper> createState() => _AnimatedPageWrapperState();
 }
 
-class _AnimatedPageWrapperState extends State<AnimatedPageWrapper> with SingleTickerProviderStateMixin {
+class _AnimatedPageWrapperState extends State<AnimatedPageWrapper>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -55,9 +56,11 @@ class _AnimatedPageWrapperState extends State<AnimatedPageWrapper> with SingleTi
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Container(
-        decoration: widget.showBackground ? BoxDecoration(
-          gradient: AppTheme.pageBackground(),
-        ) : null,
+        decoration: widget.showBackground
+            ? BoxDecoration(
+                gradient: AppTheme.pageBackground(),
+              )
+            : null,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(

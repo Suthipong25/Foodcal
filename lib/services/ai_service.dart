@@ -9,7 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AIService {
   // ใช้ API Key จาก Environment variables (เช่น --dart-define=GEMINI_API_KEY=xxx)
   static String get _apiKey =>
-      dotenv.env['GEMINI_API_KEY'] ?? const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+      dotenv.env['GEMINI_API_KEY'] ??
+      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
   static bool get isConfigured => _apiKey.isNotEmpty;
 
@@ -245,21 +246,46 @@ class AIService {
   }
 
   static Map<String, dynamic>? _parseNutrition(String text) {
-    final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(text);
-    if (jsonMatch == null) return null;
-
-    try {
-      return _normalizeNutrition(jsonDecode(jsonMatch.group(0)!));
-    } catch (_) {
-      return null;
+    final trimmed = text.trim();
+    final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(trimmed);
+    if (jsonMatch != null) {
+      try {
+        final normalized = _normalizeNutrition(jsonDecode(jsonMatch.group(0)!));
+        if (normalized != null) return normalized;
+      } on FormatException {
+        // Fall through to the line-based format used by some model responses.
+      }
     }
+
+    final fields = <String, dynamic>{};
+    for (final line in trimmed.split('\n')) {
+      final separator = line.indexOf(':');
+      if (separator < 0) continue;
+
+      final key = line.substring(0, separator).trim().toLowerCase();
+      final value = line.substring(separator + 1).trim();
+      if (key == 'name' ||
+          key == 'calories' ||
+          key == 'protein' ||
+          key == 'carbs' ||
+          key == 'fat') {
+        fields[key] = key == 'name' ? value : _toInt(value);
+      }
+    }
+    const requiredFields = ['calories', 'protein', 'carbs', 'fat'];
+    if (!requiredFields.every(fields.containsKey)) return null;
+    return _normalizeNutrition(fields);
   }
 
   static int? _toInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.round();
+    if (value is int) return value >= 0 ? value : null;
+    if (value is num) {
+      final rounded = value.round();
+      return rounded >= 0 ? rounded : null;
+    }
     if (value == null) return null;
     final match = RegExp(r'-?\d+').firstMatch(value.toString());
-    return match != null ? int.tryParse(match.group(0)!) : null;
+    final parsed = match != null ? int.tryParse(match.group(0)!) : null;
+    return parsed != null && parsed >= 0 ? parsed : null;
   }
 }

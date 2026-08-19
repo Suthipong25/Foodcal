@@ -4,21 +4,15 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:provider/provider.dart';
 
 import '../app_theme.dart';
 import '../models/daily_log.dart';
 import '../models/user_profile.dart';
-import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
 import '../utils/datetime_utils.dart';
+import '../widgets/app_card.dart';
+import '../widgets/organic_page.dart';
 import '../widgets/reminder_banner.dart';
 import '../widgets/tube_progress_bar.dart';
-import '../widgets/app_card.dart';
-import '../widgets/app_icon_bubble.dart';
-import '../widgets/app_section_header.dart';
-import '../widgets/glass_card.dart';
-import '../widgets/organic_page.dart';
 import 'ai_coach_screen.dart';
 
 class TipItem {
@@ -68,8 +62,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = AppTheme.isCompactWidth(screenWidth);
+    final width = MediaQuery.sizeOf(context).width;
     final caloriesIn = log?.caloriesIn ?? 0;
     final targetCalories = profile.targetCalories;
     final remainingCalories = targetCalories - caloriesIn;
@@ -82,126 +75,31 @@ class DashboardScreen extends StatelessWidget {
         : 0.0;
     final todayTip = _tips[DateTimeUtils.now().day % _tips.length];
 
-    final uid =
-        Provider.of<AuthService>(context, listen: false).currentUser?.uid ?? '';
-    final fs = Provider.of<FirestoreService>(context, listen: false);
-
     return OrganicPage(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StreamBuilder<List<dynamic>>(
-            stream: fs.streamWeightLogs(uid, limit: 1),
-            builder: (context, snap) {
-              final logs = snap.data ?? [];
-              final hasWeight =
-                  logs.isNotEmpty && logs.first.date == FirestoreService.dateKey();
-              if (caloriesIn > 0 &&
-                  currentWater >= profile.targetWaterGlasses &&
-                  hasWeight) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: DailyReminderColumn(
-                  waterGlasses: currentWater,
-                  targetWater: profile.targetWaterGlasses,
-                  hasFoodToday: caloriesIn > 0,
-                  hasWeightToday: hasWeight,
-                ),
-              );
-            },
-          ),
-          OrganicHeroPanel(
-            eyebrow: 'วันนี้ของคุณ',
-            title: remainingCalories < 0
-                ? 'ค่อย ๆ กลับมาสมดุลได้'
-                : 'ยังมีพื้นที่ให้กินอย่างสบายใจ',
-            subtitle: remainingCalories < 0
-                ? 'เกินเป้าไป ${remainingCalories.abs()} kcal แล้ว ลองเลือกมื้อเบาและเติมน้ำให้พอในช่วงที่เหลือ'
-                : 'เหลืออีก $remainingCalories kcal จากเป้าหมาย $targetCalories kcal วันนี้',
-            icon: LucideIcons.heart,
-            color: remainingCalories < 0 ? AppTheme.accentColor : AppTheme.primaryColor,
-            trailing: _HeroRing(
-              progress: progress,
-              caloriesIn: caloriesIn,
-              targetCalories: targetCalories,
-              emphasis:
-                  remainingCalories < 0 ? AppTheme.error : AppTheme.primaryColor,
-              compact: true,
-            ),
-            footer: [
-              OrganicPill(
-                label: '${profile.streak} วันต่อเนื่อง',
-                icon: LucideIcons.flame,
-                color: AppTheme.warning,
-              ),
-              OrganicPill(
-                label: '$currentWater/${profile.targetWaterGlasses} แก้ว',
-                icon: LucideIcons.droplet,
-                color: AppTheme.waterColor,
-              ),
-            ],
+          const OrganicScreenTitle(
+            title: 'Foodcal',
+            subtitle: 'Daily Control Center',
           ),
           const SizedBox(height: 14),
-          if (isCompact) ...[
-            OrganicActionTile(
-              icon: LucideIcons.plus,
-              title: 'บันทึกอาหาร',
-              subtitle: 'เพิ่มมื้อใหม่หรือสแกนด้วย AI',
-              color: AppTheme.primaryColor,
-              onTap: () => onSwitchTab(1),
-            ),
-            const SizedBox(height: 10),
-            OrganicActionTile(
-              icon: LucideIcons.play,
-              title: 'ขยับร่างกาย',
-              subtitle: 'เปิดบทความและวิดีโอสุขภาพ',
-              color: AppTheme.warmOrange,
-              onTap: () => onSwitchTab(2),
-            ),
-            const SizedBox(height: 10),
-            OrganicActionTile(
-              icon: LucideIcons.messageCircle,
-              title: 'ถาม AI Coach',
-              subtitle: 'ให้ช่วยคิดเมนูหรือปรับแผนวันนี้',
-              color: AppTheme.aiColor,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AICoachScreen()),
-              ),
-            ),
-          ] else
-            Row(
-              children: [
-                Expanded(
-                  child: OrganicActionTile(
-                    icon: LucideIcons.plus,
-                    title: 'บันทึกอาหาร',
-                    subtitle: 'เพิ่มมื้อใหม่หรือสแกนด้วย AI',
-                    color: AppTheme.primaryColor,
-                    onTap: () => onSwitchTab(1),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OrganicActionTile(
-                    icon: LucideIcons.play,
-                    title: 'ขยับร่างกาย',
-                    subtitle: 'เปิดบทความและวิดีโอสุขภาพ',
-                    color: AppTheme.warmOrange,
-                    onTap: () => onSwitchTab(2),
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(height: AppTheme.sectionGap),
-          const _SectionHeader(
-            title: 'สวนสารอาหาร',
-            subtitle: 'แถบแต่ละสีคือสิ่งที่ร่างกายได้รับวันนี้',
+          _TodayHero(
+            caloriesIn: caloriesIn,
+            targetCalories: targetCalories,
+            remainingCalories: remainingCalories,
+            progress: progress,
+            onScan: () => onSwitchTab(1),
           ),
           const SizedBox(height: 12),
-          _MacroGarden(
+          DailyReminderColumn(
+            waterGlasses: currentWater,
+            targetWater: profile.targetWaterGlasses,
+            hasFoodToday: caloriesIn > 0,
+            hasWeightToday: false,
+          ),
+          const SizedBox(height: 14),
+          _MacroGrid(
             protein: currentProtein,
             proteinTarget: profile.targetProtein,
             carbs: currentCarbs,
@@ -209,89 +107,178 @@ class DashboardScreen extends StatelessWidget {
             fat: currentFat,
             fatTarget: profile.targetFat,
           ),
-          const SizedBox(height: AppTheme.sectionGap),
-          if (isCompact) ...[
-            _WaterCard(
-              currentWater: currentWater,
-              targetWater: profile.targetWaterGlasses,
-            ),
-            const SizedBox(height: 12),
-            _TipCard(tip: todayTip),
-          ] else
+          const SizedBox(height: 14),
+          _WeeklyChart(profile: profile, weeklyLogs: weeklyLogs),
+          const SizedBox(height: 14),
+          if (width >= 700)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Expanded(child: _MealTimeline(log: log)),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: _WaterCard(
+                  child: _SideStack(
                     currentWater: currentWater,
                     targetWater: profile.targetWaterGlasses,
+                    tip: todayTip,
+                    onSwitchTab: onSwitchTab,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: _TipCard(tip: todayTip)),
               ],
+            )
+          else ...[
+            _MealTimeline(log: log),
+            const SizedBox(height: 14),
+            _SideStack(
+              currentWater: currentWater,
+              targetWater: profile.targetWaterGlasses,
+              tip: todayTip,
+              onSwitchTab: onSwitchTab,
             ),
-          const SizedBox(height: AppTheme.sectionGap),
-          _WeeklyChart(profile: profile, weeklyLogs: weeklyLogs),
+          ],
         ],
       ),
     );
   }
 }
 
-class _HeroRing extends StatelessWidget {
-  final double progress;
+class _TodayHero extends StatelessWidget {
   final int caloriesIn;
   final int targetCalories;
-  final Color emphasis;
-  final bool compact;
+  final int remainingCalories;
+  final double progress;
+  final VoidCallback onScan;
 
-  const _HeroRing({
-    required this.progress,
+  const _TodayHero({
     required this.caloriesIn,
     required this.targetCalories,
-    required this.emphasis,
-    required this.compact,
+    required this.remainingCalories,
+    required this.progress,
+    required this.onScan,
   });
 
   @override
   Widget build(BuildContext context) {
-    final size = compact ? 132.0 : 144.0;
+    final isOver = remainingCalories < 0;
 
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: const BoxDecoration(
+        gradient: AppTheme.heroGradient,
+        borderRadius: AppTheme.cardRadius,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('EEEE d MMM', 'th')
+                          .format(DateTimeUtils.now()),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.68),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isOver
+                          ? 'เกินเป้า ${remainingCalories.abs()} kcal'
+                          : 'เหลืออีก $remainingCalories kcal',
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              _ProgressDial(
+                progress: progress,
+                color: isOver ? AppTheme.error : AppTheme.secondaryColor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _HeroMetric(
+                  label: 'วันนี้',
+                  value: '$caloriesIn',
+                  unit: 'kcal',
+                  color: AppTheme.accentColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _HeroMetric(
+                  label: 'เป้าหมาย',
+                  value: '$targetCalories',
+                  unit: 'kcal',
+                  color: AppTheme.warning,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onScan,
+              icon: const Icon(LucideIcons.scan, size: 18),
+              label: const Text('สแกนหรือบันทึกอาหาร'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.accentColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppTheme.innerRadius,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressDial extends StatelessWidget {
+  final double progress;
+  final Color color;
+
+  const _ProgressDial({required this.progress, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
-      width: size,
-      height: size,
+      width: 84,
+      height: 84,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          CustomPaint(
-            painter: _CalorieRingPainter(
-              progress: progress,
-              isOver: emphasis == AppTheme.error,
-            ),
+          CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 9,
+            strokeCap: StrokeCap.round,
+            backgroundColor: Colors.white.withValues(alpha: 0.13),
+            color: color,
           ),
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(LucideIcons.zap, color: emphasis, size: 22),
-                const SizedBox(height: 6),
-                Text(
-                  '$caloriesIn',
-                  style: TextStyle(
-                    fontSize: compact ? 24 : 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.ink,
-                  ),
-                ),
-                Text(
-                  '/ $targetCalories kcal',
-                  style: const TextStyle(
-                    fontSize: AppTheme.meta,
-                    color: AppTheme.mutedText,
-                  ),
-                ),
-              ],
+            child: Text(
+              '${(progress * 100).round()}%',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 17,
+              ),
             ),
           ),
         ],
@@ -300,63 +287,75 @@ class _HeroRing extends StatelessWidget {
   }
 }
 
-class _CalorieRingPainter extends CustomPainter {
-  final double progress;
-  final bool isOver;
+class _HeroMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
 
-  const _CalorieRingPainter({
-    required this.progress,
-    required this.isOver,
+  const _HeroMetric({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    const strokeWidth = 14.0;
-    final rect = Offset.zero & size;
-    final ringRect = rect.deflate(strokeWidth / 2);
-    const startAngle = -math.pi / 2;
-    final sweep = math.pi * 2 * progress.clamp(0.0, 1.0);
-
-    final bgPaint = Paint()
-      ..color = AppTheme.pageTintStrong
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(ringRect, 0, math.pi * 2, false, bgPaint);
-
-    final progressPaint = Paint()
-      ..shader = (isOver
-              ? const LinearGradient(colors: [AppTheme.error, AppTheme.warning])
-              : AppTheme.calorieRingGradient)
-          .createShader(ringRect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(ringRect, startAngle, sweep, false, progressPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalorieRingPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.isOver != isOver;
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _SectionHeader({required this.title, required this.subtitle});
-
-  @override
   Widget build(BuildContext context) {
-    return AppSectionHeader(
-      title: title,
-      subtitle: subtitle,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  unit,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _MacroGarden extends StatelessWidget {
+class _MacroGrid extends StatelessWidget {
   final int protein;
   final int proteinTarget;
   final int carbs;
@@ -364,7 +363,7 @@ class _MacroGarden extends StatelessWidget {
   final int fat;
   final int fatTarget;
 
-  const _MacroGarden({
+  const _MacroGrid({
     required this.protein,
     required this.proteinTarget,
     required this.carbs,
@@ -375,117 +374,98 @@ class _MacroGarden extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      opacity: 0.14,
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        children: [
-          _MacroGardenRow(
-            label: 'โปรตีน',
+    return Row(
+      children: [
+        Expanded(
+          child: _MacroTile(
+            label: 'Protein',
             value: protein,
             target: proteinTarget,
-            icon: LucideIcons.beef,
             color: AppTheme.proteinColor,
+            icon: LucideIcons.beef,
           ),
-          const SizedBox(height: 16),
-          _MacroGardenRow(
-            label: 'คาร์บ',
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MacroTile(
+            label: 'Carbs',
             value: carbs,
             target: carbsTarget,
-            icon: LucideIcons.sun,
             color: AppTheme.carbsColor,
+            icon: LucideIcons.zap,
           ),
-          const SizedBox(height: 16),
-          _MacroGardenRow(
-            label: 'ไขมัน',
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MacroTile(
+            label: 'Fat',
             value: fat,
             target: fatTarget,
-            icon: LucideIcons.moon,
             color: AppTheme.fatColor,
+            icon: LucideIcons.heart,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _MacroGardenRow extends StatelessWidget {
+class _MacroTile extends StatelessWidget {
   final String label;
   final int value;
   final int target;
-  final IconData icon;
   final Color color;
+  final IconData icon;
 
-  const _MacroGardenRow({
+  const _MacroTile({
     required this.label,
     required this.value,
     required this.target,
-    required this.icon,
     required this.color,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final progress = target > 0 ? (value / target).clamp(0.0, 1.0) : 0.0;
-    final remaining = target - value;
 
-    return Row(
-      children: [
-        AppIconBubble(
-          color: color,
-          size: 42,
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        color: AppTheme.ink,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '$value / $target g',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TubeProgressBar(
-                progress: progress,
-                colors: [color.withValues(alpha: 0.55), color],
-                backgroundColor: color.withValues(alpha: 0.1),
-                height: 10,
-                borderRadius: 999,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                remaining < 0
-                    ? 'เกิน ${remaining.abs()} g'
-                    : 'เหลือ $remaining g',
-                style: TextStyle(
-                  color: remaining < 0 ? AppTheme.error : AppTheme.mutedText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+    return AppCard(
+      padding: const EdgeInsets.all(13),
+      borderColor: color.withValues(alpha: 0.22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 19),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.mutedText,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 3),
+          Text(
+            '$value/$target g',
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TubeProgressBar(
+            progress: progress,
+            colors: [color.withValues(alpha: 0.55), color],
+            backgroundColor: color.withValues(alpha: 0.12),
+            height: 7,
+            borderRadius: 999,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -499,14 +479,13 @@ class _WeeklyChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTimeUtils.now();
-    final weekDays = <String>[];
+    final labels = <String>[];
     final barGroups = <BarChartGroupData>[];
 
     for (int i = 6; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       final dateKey = DateFormat('yyyy-MM-dd').format(date);
-      final dayLabel = i == 0 ? 'วันนี้' : DateFormat('E', 'th').format(date);
-      weekDays.add(dayLabel);
+      labels.add(i == 0 ? 'วันนี้' : DateFormat('E', 'th').format(date));
 
       final logItem = weeklyLogs.firstWhere(
         (entry) => entry.date == dateKey,
@@ -527,16 +506,10 @@ class _WeeklyChart extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: logItem.caloriesIn.toDouble(),
-              width: 16,
+              width: 18,
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(8)),
-              gradient: LinearGradient(
-                colors: isOver
-                    ? [AppTheme.error.withValues(alpha: 0.6), AppTheme.error]
-                    : [AppTheme.secondaryColor, AppTheme.primaryColor],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
+                  const BorderRadius.vertical(top: Radius.circular(4)),
+              color: isOver ? AppTheme.error : AppTheme.primaryColor,
               backDrawRodData: BackgroundBarChartRodData(
                 show: true,
                 toY: profile.targetCalories.toDouble(),
@@ -556,113 +529,252 @@ class _WeeklyChart extends StatelessWidget {
             .toDouble();
 
     return AppCard(
-      padding: const EdgeInsets.all(20),
-      borderColor: AppTheme.cardBorder,
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'แนวโน้มแคลอรี่ 7 วัน',
-                  style: TextStyle(
-                    fontSize: AppTheme.title,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink,
-                  ),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppTheme.pageTintStrong,
-                  borderRadius: AppTheme.pillRadius,
-                  border: Border.all(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.10),
-                  ),
-                ),
-                child: const Text(
-                  'เป้าหมายรายวัน',
-                  style: TextStyle(
-                    fontSize: AppTheme.meta,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ),
-            ],
+          const _SectionHeader(
+            title: 'แนวโน้ม 7 วัน',
+            icon: LucideIcons.barChart2,
+            color: AppTheme.primaryColor,
           ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppTheme.cardBorder),
-            ),
-            child: AspectRatio(
-              aspectRatio: 1.85,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: math.max(maxLog, profile.targetCalories.toDouble()) *
-                      1.25,
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: math.max(profile.targetCalories / 2, 1),
-                    getDrawingHorizontalLine: (_) => const FlLine(
-                      color: Color(0xFFDCE7F5),
-                      strokeWidth: 1,
-                    ),
+          const SizedBox(height: 16),
+          AspectRatio(
+            aspectRatio: 1.85,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: math.max(maxLog, profile.targetCalories.toDouble()) *
+                    1.25,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: math.max(profile.targetCalories / 2, 1),
+                  getDrawingHorizontalLine: (_) => const FlLine(
+                    color: AppTheme.cardBorder,
+                    strokeWidth: 1,
                   ),
-                  borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) => Padding(
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final index = value.toInt().clamp(0, labels.length - 1);
+                        return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            weekDays[value.toInt()],
+                            labels[index],
                             style: const TextStyle(
                               fontSize: AppTheme.meta,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               color: AppTheme.mutedText,
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
-                  extraLinesData: ExtraLinesData(
-                    horizontalLines: [
-                      HorizontalLine(
-                        y: profile.targetCalories.toDouble(),
-                        color: AppTheme.warning.withValues(alpha: 0.65),
-                        strokeWidth: 1.3,
-                        dashArray: [5, 4],
-                      ),
-                    ],
-                  ),
-                  barGroups: barGroups,
                 ),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: profile.targetCalories.toDouble(),
+                      color: AppTheme.warning.withValues(alpha: 0.75),
+                      strokeWidth: 1.3,
+                      dashArray: [5, 4],
+                    ),
+                  ],
+                ),
+                barGroups: barGroups,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MealTimeline extends StatelessWidget {
+  final DailyLog? log;
+
+  const _MealTimeline({required this.log});
+
+  @override
+  Widget build(BuildContext context) {
+    final foods = log?.foods.reversed.take(5).toList() ?? [];
+
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(
+            title: 'มื้อวันนี้',
+            icon: LucideIcons.bookOpen,
+            color: AppTheme.accentColor,
+          ),
+          const SizedBox(height: 14),
+          if (foods.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.pageTint,
+                borderRadius: AppTheme.innerRadius,
+                border: Border.all(color: AppTheme.cardBorder),
+              ),
+              child: const Text(
+                'ยังไม่มีรายการอาหารวันนี้',
+                style: TextStyle(
+                  color: AppTheme.mutedText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          else
+            ...foods.map((food) => _FoodRow(food: food)),
+        ],
+      ),
+    );
+  }
+}
+
+class _FoodRow extends StatelessWidget {
+  final FoodItem food;
+
+  const _FoodRow({required this.food});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.pageTint,
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(color: AppTheme.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppTheme.pageBg,
+              borderRadius: AppTheme.innerRadius,
+            ),
+            child: const Icon(
+              LucideIcons.utensils,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  food.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.ink,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${food.mealType} · P ${food.protein}g / C ${food.carbs}g / F ${food.fat}g',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.mutedText,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${food.calories}',
+            style: const TextStyle(
+              color: AppTheme.accentColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SideStack extends StatelessWidget {
+  final int currentWater;
+  final int targetWater;
+  final TipItem tip;
+  final Function(int) onSwitchTab;
+
+  const _SideStack({
+    required this.currentWater,
+    required this.targetWater,
+    required this.tip,
+    required this.onSwitchTab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _WaterCard(currentWater: currentWater, targetWater: targetWater),
+        const SizedBox(height: 14),
+        _TipCard(tip: tip),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: OrganicActionTile(
+                icon: LucideIcons.plus,
+                title: 'บันทึกอาหาร',
+                subtitle: 'เพิ่มมื้อใหม่',
+                color: AppTheme.primaryColor,
+                onTap: () => onSwitchTab(1),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OrganicActionTile(
+                icon: LucideIcons.messageCircle,
+                title: 'AI Coach',
+                subtitle: 'ช่วยคิดเมนู',
+                color: AppTheme.aiColor,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AICoachScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -683,60 +795,31 @@ class _WaterCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(18),
-      borderColor: AppTheme.cardBorder,
+      borderColor: AppTheme.waterColor.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              AppIconBubble(
-                color: AppTheme.waterColor,
-                size: 36,
-                child: Icon(
-                  LucideIcons.droplet,
-                  color: AppTheme.waterColor,
-                  size: 18,
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'น้ำดื่มวันนี้',
-                  style: TextStyle(
-                    fontSize: AppTheme.title,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.ink,
-                  ),
-                ),
-              ),
-            ],
+          const _SectionHeader(
+            title: 'น้ำดื่ม',
+            icon: LucideIcons.droplet,
+            color: AppTheme.waterColor,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Text(
             '$currentWater / $targetWater แก้ว',
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
               color: AppTheme.ink,
             ),
           ),
           const SizedBox(height: 12),
           TubeProgressBar(
             progress: progress,
-            colors: const [AppTheme.secondaryColor, AppTheme.waterColor],
-            backgroundColor: AppTheme.waterColor.withValues(alpha: 0.08),
+            colors: const [AppTheme.waterColor, AppTheme.secondaryColor],
+            backgroundColor: AppTheme.waterColor.withValues(alpha: 0.1),
             height: 10,
             borderRadius: 999,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            progress >= 1
-                ? 'ครบเป้าหมายแล้ว เยี่ยมมาก'
-                : 'อีก ${targetWater - currentWater} แก้วจะครบเป้าหมาย',
-            style: const TextStyle(
-              fontSize: AppTheme.meta,
-              color: AppTheme.mutedText,
-            ),
           ),
         ],
       ),
@@ -753,48 +836,68 @@ class _TipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       padding: const EdgeInsets.all(18),
+      borderColor: tip.color.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppIconBubble(
+          _SectionHeader(
+            title: 'Tip วันนี้',
+            icon: tip.icon,
             color: tip.color,
-            size: 36,
-            child: Icon(
-              LucideIcons.lightbulb,
-              color: tip.color,
-              size: 18,
-            ),
           ),
-          const SizedBox(height: 18),
-          Text(
-            'Tip วันนี้',
-            style: TextStyle(
-              fontSize: AppTheme.meta,
-              fontWeight: FontWeight.w700,
-              color: tip.color,
-            ),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           Text(
             tip.text,
             style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
               color: AppTheme.ink,
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 18),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Icon(
-              tip.icon,
-              color: tip.color.withValues(alpha: 0.22),
-              size: 40,
-            ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: AppTheme.innerRadius,
+          ),
+          child: Icon(icon, color: color, size: 17),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

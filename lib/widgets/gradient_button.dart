@@ -82,9 +82,10 @@ class _GradientButtonState extends State<GradientButton>
                 : [
                     BoxShadow(
                       color:
-                          resolvedGradient.colors.first.withValues(alpha: 0.22),
+                          resolvedGradient.colors.last.withValues(alpha: 0.20),
                       blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      spreadRadius: -8,
+                      offset: const Offset(0, 14),
                     ),
                   ],
           ),
@@ -115,7 +116,7 @@ class _GradientButtonState extends State<GradientButton>
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
+                                  letterSpacing: 0,
                                 ),
                       ),
                     ],

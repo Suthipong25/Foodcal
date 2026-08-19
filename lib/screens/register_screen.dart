@@ -10,6 +10,7 @@ import '../widgets/animated_page_wrapper.dart';
 import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/organic_page.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -87,19 +88,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 top: 20,
                 bottom: 24,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(LucideIcons.arrowLeft, size: 18),
-                    label: const Text('กลับ',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildHero(isCompact),
-                  const SizedBox(height: 18),
-                  GlassCard(
+              child: OrganicAppFrame(
+                padding: EdgeInsets.fromLTRB(
+                  isCompact ? 18 : 24,
+                  isCompact ? 18 : 22,
+                  isCompact ? 18 : 24,
+                  isCompact ? 22 : 28,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(LucideIcons.arrowLeft, size: 18),
+                      label: const Text(
+                        'กลับ',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildHero(isCompact),
+                    const SizedBox(height: 18),
+                    GlassCard(
                     padding: EdgeInsets.all(isCompact ? 20 : 28),
                     opacity: 0.15,
                     child: Stack(
@@ -196,8 +206,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

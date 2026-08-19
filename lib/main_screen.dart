@@ -12,7 +12,6 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/tracking_screen.dart';
-import 'widgets/glass_card.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'utils/app_logger.dart';
@@ -204,22 +203,24 @@ class _MainScreenState extends State<MainScreen> {
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          isCompact ? 10 : 14,
+          isCompact ? 10 : 16,
           0,
-          isCompact ? 10 : 14,
-          isCompact ? 10 : 14,
+          isCompact ? 10 : 16,
+          isCompact ? 10 : 16,
         ),
-        child: GlassCard(
+        child: Container(
           padding: EdgeInsets.fromLTRB(
-            isCompact ? 8 : 12,
             isCompact ? 8 : 10,
-            isCompact ? 8 : 12,
-            isCompact ? 8 : 12,
+            isCompact ? 8 : 10,
+            isCompact ? 8 : 10,
+            isCompact ? 8 : 10,
           ),
-          opacity: 0.25,
-          blur: 16,
-          borderRadius: BorderRadius.circular(24),
-          borderColor: AppTheme.cardBorder,
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: AppTheme.cardRadius,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            boxShadow: AppTheme.softShadow(AppTheme.ink),
+          ),
           child: Row(
             children: [
               Expanded(
@@ -294,15 +295,22 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              width: compact ? 52 : 56,
-              height: compact ? 52 : 56,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                shape: BoxShape.circle,
-                boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          width: compact ? 50 : 54,
+          height: compact ? 50 : 54,
+          decoration: BoxDecoration(
+            color: AppTheme.accentColor,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentColor.withValues(alpha: 0.32),
+                blurRadius: 18,
+                spreadRadius: -6,
+                offset: const Offset(0, 14),
               ),
+            ],
+          ),
           child: const Icon(
             LucideIcons.scan,
             color: Colors.white,
@@ -333,20 +341,22 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: active ? 28 : 0,
-              height: 3,
-              margin: const EdgeInsets.only(bottom: 5),
+            Container(
+              width: compact ? 34 : 40,
+              height: compact ? 34 : 38,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: BorderRadius.circular(999),
+                color: active
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: AppTheme.innerRadius,
               ),
-            ),
-            Icon(
-              icon,
-              color: active ? AppTheme.primaryColor : AppTheme.mutedText,
-              size: compact ? 20 : 22,
+              child: Icon(
+                icon,
+                color: active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.48),
+                size: compact ? 19 : 21,
+              ),
             ),
             if (!compact) ...[
               const SizedBox(height: 4),
@@ -356,7 +366,9 @@ class _MainScreenState extends State<MainScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: active ? AppTheme.primaryColor : AppTheme.mutedText,
+                  color: active
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.52),
                 ),
               ),
             ],

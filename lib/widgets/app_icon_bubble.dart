@@ -21,7 +21,7 @@ class AppIconBubble extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: color.withValues(alpha: opacity),
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
       child: child,

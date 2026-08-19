@@ -19,7 +19,6 @@ import '../utils/input_validator.dart';
 import '../utils/app_logger.dart';
 import '../widgets/edit_food_dialog.dart';
 import '../widgets/app_icon_bubble.dart';
-import '../widgets/decorative_elements.dart';
 import '../widgets/nutrition_source_badge.dart';
 import '../widgets/tube_progress_bar.dart';
 import '../widgets/glass_card.dart';
@@ -501,9 +500,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Widget build(BuildContext context) {
     return OrganicPage(
       child: Column(
+        children: [
+          const OrganicScreenTitle(
+            title: 'Foodcal',
+            subtitle: 'Daily Tracking',
+          ),
+          const SizedBox(height: 22),
+          OrganicAppFrame(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
+                const FoodGardenBanner(
+                  title: 'บันทึกประจำวัน',
+                  subtitle: 'อาหาร น้ำดื่ม และพลังงานวันนี้',
+                  icon: LucideIcons.utensils,
+                  compact: true,
+                ),
                 const SizedBox(height: AppTheme.sectionGap),
                 Row(
                   children: [
@@ -521,7 +533,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       child: _TrackingModeTile(
                         icon: LucideIcons.camera,
                         title: 'สแกนจาน',
-                        subtitle: _isAnalyzing ? 'กำลังวิเคราะห์' : 'เปิดกล้องทันที',
+                        subtitle:
+                            _isAnalyzing ? 'กำลังวิเคราะห์' : 'เปิดกล้องทันที',
                         color: AppTheme.accentColor,
                         onTap: _isAnalyzing ? null : _scanFood,
                       ),
@@ -863,50 +876,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   ),
                 ),
               ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return const GlassCard(
-      padding: EdgeInsets.all(22),
-      opacity: 0.2,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          OrganicCircleDecoration(
-            alignment: Alignment.topRight,
-            color: AppTheme.warmPeach,
-            size: 96,
-            opacity: 0.34,
-          ),
-          LeafDecoration(
-            alignment: Alignment.topRight,
-            color: AppTheme.leafGreen,
-            size: 58,
-            opacity: 0.14,
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'บันทึกประจำวัน',
-                style: TextStyle(
-                  fontSize: AppTheme.largeTitle,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.ink,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'เพิ่มอาหารและน้ำดื่มเพื่อติดตามความก้าวหน้าของคุณในวันนี้',
-                style: TextStyle(
-                  fontSize: AppTheme.body,
-                  color: AppTheme.mutedText,
-                  height: 1.45,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -923,7 +893,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? mealColor : mealColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected ? mealColor : mealColor.withValues(alpha: 0.2),
           ),

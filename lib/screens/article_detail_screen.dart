@@ -3,7 +3,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../app_theme.dart';
 import '../models/content_model.dart';
-import '../widgets/glass_card.dart';
+
+const Color _articleSurface = Color(0xFFF8FAFC);
+const Color _articleInk = Color(0xFF111318);
+const Color _articleMuted = Color(0xFF566070);
 
 class ArticleDetailScreen extends StatefulWidget {
   final List<Article> articles;
@@ -66,23 +69,15 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           elevation: 0,
           backgroundColor: Colors.white.withValues(alpha: 0.92),
           surfaceTintColor: Colors.transparent,
+          leadingWidth: 160,
           leading: Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: _CircleIconButton(
-              icon: LucideIcons.chevronLeft,
+            padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+            child: _BackLabelButton(
+              label: article.category,
               onTap: () => Navigator.pop(context),
             ),
           ),
           titleSpacing: 0,
-          title: Text(
-            article.category,
-            style: const TextStyle(
-              color: AppTheme.primaryColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
-            ),
-          ),
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
@@ -132,16 +127,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeadlineCard(article),
-                    const SizedBox(height: 18),
-                    GlassCard(
-                      padding: const EdgeInsets.all(24),
-                      opacity: 0.1,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _buildBodyContent(article.body),
-                      ),
-                    ),
+                    _buildArticleCard(article),
                     const SizedBox(height: 28),
                   ],
                 ),
@@ -153,17 +139,29 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     );
   }
 
-  Widget _buildHeadlineCard(Article article) {
-    return GlassCard(
+  Widget _buildArticleCard(Article article) {
+    return Container(
       padding: const EdgeInsets.all(24),
-      opacity: 0.15,
+      decoration: BoxDecoration(
+        color: _articleSurface,
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 28,
+            spreadRadius: -12,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white,
               borderRadius: AppTheme.pillRadius,
             ),
             child: Text(
@@ -172,7 +170,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 color: AppTheme.primaryColor,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
+                letterSpacing: 0,
               ),
             ),
           ),
@@ -182,7 +180,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              color: AppTheme.ink,
+              color: _articleInk,
               height: 1.18,
             ),
           ),
@@ -203,6 +201,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 24),
+          ..._buildBodyContent(article.body),
         ],
       ),
     );
@@ -240,7 +242,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: AppTheme.ink,
+              color: _articleInk,
               height: 1.3,
             ),
           ),
@@ -274,7 +276,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   height: 1.8,
-                  color: AppTheme.ink,
+                  color: _articleMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -367,7 +369,7 @@ class _ArticleListRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               height: 1.7,
-              color: AppTheme.ink,
+              color: _articleMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -377,12 +379,12 @@ class _ArticleListRow extends StatelessWidget {
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
+class _BackLabelButton extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
 
-  const _CircleIconButton({
-    required this.icon,
+  const _BackLabelButton({
+    required this.label,
     required this.onTap,
   });
 
@@ -390,17 +392,38 @@ class _CircleIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white.withValues(alpha: 0.88),
-      shape: const CircleBorder(),
+      borderRadius: AppTheme.innerRadius,
       child: InkWell(
         onTap: onTap,
-        customBorder: const CircleBorder(),
+        borderRadius: AppTheme.innerRadius,
         child: SizedBox(
-          width: 40,
+          width: 136,
           height: 40,
-          child: Icon(
-            icon,
-            color: AppTheme.ink,
-            size: 20,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.chevronLeft,
+                  color: _articleInk,
+                  size: 20,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

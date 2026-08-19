@@ -11,8 +11,10 @@ import 'register_screen.dart';
 
 import '../widgets/animated_page_wrapper.dart';
 import '../widgets/decorative_elements.dart';
+import '../widgets/app_logo_mark.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/organic_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -186,196 +188,207 @@ class _LoginScreenState extends State<LoginScreen> {
                 top: 20,
                 bottom: 24,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHero(isCompact),
-                  const SizedBox(height: 24),
-                  GlassCard(
-                    padding: EdgeInsets.all(isCompact ? 22 : 32),
-                    opacity: 0.18,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const LeafDecoration(
-                          alignment: Alignment.bottomRight,
-                          color: AppTheme.leafGreen,
-                          size: 58,
-                          opacity: 0.12,
-                          angle: -0.45,
-                        ),
-                        const LeafDecoration(
-                          alignment: Alignment.bottomRight,
-                          color: AppTheme.coralLight,
-                          size: 38,
-                          opacity: 0.22,
-                          angle: 0.7,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ยินดีต้อนรับกลับ',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'เข้าสู่ระบบเพื่อจัดการสุขภาพของคุณวันนี้',
-                              style: TextStyle(
-                                color: AppTheme.mutedText,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+              child: OrganicAppFrame(
+                padding: EdgeInsets.fromLTRB(
+                  isCompact ? 18 : 24,
+                  isCompact ? 18 : 24,
+                  isCompact ? 18 : 24,
+                  isCompact ? 22 : 28,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHero(isCompact),
+                    const SizedBox(height: 24),
+                    GlassCard(
+                      padding: EdgeInsets.all(isCompact ? 22 : 32),
+                      opacity: 0.18,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const LeafDecoration(
+                            alignment: Alignment.bottomRight,
+                            color: AppTheme.leafGreen,
+                            size: 58,
+                            opacity: 0.12,
+                            angle: -0.45,
+                          ),
+                          const LeafDecoration(
+                            alignment: Alignment.bottomRight,
+                            color: AppTheme.coralLight,
+                            size: 38,
+                            opacity: 0.22,
+                            angle: 0.7,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ยินดีต้อนรับกลับ',
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium,
                               ),
-                            ),
-                            if (error != null) ...[
+                              const SizedBox(height: 8),
+                              const Text(
+                                'เข้าสู่ระบบเพื่อจัดการสุขภาพของคุณวันนี้',
+                                style: TextStyle(
+                                  color: AppTheme.mutedText,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (error != null) ...[
+                                const SizedBox(height: 18),
+                                _buildErrorBanner(error!),
+                              ],
+                              const SizedBox(height: 22),
+                              _buildLabel('อีเมล'),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: const InputDecoration(
+                                  hintText: 'hello@example.com',
+                                  prefixIcon: Icon(LucideIcons.mail, size: 18),
+                                ),
+                              ),
                               const SizedBox(height: 18),
-                              _buildErrorBanner(error!),
-                            ],
-                            const SizedBox(height: 22),
-                            _buildLabel('อีเมล'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                hintText: 'hello@example.com',
-                                prefixIcon: Icon(LucideIcons.mail, size: 18),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            _buildLabel('รหัสผ่าน'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                hintText: '••••••••',
-                                prefixIcon: Icon(LucideIcons.lock, size: 18),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _emailLoading || _googleLoading
-                                    ? null
-                                    : _showForgotPasswordDialog,
-                                child: const Text('ลืมรหัสผ่าน?'),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            InkWell(
-                              borderRadius: AppTheme.innerRadius,
-                              onTap: () =>
-                                  setState(() => _rememberMe = !_rememberMe),
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _rememberMe,
-                                      activeColor: AppTheme.primaryColor,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _rememberMe = value ?? false;
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Expanded(
-                                      child: Text(
-                                        'จดจำการเข้าสู่ระบบ',
-                                        style: TextStyle(
-                                          color: AppTheme.mutedText,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              _buildLabel('รหัสผ่าน'),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  hintText: '••••••••',
+                                  prefixIcon: Icon(LucideIcons.lock, size: 18),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            GradientButton(
-                              text: 'เข้าสู่ระบบ',
-                              icon: LucideIcons.arrowRight,
-                              isLoading: _emailLoading,
-                              onPressed: _emailLoading || _googleLoading
-                                  ? null
-                                  : () => _handleSubmit(context),
-                            ),
-                            const SizedBox(height: 18),
-                            const _DividerLabel(label: 'หรือ'),
-                            const SizedBox(height: 18),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: _supportsGoogleSignIn &&
-                                        !_emailLoading &&
-                                        !_googleLoading
-                                    ? () => _handleGoogleSignIn(context)
-                                    : null,
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(
-                                    AppTheme.buttonHeight,
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: _emailLoading || _googleLoading
+                                      ? null
+                                      : _showForgotPasswordDialog,
+                                  child: const Text('ลืมรหัสผ่าน?'),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                borderRadius: AppTheme.innerRadius,
+                                onTap: () =>
+                                    setState(() => _rememberMe = !_rememberMe),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _rememberMe,
+                                        activeColor: AppTheme.primaryColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _rememberMe = value ?? false;
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Expanded(
+                                        child: Text(
+                                          'จดจำการเข้าสู่ระบบ',
+                                          style: TextStyle(
+                                            color: AppTheme.mutedText,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.5),
                                 ),
-                                child: _googleLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const _GoogleBadge(),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            _supportsGoogleSignIn
-                                                ? 'เข้าสู่ระบบด้วย Google'
-                                                : 'Google Sign-In ยังไม่รองรับ',
-                                          ),
-                                        ],
-                                      ),
                               ),
-                            ),
-                            const SizedBox(height: 14),
-                            SizedBox(
-                              width: double.infinity,
-                              child: TextButton(
+                              const SizedBox(height: 20),
+                              GradientButton(
+                                text: 'เข้าสู่ระบบ',
+                                icon: LucideIcons.arrowRight,
+                                isLoading: _emailLoading,
                                 onPressed: _emailLoading || _googleLoading
                                     ? null
-                                    : () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const RegisterScreen(),
+                                    : () => _handleSubmit(context),
+                              ),
+                              const SizedBox(height: 18),
+                              const _DividerLabel(label: 'หรือ'),
+                              const SizedBox(height: 18),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: _supportsGoogleSignIn &&
+                                          !_emailLoading &&
+                                          !_googleLoading
+                                      ? () => _handleGoogleSignIn(context)
+                                      : null,
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(
+                                      AppTheme.buttonHeight,
+                                    ),
+                                    backgroundColor:
+                                        Colors.white.withValues(alpha: 0.5),
+                                  ),
+                                  child: _googleLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
                                           ),
-                                        );
-                                      },
-                                child: const Text(
-                                  'ยังไม่มีบัญชี? สมัครสมาชิก',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                        )
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const _GoogleBadge(),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              _supportsGoogleSignIn
+                                                  ? 'เข้าสู่ระบบด้วย Google'
+                                                  : 'Google Sign-In ยังไม่รองรับ',
+                                            ),
+                                          ],
+                                        ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: TextButton(
+                                  onPressed: _emailLoading || _googleLoading
+                                      ? null
+                                      : () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const RegisterScreen(),
+                                            ),
+                                          );
+                                        },
+                                  child: const Text(
+                                    'ยังไม่มีบัญชี? สมัครสมาชิก',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -406,19 +419,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           Row(
             children: [
-              Container(
-                width: isCompact ? 68 : 78,
-                height: isCompact ? 68 : 78,
-                decoration: BoxDecoration(
-                  gradient: AppTheme.heroGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: AppTheme.softShadow(AppTheme.accentColor),
-                ),
-                child: const Icon(
-                  LucideIcons.heart,
-                  color: AppTheme.accentColor,
-                  size: 30,
-                ),
+              AppLogoMark(
+                size: isCompact ? 68 : 78,
+                padding: const EdgeInsets.all(7),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -426,27 +429,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ยินดีต้อนรับกลับมา',
+                      'Foodcal',
                       style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'สุขภาพดี เริ่มต้นได้ที่นี่',
-                      style: TextStyle(
-                        color: AppTheme.mutedText,
-                        fontSize: AppTheme.body,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _HeroChip(label: 'ติดตามง่าย'),
-                        _HeroChip(label: 'โทนอุ่น'),
-                        _HeroChip(label: 'ใช้ทุกวันสบาย'),
-                      ],
                     ),
                   ],
                 ),
@@ -496,32 +480,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeroChip extends StatelessWidget {
-  final String label;
-
-  const _HeroChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.warmMint.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppTheme.leafGreen.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.primaryColor,
-        ),
       ),
     );
   }

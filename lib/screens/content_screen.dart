@@ -77,82 +77,83 @@ class _ContentScreenState extends State<ContentScreen> {
     return AnimatedPageWrapper(
       child: OrganicPage(
         child: StreamBuilder<List<WorkoutVideo>>(
-            stream: _videosStream,
-            builder: (context, videosSnapshot) {
-              final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
-              final sourceVideos =
-                  allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
-              final filteredVideos = filter == 'All'
-                  ? sourceVideos
-                  : sourceVideos
-                      .where((video) => video.level == filter)
-                      .toList();
+          stream: _videosStream,
+          builder: (context, videosSnapshot) {
+            final allVideos = videosSnapshot.data ?? const <WorkoutVideo>[];
+            final sourceVideos =
+                allVideos.isEmpty ? fallbackWorkoutVideos : allVideos;
+            final filteredVideos = filter == 'All'
+                ? sourceVideos
+                : sourceVideos.where((video) => video.level == filter).toList();
 
-              return StreamBuilder<Map<int, WorkoutSessionState>>(
-                stream: _sessionsStream,
-                builder: (context, sessionsSnapshot) {
-                  final workoutSessions = sessionsSnapshot.data ??
-                      const <int, WorkoutSessionState>{};
+            return StreamBuilder<Map<int, WorkoutSessionState>>(
+              stream: _sessionsStream,
+              builder: (context, sessionsSnapshot) {
+                final workoutSessions =
+                    sessionsSnapshot.data ?? const <int, WorkoutSessionState>{};
 
-                  return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeroCard(filteredVideos.length, completedCount),
+                    const SizedBox(height: 12),
+                    _buildLearningRail(
+                      articles: educationArticles.length,
+                      workouts: filteredVideos.length,
+                      completed: completedCount,
+                    ),
+                    const SizedBox(height: AppTheme.sectionGap),
+                    _buildSectionHeader(
+                      'บทความน่าอ่าน',
+                      'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildArticleList(isCompact),
+                    const SizedBox(height: AppTheme.sectionGap),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        _buildHeroCard(filteredVideos.length, completedCount),
-                        const SizedBox(height: 12),
-                        _buildLearningRail(
-                          articles: educationArticles.length,
-                          workouts: filteredVideos.length,
-                          completed: completedCount,
-                        ),
-                        const SizedBox(height: AppTheme.sectionGap),
-                        _buildSectionHeader(
-                          'บทความน่าอ่าน',
-                          'สรุปสั้น อ่านง่าย และหยิบไปใช้ได้จริงในแต่ละวัน',
-                        ),
-                        const SizedBox(height: 16),
-                        _buildArticleList(isCompact),
-                        const SizedBox(height: AppTheme.sectionGap),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: _buildSectionHeader(
-                                'คลังวิดีโอ',
-                                'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            _buildFilterDropdown(),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        if (videosSnapshot.connectionState ==
-                            ConnectionState.waiting)
-                          const Center(child: CircularProgressIndicator())
-                        else if (filteredVideos.isEmpty)
-                          const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
-                        else
-                          ...filteredVideos.map(
-                            (video) => _buildWorkoutCard(
-                              video,
-                              isCompact,
-                              session: workoutSessions[video.id],
-                            ),
+                        Expanded(
+                          child: _buildSectionHeader(
+                            'คลังวิดีโอ',
+                            'เลือกตามระดับความยาก แล้วบันทึกการออกกำลังกายได้ทันที',
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        _buildFilterDropdown(),
                       ],
-                    );
-                },
-              );
-            },
-          ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (videosSnapshot.connectionState ==
+                        ConnectionState.waiting)
+                      const Center(child: CircularProgressIndicator())
+                    else if (filteredVideos.isEmpty)
+                      const Text('ยังไม่มีวิดีโอสำหรับตัวกรองนี้')
+                    else
+                      ...filteredVideos.map(
+                        (video) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _buildWorkoutCard(
+                            video,
+                            isCompact,
+                            session: workoutSessions[video.id],
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildArticleList(bool isCompact) {
-    final cardHeight = isCompact ? 280.0 : 272.0;
+    final cardHeight = isCompact ? 304.0 : 300.0;
     final cardWidth = isCompact ? 220.0 : 240.0;
-    final imageHeight = isCompact ? 100.0 : 110.0;
+    final imageHeight = isCompact ? 118.0 : 128.0;
 
     return SizedBox(
       height: cardHeight,
@@ -192,21 +193,27 @@ class _ContentScreenState extends State<ContentScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24),
-                          ),
-                          child: Image.network(
-                            article.imageUrl,
-                            height: imageHeight,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                        SizedBox(
+                          width: cardWidth,
+                          height: imageHeight,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(8),
+                            ),
+                            child: Image.network(
+                              article.imageUrl,
+                              width: cardWidth,
                               height: imageHeight,
-                              color: AppTheme.pageTintStrong,
-                              child: const Icon(
-                                LucideIcons.image,
-                                color: AppTheme.secondaryColor,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: cardWidth,
+                                height: imageHeight,
+                                color: AppTheme.pageTintStrong,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppTheme.secondaryColor,
+                                ),
                               ),
                             ),
                           ),

@@ -9,6 +9,9 @@ import '../widgets/animated_page_wrapper.dart';
 import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 
+const Color _lightSurfaceInk = Color(0xFF111318);
+const Color _lightSurfaceMuted = Color(0xFF667085);
+
 class AICoachScreen extends StatefulWidget {
   const AICoachScreen({super.key});
 
@@ -184,6 +187,10 @@ class _AICoachScreenState extends State<AICoachScreen> {
                       Expanded(
                         child: TextField(
                           controller: _msgCtrl,
+                          style: const TextStyle(
+                            color: _lightSurfaceInk,
+                            fontWeight: FontWeight.w600,
+                          ),
                           minLines: 1,
                           maxLines: 4,
                           textInputAction: TextInputAction.send,
@@ -191,7 +198,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                             hintText:
                                 'ถามเรื่องอาหาร การออกกำลังกาย หรือสุขภาพ...',
                             hintStyle: const TextStyle(
-                              color: AppTheme.mutedText,
+                              color: _lightSurfaceMuted,
                               fontSize: 14,
                             ),
                             filled: true,
@@ -367,7 +374,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                         child: Text(
                           prompt,
                           style: const TextStyle(
-                            color: AppTheme.ink,
+                            color: _lightSurfaceInk,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -377,7 +384,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                       const Icon(
                         LucideIcons.arrowRight,
                         size: 16,
-                        color: AppTheme.mutedText,
+                        color: _lightSurfaceMuted,
                       ),
                     ],
                   ),
@@ -433,7 +440,7 @@ class _AICoachScreenState extends State<AICoachScreen> {
                 ? AppTheme.error
                 : isUser
                     ? Colors.white
-                    : AppTheme.ink,
+                    : _lightSurfaceInk,
             height: 1.5,
             fontWeight: isUser ? FontWeight.w700 : FontWeight.w600,
             fontSize: 15,

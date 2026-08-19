@@ -214,90 +214,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return OrganicPage(
       child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeroCard(),
-                const SizedBox(height: AppTheme.sectionGap),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ProfileIdentityTile(
-                        icon: LucideIcons.target,
-                        label: 'เป้าหมาย',
-                        value: _getGoalLabel(
-                            isEditing ? _selectedGoal : widget.profile.goal),
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ProfileIdentityTile(
-                        icon: LucideIcons.badgeCheck,
-                        label: 'สตรีก',
-                        value: '${widget.profile.streak} วัน',
-                        color: AppTheme.warning,
-                      ),
-                    ),
-                  ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeroCard(),
+          const SizedBox(height: AppTheme.sectionGap),
+          Row(
+            children: [
+              Expanded(
+                child: _ProfileIdentityTile(
+                  icon: LucideIcons.target,
+                  label: 'เป้าหมาย',
+                  value: _getGoalLabel(
+                      isEditing ? _selectedGoal : widget.profile.goal),
+                  color: AppTheme.primaryColor,
                 ),
-                const SizedBox(height: AppTheme.sectionGap),
-                _buildSectionHeader(
-                  'ภาพรวมของคุณ',
-                  'โปรไฟล์นี้สรุปเป้าหมายและค่าที่ใช้คำนวณแผนรายวันของแอป',
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ProfileIdentityTile(
+                  icon: LucideIcons.badgeCheck,
+                  label: 'สตรีก',
+                  value: '${widget.profile.streak} วัน',
+                  color: AppTheme.warning,
                 ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.05,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  children: [
-                    _buildMetricCard(
-                      'เป้าหมายแคลอรี่',
-                      '${widget.profile.targetCalories}',
-                      'kcal ต่อวัน',
-                      LucideIcons.target,
-                      AppTheme.primaryColor,
-                    ),
-                    _buildMetricCard(
-                      'อัตราเผาผลาญ',
-                      '${widget.profile.tdee}',
-                      'kcal โดยประมาณ',
-                      LucideIcons.flame,
-                      AppTheme.warning,
-                    ),
-                    _buildMetricCard(
-                      'ดื่มน้ำ',
-                      '${widget.profile.targetWaterGlasses}',
-                      'แก้วต่อวัน',
-                      LucideIcons.droplets,
-                      AppTheme.waterColor,
-                    ),
-                    _buildMetricCard(
-                      'สตรีก',
-                      '${widget.profile.streak}',
-                      'วันต่อเนื่อง',
-                      LucideIcons.badgeCheck,
-                      AppTheme.success,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppTheme.sectionGap),
-                _buildEditPanel(),
-                const SizedBox(height: AppTheme.sectionGap),
-                _buildReminderSettings(),
-                const SizedBox(height: AppTheme.sectionGap),
-                _buildFeedbackCard(context),
-                if (UserRole.fromString(widget.profile.role) ==
-                    UserRole.admin) ...[
-                  const SizedBox(height: 12),
-                  _buildAdminCard(context),
-                ],
-                const SizedBox(height: AppTheme.sectionGap),
-                _buildLogoutCard(),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildSectionHeader(
+            'ภาพรวมของคุณ',
+            'โปรไฟล์นี้สรุปเป้าหมายและค่าที่ใช้คำนวณแผนรายวันของแอป',
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.05,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _buildMetricCard(
+                'เป้าหมายแคลอรี่',
+                '${widget.profile.targetCalories}',
+                'kcal ต่อวัน',
+                LucideIcons.target,
+                AppTheme.primaryColor,
+              ),
+              _buildMetricCard(
+                'อัตราเผาผลาญ',
+                '${widget.profile.tdee}',
+                'kcal โดยประมาณ',
+                LucideIcons.flame,
+                AppTheme.warning,
+              ),
+              _buildMetricCard(
+                'ดื่มน้ำ',
+                '${widget.profile.targetWaterGlasses}',
+                'แก้วต่อวัน',
+                LucideIcons.droplets,
+                AppTheme.waterColor,
+              ),
+              _buildMetricCard(
+                'สตรีก',
+                '${widget.profile.streak}',
+                'วันต่อเนื่อง',
+                LucideIcons.badgeCheck,
+                AppTheme.success,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildEditPanel(),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildReminderSettings(),
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildFeedbackCard(context),
+          if (UserRole.fromString(widget.profile.role) == UserRole.admin) ...[
+            const SizedBox(height: 12),
+            _buildAdminCard(context),
+          ],
+          const SizedBox(height: AppTheme.sectionGap),
+          _buildLogoutCard(),
+        ],
       ),
     );
   }
@@ -468,7 +467,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                           opacity: 0.1,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(8),
                           child: Row(
                             children: [
                               const Icon(
