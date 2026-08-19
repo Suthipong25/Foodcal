@@ -31,8 +31,7 @@ class GlassCard extends StatelessWidget {
     final effectiveOpacity = opacity < 0.16 ? 0.16 : opacity;
     final int alpha = (effectiveOpacity * 255).toInt().clamp(0, 255);
     final int heavyAlpha = (effectiveOpacity * 1.6 * 255).toInt().clamp(0, 255);
-    final resolvedBorderColor =
-        borderColor ?? const Color(0xFFDDE7F3);
+    final resolvedBorderColor = borderColor ?? const Color(0xFFE5F0DE);
 
     return Container(
       decoration: BoxDecoration(
@@ -46,7 +45,8 @@ class GlassCard extends StatelessWidget {
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: gradient == null ? Color.fromARGB(alpha, 255, 255, 255) : null,
+              color:
+                  gradient == null ? Color.fromARGB(alpha, 255, 255, 255) : null,
               gradient: gradient ??
                   LinearGradient(
                     colors: [

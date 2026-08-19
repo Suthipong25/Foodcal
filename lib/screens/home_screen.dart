@@ -271,7 +271,7 @@ class _HeroCard extends StatelessWidget {
 
     return AppCard(
       padding: EdgeInsets.all(isCompact ? 18 : 22),
-      borderColor: const Color(0xFFDDE8F4),
+      borderColor: const Color(0xFFE5F0DE),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -514,7 +514,7 @@ class _MacroCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(16),
-      borderColor: const Color(0xFFDDE8F4),
+      borderColor: const Color(0xFFE5F0DE),
       child: SizedBox(
         width: 158,
         child: Column(
@@ -640,7 +640,7 @@ class _WeeklyChart extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(20),
-      borderColor: const Color(0xFFDDE8F4),
+      borderColor: const Color(0xFFE5F0DE),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -683,7 +683,7 @@ class _WeeklyChart extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE4EDF8)),
+              border: Border.all(color: const Color(0xFFE5F0DE)),
             ),
             child: AspectRatio(
               aspectRatio: 1.85,
@@ -773,7 +773,7 @@ class _ActionCard extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 126),
         child: AppCard(
           padding: const EdgeInsets.all(16),
-          borderColor: const Color(0xFFDDE8F4),
+          borderColor: const Color(0xFFE5F0DE),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -835,7 +835,7 @@ class _WaterCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(18),
-      borderColor: const Color(0xFFDDE8F4),
+      borderColor: const Color(0xFFE5F0DE),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

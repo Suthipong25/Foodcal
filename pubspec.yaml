@@ -74,7 +74,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/Gemini_Generated_Image_9log6n9log6n9log.png
     - assets/.env
 
   # To add assets to your application, add an assets section, like this:

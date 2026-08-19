@@ -1,0 +1,8 @@
+From Entity,From Field,Relationship,To Entity,To Field,Cardinality,Label
+USERS,uid,has,DAILY_LOGS,userId,1-to-many,User has daily logs
+DAILY_LOGS,logId,contains,FOOD_ITEMS,logId,1-to-many,Daily log contains food items
+DAILY_LOGS,logId,contains,WORKOUT_ITEMS,logId,1-to-many,Daily log contains workout items
+USERS,uid,has,WEIGHT_LOGS,userId,1-to-many,User has weight logs
+USERS,uid,creates,CUSTOM_FOODS,userId,1-to-many,User creates custom foods
+USERS,uid,does,WORKOUT_SESSIONS,userId,1-to-many,User does workout sessions
+USERS,uid,sends,FEEDBACK,uid,1-to-many,User sends feedback

@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF58A6FF);
-  static const Color secondaryColor = Color(0xFF86C5FF);
-  static const Color accentColor = Color(0xFFB7E1FF);
-  static const Color ink = Color(0xFF24324A);
-  static const Color mutedText = Color(0xFF72819A);
+  static const Color primaryColor = Color(0xFF4CBF83);
+  static const Color secondaryColor = Color(0xFFA7E8C4);
+  static const Color accentColor = Color(0xFFFF8A7A);
+  static const Color ink = Color(0xFF26362B);
+  static const Color mutedText = Color(0xFF758675);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color pageBg = Color(0xFFFFFCFF);
-  static const Color pageTint = Color(0xFFF8FBFF);
-  static const Color pageTintStrong = Color(0xFFEEF7FF);
+  static const Color pageBg = Color(0xFFFBF8F0);
+  static const Color pageTint = Color(0xFFFFFCF7);
+  static const Color pageTintStrong = Color(0xFFEFF8E9);
 
-  static const Color proteinColor = Color(0xFF2F80ED);
-  static const Color carbsColor = Color(0xFF3BA7FF);
-  static const Color fatColor = Color(0xFF5B6CFF);
-  static const Color waterColor = Color(0xFF1DB4FF);
-  static const Color calorieColor = Color(0xFF1F6FEB);
+  static const Color proteinColor = Color(0xFF4CBF83);
+  static const Color carbsColor = Color(0xFFFFB066);
+  static const Color fatColor = Color(0xFF8D9BFF);
+  static const Color waterColor = Color(0xFF68BDEB);
+  static const Color calorieColor = Color(0xFF4CBF83);
 
   static const Color success = Color(0xFF39B980);
   static const Color warning = Color(0xFFFFB84D);
@@ -25,13 +25,13 @@ class AppTheme {
   static const Color aiBgColor = Color(0xFFF4F0FF);
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF63B2FF), Color(0xFF8FD2FF)],
+    colors: [Color(0xFF4CBF83), Color(0xFFA7E8C4)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFF9DD8FF), Color(0xFFCDEBFF)],
+    colors: [Color(0xFFFF8A7A), Color(0xFFFFC47C)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -66,14 +66,14 @@ class AppTheme {
       color: Color.fromARGB(alpha, 255, 255, 255),
       borderRadius: borderRadius ?? cardRadius,
       border: Border.all(
-        color: borderColor ?? const Color(0x3DFFFFFF), // 0.24 opacity
+        color: borderColor ?? const Color(0x3DFFFFFF),
         width: 1.5,
       ),
     );
   }
 
-  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(20));
-  static const BorderRadius innerRadius = BorderRadius.all(Radius.circular(16));
+  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(24));
+  static const BorderRadius innerRadius = BorderRadius.all(Radius.circular(18));
   static const BorderRadius pillRadius = BorderRadius.all(Radius.circular(999));
 
   static const double pagePadding = 16;
@@ -121,15 +121,16 @@ class AppTheme {
 
   static List<BoxShadow> softShadow(Color color) => [
         BoxShadow(
-          color: color.withValues(alpha: 0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
+          color: color.withValues(alpha: 0.12),
+          blurRadius: 28,
+          spreadRadius: -4,
+          offset: const Offset(0, 14),
         ),
       ];
 
   static BoxDecoration elevatedCard({
     Color color = surface,
-    Color borderColor = const Color(0xFFE4EEFB),
+    Color borderColor = const Color(0xFFE5F0DE),
     List<BoxShadow>? boxShadow,
   }) {
     return BoxDecoration(
@@ -158,7 +159,7 @@ class AppTheme {
 
   static BoxDecoration subtleCard({
     Color background = Colors.white,
-    Color borderColor = const Color(0xFFE7EDF4),
+    Color borderColor = const Color(0xFFE5F0DE),
     List<BoxShadow>? boxShadow,
   }) {
     return BoxDecoration(
@@ -179,9 +180,9 @@ class AppTheme {
   static LinearGradient pageBackground() {
     return const LinearGradient(
         colors: [
-          Color(0xFFF8FBFF),
-          Color(0xFFF2F7FE),
-          Color(0xFFECF3FC),
+          Color(0xFFF8FCF4),
+          Color(0xFFF5FAEF),
+          Color(0xFFEFF8E9),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -265,7 +266,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: cardRadius,
-          side: BorderSide(color: Color(0xFFE4EEFB)),
+          side: BorderSide(color: Color(0xFFE5F0DE)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -286,7 +287,7 @@ class AppTheme {
         ),
         enabledBorder: const OutlineInputBorder(
           borderRadius: innerRadius,
-          borderSide: BorderSide(color: Color(0xFFE3EAF2)),
+          borderSide: BorderSide(color: Color(0xFFE5F0DE)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: innerRadius,
@@ -342,7 +343,7 @@ class AppTheme {
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        side: BorderSide(color: primaryColor.withValues(alpha: 0.1)),
+        side: BorderSide(color: primaryColor.withValues(alpha: 0.16)),
         shape: const StadiumBorder(),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -355,7 +356,7 @@ class AppTheme {
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
-      dividerColor: const Color(0xFFE6EEF9),
+      dividerColor: const Color(0xFFE5F0DE),
       splashColor: primaryColor.withValues(alpha: 0.06),
       highlightColor: primaryColor.withValues(alpha: 0.03),
     );

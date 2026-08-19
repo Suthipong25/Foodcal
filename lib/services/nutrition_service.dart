@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/nutrition_result.dart';
 import '../utils/app_logger.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'food_database_service.dart';
 
 /// Facade หลักสำหรับค้นหาข้อมูลโภชนาการ
@@ -16,11 +16,44 @@ import 'food_database_service.dart';
 ///   3. Gemini AI estimate (fallback)
 class NutritionService {
   static String get _apiKey =>
-      dotenv.env['GEMINI_API_KEY'] ?? const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+      _apiKeyOverride ??
+      dotenv.env['GEMINI_API_KEY'] ??
+      const String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
 
   static bool get isConfigured => _apiKey.isNotEmpty;
 
-  static final FoodDatabaseService _foodDb = FoodDatabaseService();
+  static FoodDatabaseService? _foodDb;
+  static String? _apiKeyOverride;
+
+  static FoodDatabaseService get _foodDatabase =>
+      _foodDb ??= FoodDatabaseService();
+
+  static const String _servingGuidance = '''
+แนวทางการประเมิน serving:
+- ถ้าเป็นข้าวขาว/ข้าวสวย ให้ระบุและคำนวณเป็น "ทัพพี" ไม่ใช่เหมารวมเป็นจาน
+- ข้าวสวย 1 ทัพพีโดยทั่วไปประมาณ 60 กรัม หรือประมาณ 80 kcal
+- ถ้าเป็นเมนูราดข้าวหรืออาหารไทยที่มีข้าว แต่ผู้ใช้ไม่ได้บอกปริมาณข้าว ให้ประเมินข้าวสวยประมาณ 1-3 ทัพพี และไม่ควรเกิน 3 ทัพพีสำหรับ 1 มื้อทั่วไปของคนไทย
+- ถ้าวิเคราะห์จากรูปภาพ ให้ประเมินจำนวนทัพพีจากปริมาณข้าวที่เห็นจริงในภาพก่อน แล้วค่อยคำนวณแคลอรี่รวม
+- ถ้าผู้ใช้บอกจำนวนทัพพี ให้ใช้จำนวนนั้นเป็นหลัก เช่น "ข้าว 1 ทัพพี", "ข้าว 2 ทัพพี"
+- ถ้าผู้ใช้บอกว่าไม่เอาข้าว/เป็นกับข้าว ให้ไม่รวมแคลอรี่และคาร์บจากข้าว
+- serving_label ควรบอกส่วนประกอบหลักและจำนวนทัพพีของข้าว เช่น "ข้าวสวย 2 ทัพพี + กะเพรา 1 ส่วน"
+''';
+
+  @visibleForTesting
+  static void setFoodDatabaseServiceForTest(FoodDatabaseService service) {
+    _foodDb = service;
+  }
+
+  @visibleForTesting
+  static void setApiKeyForTest(String value) {
+    _apiKeyOverride = value;
+  }
+
+  @visibleForTesting
+  static void resetTestingOverrides() {
+    _foodDb = null;
+    _apiKeyOverride = null;
+  }
 
   // ─── Public API ────────────────────────────────────────────────────────
 
@@ -29,10 +62,9 @@ class NutritionService {
     final name = foodName.trim();
     if (name.isEmpty) return null;
 
-    // 1. ลองหาจากฐานข้อมูลจริงก่อน
-    final dbResult = await _foodDb.searchFood(name);
+    // 1. ลองหาจากฐานข้อมูล packaged food / cache ก่อน
+    final dbResult = await _foodDatabase.searchFood(name);
     if (dbResult != null) {
-      // ถ้าชื่อจากฐานข้อมูลเป็นภาษาอังกฤษ ให้ AI แปลเป็นไทยและประมาณ serving
       final enriched = await _enrichWithAI(dbResult, originalQuery: name);
       return enriched ?? dbResult;
     }
@@ -46,9 +78,10 @@ class NutritionService {
   static Future<NutritionResult?> analyzeImage(Uint8List imageBytes) async {
     if (imageBytes.isEmpty || !isConfigured) return null;
 
-    const prompt = '''
-คุณเป็นนักโภชนาการผู้เชี่ยวชาญ วิเคราะห์อาหารในรูปภาพนี้
+    const prompt = '''คุณเป็นนักโภชนาการผู้เชี่ยวชาญ วิเคราะห์อาหารในรูปภาพนี้
 ประมาณปริมาณที่เหมาะสมสำหรับ 1 มื้อ/1 จาน/1 ชิ้นตามที่เห็นในรูป
+
+$_servingGuidance
 
 ตอบเป็น JSON object เท่านั้น (ไม่มี markdown):
 {
@@ -79,12 +112,13 @@ class NutritionService {
   }) async {
     if (!isConfigured) return dbResult;
 
-    final prompt = '''
-คุณเป็นนักโภชนาการ ข้อมูลต่อไปนี้มาจากฐานข้อมูลโภชนาการต่อ serving ดังนี้:
+    final prompt = '''คุณเป็นนักโภชนาการ ข้อมูลต่อไปนี้มาจากฐานข้อมูลโภชนาการต่อ serving ดังนี้:
 ชื่อ (EN): ${dbResult.name}
 Serving: ${dbResult.servingLabel}
 แคลอรี่: ${dbResult.calories} kcal
 โปรตีน: ${dbResult.protein}g  คาร์บ: ${dbResult.carbs}g  ไขมัน: ${dbResult.fat}g
+
+$_servingGuidance
 
 งาน:
 1. แปลหรือตั้งชื่อภาษาไทยที่เหมาะสมสำหรับ "$originalQuery"
@@ -113,9 +147,10 @@ Serving: ${dbResult.servingLabel}
 
   /// ประมาณการโภชนาการทั้งหมดจาก AI (fallback)
   static Future<NutritionResult?> _estimateWithAI(String foodName) async {
-    final prompt = '''
-คุณเป็นนักโภชนาการผู้เชี่ยวชาญอาหารไทยและสากล
+    final prompt = '''คุณเป็นนักโภชนาการผู้เชี่ยวชาญอาหารไทยและสากล
 ประมาณค่าโภชนาการของ "$foodName" สำหรับ 1 มื้อ/1 จาน/1 ชิ้นที่คนไทยทานจริง
+
+$_servingGuidance
 
 ตอบเป็น JSON object เท่านั้น (ไม่มี markdown):
 {
@@ -133,7 +168,7 @@ Serving: ${dbResult.servingLabel}
       return _parseAIResult(text, NutritionSource.aiEstimate);
     } catch (e) {
       AppLogger.error('[Nutrition] _estimateWithAI failed', e);
-      rethrow;
+      return null;
     }
   }
 

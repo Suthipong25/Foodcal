@@ -1,5 +1,6 @@
 {
   "postman.settings.dotenv-detection-notification-visibility": false,
   "cmake.ignoreCMakeListsMissing": true,
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "editor.fontSize": 14
 }

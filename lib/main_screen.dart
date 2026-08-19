@@ -57,6 +57,7 @@ class _MainScreenState extends State<MainScreen> {
 
     if (user == null || _userProfileStream == null) {
       return const Scaffold(
+        backgroundColor: AppTheme.pageBg,
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -71,7 +72,7 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppTheme.pageBg,
             body: Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             ),
@@ -139,7 +140,7 @@ class _MainScreenState extends State<MainScreen> {
             });
           }
           return const Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppTheme.pageBg,
             body: Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             ),
@@ -221,7 +222,7 @@ class _MainScreenState extends State<MainScreen> {
             height: 48,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFEAF6FF), Color(0xFFF8FBFF)],
+                colors: [Color(0xFFE8F8DF), Color(0xFFFFFFFF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -253,30 +254,6 @@ class _MainScreenState extends State<MainScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF2F8FF),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Foodcal',
-                        style: TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
                 Text(
                   'สวัสดี, คุณ${profile.name}',
                   overflow: TextOverflow.ellipsis,
@@ -293,7 +270,7 @@ class _MainScreenState extends State<MainScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.blueGrey[400],
+                    color: AppTheme.mutedText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -319,17 +296,17 @@ class _MainScreenState extends State<MainScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFFF6DE), Color(0xFFFFFDF5)],
+              colors: [Color(0xFFFFF2DF), Color(0xFFFFFFFF)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFFFFD797)),
+            border: Border.all(color: AppTheme.warning),
             boxShadow: AppTheme.softShadow(AppTheme.warning),
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.flame, color: Colors.orange[600], size: 16),
+              Icon(LucideIcons.flame, color: AppTheme.warning, size: 16),
               const SizedBox(width: 6),
               Text(
                 '${profile.streak} วัน',
@@ -354,9 +331,9 @@ class _MainScreenState extends State<MainScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFE1EBFA)),
+        border: Border.all(color: const Color(0xFFE5F0DE)),
         boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
       ),
       child: IconButton(
@@ -388,7 +365,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           opacity: 0.95,
           borderRadius: BorderRadius.circular(24),
-          borderColor: const Color(0xFFE6EEF8),
+          borderColor: const Color(0xFFE5F0DE),
           child: Row(
             children: [
               Expanded(
@@ -473,8 +450,8 @@ class _MainScreenState extends State<MainScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: active
-                      ? const [Color(0xFF63B2FF), Color(0xFF90D2FF)]
-                      : const [Color(0xFF76BCFF), Color(0xFFA6DDFF)],
+                      ? const [Color(0xFF23A36E), Color(0xFF77D99C)]
+                      : const [Color(0xFF77D99C), Color(0xFFEAF5E4)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -486,17 +463,21 @@ class _MainScreenState extends State<MainScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(LucideIcons.camera, color: Colors.white, size: 18),
+                  Icon(
+                    LucideIcons.camera,
+                    color: active ? Colors.white : AppTheme.primaryColor,
+                    size: 18,
+                  ),
                   if (showLabel) ...[
                     const SizedBox(width: 6),
-                    const Flexible(
+                    Flexible(
                       child: Text(
                         'สแกน',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: active ? Colors.white : AppTheme.primaryColor,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           height: 1,
@@ -531,7 +512,7 @@ class _MainScreenState extends State<MainScreen> {
           vertical: compact ? 8 : 9,
         ),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFF1F8FF) : Colors.transparent,
+          color: active ? const Color(0xFFEAF5E4) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -543,13 +524,13 @@ class _MainScreenState extends State<MainScreen> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
+                color: AppTheme.primaryColor,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
             Icon(
               icon,
-              color: active ? AppTheme.primaryColor : Colors.blueGrey[300],
+              color: active ? AppTheme.primaryColor : AppTheme.mutedText,
               size: compact ? 20 : 22,
             ),
             if (!compact) ...[
@@ -560,7 +541,7 @@ class _MainScreenState extends State<MainScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: active ? AppTheme.primaryColor : Colors.blueGrey[400],
+                  color: active ? AppTheme.primaryColor : AppTheme.mutedText,
                 ),
               ),
             ],

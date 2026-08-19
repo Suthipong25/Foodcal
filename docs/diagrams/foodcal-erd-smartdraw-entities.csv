@@ -1,0 +1,70 @@
+Entity,Field,Type,Key,Note
+USERS,uid,string,PK,Firebase Auth user id
+USERS,name,string,,
+USERS,gender,string,,
+USERS,birthMonth,int,,
+USERS,birthYear,int,,
+USERS,height,double,,
+USERS,weight,double,,
+USERS,targetWeight,double,,
+USERS,activityLevel,string,,
+USERS,goal,string,,
+USERS,role,string,,"user or admin"
+USERS,streak,int,,
+USERS,joinedDate,datetime,,
+DAILY_LOGS,logId,string,PK,Daily log document id
+DAILY_LOGS,userId,string,FK,References USERS.uid
+DAILY_LOGS,date,string,,"YYYY-MM-DD"
+DAILY_LOGS,caloriesIn,int,,
+DAILY_LOGS,caloriesOut,int,,
+DAILY_LOGS,protein,int,,
+DAILY_LOGS,carbs,int,,
+DAILY_LOGS,fat,int,,
+DAILY_LOGS,waterGlasses,int,,
+DAILY_LOGS,lastUpdated,datetime,,
+FOOD_ITEMS,id,string,PK,Embedded food item id inside DAILY_LOGS.foods
+FOOD_ITEMS,logId,string,FK,References DAILY_LOGS.logId
+FOOD_ITEMS,name,string,,
+FOOD_ITEMS,calories,int,,
+FOOD_ITEMS,protein,int,,
+FOOD_ITEMS,carbs,int,,
+FOOD_ITEMS,fat,int,,
+FOOD_ITEMS,time,datetime,,
+FOOD_ITEMS,mealType,string,,
+WORKOUT_ITEMS,id,int,PK,Embedded workout item id inside DAILY_LOGS.workouts
+WORKOUT_ITEMS,logId,string,FK,References DAILY_LOGS.logId
+WORKOUT_ITEMS,title,string,,
+WORKOUT_ITEMS,level,string,,
+WORKOUT_ITEMS,duration,string,,
+WORKOUT_ITEMS,minutes,int,,
+WORKOUT_ITEMS,type,string,,
+WORKOUT_ITEMS,completedAt,datetime,,
+WEIGHT_LOGS,logId,string,PK,Weight log document id
+WEIGHT_LOGS,userId,string,FK,References USERS.uid
+WEIGHT_LOGS,date,string,,"YYYY-MM-DD"
+WEIGHT_LOGS,weightKg,double,,
+WEIGHT_LOGS,note,string,,
+CUSTOM_FOODS,foodId,string,PK,Custom food document id
+CUSTOM_FOODS,userId,string,FK,References USERS.uid
+CUSTOM_FOODS,name,string,,
+CUSTOM_FOODS,calories,int,,
+CUSTOM_FOODS,protein,int,,
+CUSTOM_FOODS,carbs,int,,
+CUSTOM_FOODS,fat,int,,
+CUSTOM_FOODS,servingSize,double,,
+CUSTOM_FOODS,servingUnit,string,,
+CUSTOM_FOODS,isFavorite,bool,,
+WORKOUT_SESSIONS,sessionId,string,PK,Workout session document id
+WORKOUT_SESSIONS,userId,string,FK,References USERS.uid
+WORKOUT_SESSIONS,workoutId,int,,
+WORKOUT_SESSIONS,dateKey,string,,"YYYY-MM-DD"
+WORKOUT_SESSIONS,minutes,int,,
+WORKOUT_SESSIONS,startedAt,datetime,,
+WORKOUT_SESSIONS,completed,bool,,
+WORKOUT_SESSIONS,completedAt,datetime,,
+FEEDBACK,feedbackId,string,PK,Feedback document id
+FEEDBACK,uid,string,FK,References USERS.uid
+FEEDBACK,rating,int,,
+FEEDBACK,comment,string,,
+FEEDBACK,favoriteFeature,string,,
+FEEDBACK,createdAt,datetime,,

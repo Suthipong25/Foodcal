@@ -370,23 +370,21 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         children: [
           Container(
-            width: isCompact ? 72 : 84,
-            height: isCompact ? 72 : 84,
-            padding: const EdgeInsets.all(5),
+            width: isCompact ? 68 : 78,
+            height: isCompact ? 68 : 78,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFDF7FF), Color(0xFFF1F8FF)],
+                colors: [Color(0xFFFFEEE9), Color(0xFFEFF8E9)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               shape: BoxShape.circle,
-              boxShadow: AppTheme.softShadow(AppTheme.secondaryColor),
+              boxShadow: AppTheme.softShadow(AppTheme.accentColor),
             ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/Gemini_Generated_Image_9log6n9log6n9log.png',
-                fit: BoxFit.cover,
-              ),
+            child: const Icon(
+              LucideIcons.heart,
+              color: AppTheme.accentColor,
+              size: 30,
             ),
           ),
           const SizedBox(width: 16),
@@ -395,8 +393,8 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Foodcal',
-                  style: Theme.of(context).textTheme.headlineLarge,
+                  'ยินดีต้อนรับกลับมา',
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 6),
                 const Text(

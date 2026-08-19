@@ -192,19 +192,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Row(
         children: [
           Container(
-            width: isCompact ? 72 : 84,
-            height: isCompact ? 72 : 84,
-            padding: const EdgeInsets.all(4),
+            width: isCompact ? 68 : 78,
+            height: isCompact ? 68 : 78,
             decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: AppTheme.softShadow(AppTheme.secondaryColor),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/Gemini_Generated_Image_9log6n9log6n9log.png',
-                fit: BoxFit.cover,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEFF8E9), Color(0xFFFFF1D8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              shape: BoxShape.circle,
+              boxShadow: AppTheme.softShadow(AppTheme.primaryColor),
+            ),
+            child: const Icon(
+              LucideIcons.sparkles,
+              color: AppTheme.primaryColor,
+              size: 30,
             ),
           ),
           const SizedBox(width: 16),
@@ -213,8 +215,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Foodcal',
-                  style: Theme.of(context).textTheme.headlineLarge,
+                  'เริ่มต้นดูแลตัวเอง',
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 6),
                 const Text(

@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="980" viewBox="0 0 1480 980">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9fbff"/>
+      <stop offset="100%" stop-color="#eef5ff"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 30px Arial, sans-serif; fill: #1f2d3d; }
+      .subtitle { font: 16px Arial, sans-serif; fill: #5b6b7b; }
+      .actor { font: 700 18px Arial, sans-serif; fill: #1f2d3d; }
+      .section { font: 700 20px Arial, sans-serif; fill: #35507a; }
+      .label { font: 16px Arial, sans-serif; fill: #1f2d3d; }
+      .system { fill: url(#panel); stroke: #9dbbe6; stroke-width: 2; rx: 24; ry: 24; }
+      .subpanel { fill: #ffffff; stroke: #d4e3f7; stroke-width: 1.5; rx: 18; ry: 18; }
+      .ellipse { fill: #ffffff; stroke: #7fa7de; stroke-width: 1.8; }
+      .line { stroke: #7a8ca5; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <rect width="1480" height="980" fill="#ffffff"/>
+  <text x="70" y="70" class="title">Use Case Diagram</text>
+  <text x="70" y="102" class="subtitle">Simple, clean layout for report and presentation</text>
+
+  <rect x="280" y="130" width="1120" height="790" class="system"/>
+  <text x="330" y="176" class="actor">Foodcal System</text>
+
+  <rect x="360" y="210" width="960" height="430" class="subpanel"/>
+  <text x="400" y="250" class="section">User Features</text>
+
+  <rect x="360" y="680" width="960" height="180" class="subpanel"/>
+  <text x="400" y="720" class="section">Admin Features</text>
+
+  <circle cx="130" cy="360" r="24" fill="#fff" stroke="#5679ac" stroke-width="2"/>
+  <line x1="130" y1="384" x2="130" y2="462" class="line"/>
+  <line x1="90" y1="414" x2="170" y2="414" class="line"/>
+  <line x1="130" y1="462" x2="98" y2="514" class="line"/>
+  <line x1="130" y1="462" x2="162" y2="514" class="line"/>
+  <text x="130" y="552" text-anchor="middle" class="actor">User</text>
+
+  <circle cx="130" cy="760" r="24" fill="#fff" stroke="#5679ac" stroke-width="2"/>
+  <line x1="130" y1="784" x2="130" y2="862" class="line"/>
+  <line x1="90" y1="814" x2="170" y2="814" class="line"/>
+  <line x1="130" y1="862" x2="98" y2="914" class="line"/>
+  <line x1="130" y1="862" x2="162" y2="914" class="line"/>
+  <text x="130" y="952" text-anchor="middle" class="actor">Admin</text>
+
+  <g>
+    <ellipse cx="600" cy="300" rx="165" ry="30" class="ellipse"/>
+    <text x="600" y="305" text-anchor="middle" class="label">Register</text>
+    <line x1="190" y1="300" x2="435" y2="300" class="line"/>
+
+    <ellipse cx="600" cy="380" rx="165" ry="30" class="ellipse"/>
+    <text x="600" y="385" text-anchor="middle" class="label">Login</text>
+    <line x1="190" y1="380" x2="435" y2="380" class="line"/>
+
+    <ellipse cx="600" cy="460" rx="165" ry="30" class="ellipse"/>
+    <text x="600" y="465" text-anchor="middle" class="label">Set Health Profile</text>
+    <line x1="190" y1="460" x2="435" y2="460" class="line"/>
+
+    <ellipse cx="600" cy="540" rx="165" ry="30" class="ellipse"/>
+    <text x="600" y="545" text-anchor="middle" class="label">View Dashboard</text>
+    <line x1="190" y1="540" x2="435" y2="540" class="line"/>
+  </g>
+
+  <g>
+    <ellipse cx="1080" cy="300" rx="185" ry="30" class="ellipse"/>
+    <text x="1080" y="305" text-anchor="middle" class="label">Track Food and Water</text>
+    <line x1="765" y1="300" x2="895" y2="300" class="line"/>
+
+    <ellipse cx="1080" cy="380" rx="185" ry="30" class="ellipse"/>
+    <text x="1080" y="385" text-anchor="middle" class="label">Use AI Food Analysis</text>
+    <line x1="765" y1="380" x2="895" y2="380" class="line"/>
+
+    <ellipse cx="1080" cy="460" rx="185" ry="30" class="ellipse"/>
+    <text x="1080" y="465" text-anchor="middle" class="label">View Learning Content</text>
+    <line x1="765" y1="460" x2="895" y2="460" class="line"/>
+
+    <ellipse cx="1080" cy="540" rx="185" ry="30" class="ellipse"/>
+    <text x="1080" y="545" text-anchor="middle" class="label">Complete Workout</text>
+    <line x1="765" y1="540" x2="895" y2="540" class="line"/>
+
+    <ellipse cx="840" cy="610" rx="185" ry="30" class="ellipse"/>
+    <text x="840" y="615" text-anchor="middle" class="label">Update Profile / Goals</text>
+    <line x1="190" y1="610" x2="655" y2="610" class="line"/>
+
+    <ellipse cx="1240" cy="610" rx="150" ry="30" class="ellipse"/>
+    <text x="1240" y="615" text-anchor="middle" class="label">Upload Profile Picture</text>
+    <line x1="1025" y1="610" x2="1090" y2="610" class="line"/>
+  </g>
+
+  <g>
+    <ellipse cx="620" cy="770" rx="175" ry="30" class="ellipse"/>
+    <text x="620" y="775" text-anchor="middle" class="label">View User List</text>
+    <line x1="190" y1="770" x2="445" y2="770" class="line"/>
+
+    <ellipse cx="1080" cy="770" rx="190" ry="30" class="ellipse"/>
+    <text x="1080" y="775" text-anchor="middle" class="label">View Goal Summary</text>
+    <line x1="795" y1="770" x2="890" y2="770" class="line"/>
+
+    <ellipse cx="620" cy="830" rx="175" ry="30" class="ellipse"/>
+    <text x="620" y="835" text-anchor="middle" class="label">View 7-Day Result</text>
+    <line x1="190" y1="830" x2="445" y2="830" class="line"/>
+
+    <ellipse cx="1080" cy="830" rx="190" ry="30" class="ellipse"/>
+    <text x="1080" y="835" text-anchor="middle" class="label">Monitor User Statistics</text>
+    <line x1="795" y1="830" x2="890" y2="830" class="line"/>
+  </g>
+</svg>

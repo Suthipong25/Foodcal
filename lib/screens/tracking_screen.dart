@@ -433,16 +433,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
       return;
     }
 
-    if (!NutritionService.isConfigured) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ฟีเจอร์ AI ยังไม่พร้อมใช้งาน'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isAnalyzing = true);
     try {
       AppLogger.info('Looking up nutrition for: $name');
