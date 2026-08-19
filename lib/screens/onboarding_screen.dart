@@ -35,6 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String activityLevel = AppConfig.activityLevelModerate;
   String goal = HealthGoal.lose.value;
   bool loading = false;
+  String? _profileError;
 
   @override
   void dispose() {
@@ -44,18 +45,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _nextStep() async {
     if (step == 1 && _nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกชื่อของคุณ')),
-      );
+      setState(() => _profileError = 'กรุณากรอกชื่อของคุณ');
       return;
     }
 
     if (step < 4) {
-      setState(() => step++);
+      setState(() {
+        step++;
+        _profileError = null;
+      });
       return;
     }
 
-    setState(() => loading = true);
+    final validationError = HealthProfileValidator.validate(
+      name: _nameController.text.trim(),
+      birthMonth: birthMonth,
+      birthYear: birthYear,
+      height: height,
+      weight: weight,
+      targetWeight: targetWeight,
+      goal: goal,
+    );
+
+    if (validationError != null) {
+      setState(() => _profileError = validationError);
+      return;
+    }
+
+    setState(() {
+      loading = true;
+      _profileError = null;
+    });
     try {
       final user = Provider.of<AuthService>(context, listen: false).currentUser;
       if (user == null) throw Exception('No user found');
@@ -105,15 +125,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (e) {
       AppLogger.error('Error saving profile: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-        );
+        setState(() => _profileError = _cleanProfileError(e));
       }
     } finally {
       if (mounted) {
         setState(() => loading = false);
       }
     }
+  }
+
+  void _clearProfileError() {
+    if (_profileError != null) {
+      setState(() => _profileError = null);
+    }
+  }
+
+  String _cleanProfileError(Object error) {
+    final raw = error.toString();
+    return raw
+        .replaceFirst('Invalid argument(s): ', '')
+        .replaceFirst('ArgumentError: ', '')
+        .replaceFirst('Exception: ', '')
+        .trim();
   }
 
   @override
@@ -182,6 +215,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   _buildLabel('ชื่อเล่น'),
                                   TextField(
                                     controller: _nameController,
+                                    onChanged: (_) => _clearProfileError(),
                                     decoration: const InputDecoration(
                                       hintText: 'ชื่อของคุณ',
                                       prefixIcon:
@@ -300,6 +334,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_profileError != null) ...[
+                    _buildProfileErrorBanner(_profileError!),
+                    const SizedBox(height: 14),
+                  ],
                   GradientButton(
                     onPressed: loading ? null : _nextStep,
                     isLoading: loading,
@@ -383,7 +421,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _buildLabel(label),
         TextField(
           keyboardType: TextInputType.number,
-          onChanged: onChanged,
+          onChanged: (value) {
+            _clearProfileError();
+            onChanged(value);
+          },
           decoration: InputDecoration(
             hintText: value,
             prefixIcon: Icon(icon, size: 18),
@@ -396,7 +437,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildActivityOption(String id, String label, String sub) {
     final selected = activityLevel == id;
     return GestureDetector(
-      onTap: () => setState(() => activityLevel = id),
+      onTap: () => setState(() {
+        activityLevel = id;
+        _profileError = null;
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
@@ -440,7 +484,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildGoalOption(String id, String label, String sub) {
     final selected = goal == id;
     return GestureDetector(
-      onTap: () => setState(() => goal = id),
+      onTap: () => setState(() {
+        goal = id;
+        _profileError = null;
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
@@ -477,6 +524,63 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         : AppTheme.mutedText)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfileErrorBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.error.withValues(alpha: 0.08),
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(
+          color: AppTheme.error.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppTheme.error.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              LucideIcons.alertCircle,
+              size: 18,
+              color: AppTheme.error,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ยังบันทึกไม่ได้',
+                  style: TextStyle(
+                    color: AppTheme.error,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: AppTheme.ink,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

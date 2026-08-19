@@ -12,9 +12,9 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/datetime_utils.dart';
+import '../utils/health_profile_stats.dart';
 import '../widgets/reminder_banner.dart';
 import '../widgets/app_icon_bubble.dart';
-import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/organic_page.dart';
 import 'admin_screen.dart';
@@ -38,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _birthYearCtrl;
   String _selectedGoal = HealthGoal.maintain.value;
   bool _isUploading = false;
+  String? _profileError;
   String? _localPhotoUrl;
   Uint8List? _localImageBytes; // แสดงรูปจากเครื่องทันที ก่อน upload เสร็จ
   final ImagePicker _picker = ImagePicker();
@@ -98,9 +99,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final by = int.tryParse(_birthYearCtrl.text);
 
     if (w == null || tw == null || h == null || bm == null || by == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกข้อมูลให้ครบและถูกต้อง')),
-      );
+      setState(() => _profileError = 'กรุณากรอกข้อมูลให้ครบและถูกต้อง');
+      return;
+    }
+
+    final validationError = HealthProfileValidator.validate(
+      name: widget.profile.name,
+      birthMonth: bm,
+      birthYear: by,
+      height: h,
+      weight: w,
+      targetWeight: tw,
+      goal: _selectedGoal,
+    );
+    if (validationError != null) {
+      setState(() => _profileError = validationError);
       return;
     }
 
@@ -150,7 +163,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .saveUserProfile(user.uid, newProfile);
 
       if (mounted) {
-        setState(() => isEditing = false);
+        setState(() {
+          isEditing = false;
+          _profileError = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('บันทึกข้อมูลสำเร็จ ✓')),
         );
@@ -158,11 +174,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       AppLogger.error('Save profile error', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('บันทึกไม่สำเร็จ: $e')),
-        );
+        setState(() => _profileError = _cleanProfileError(e));
       }
     }
+  }
+
+  String _cleanProfileError(Object error) {
+    final raw = error.toString();
+    return raw
+        .replaceFirst('Invalid argument(s): ', '')
+        .replaceFirst('ArgumentError: ', '')
+        .replaceFirst('Exception: ', '')
+        .trim();
   }
 
   Future<void> _pickImage() async {
@@ -308,18 +331,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          const OrganicCircleDecoration(
-            alignment: Alignment.topRight,
-            color: AppTheme.warmPeach,
-            size: 120,
-            opacity: 0.32,
-          ),
-          const OrganicCircleDecoration(
-            alignment: Alignment.bottomLeft,
-            color: AppTheme.warmMint,
-            size: 92,
-            opacity: 0.36,
-          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -507,7 +518,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GestureDetector(
       onTap: () {
         if (isEditing) {
-          setState(() => isEditing = false);
+          setState(() {
+            isEditing = false;
+            _profileError = null;
+          });
         } else {
           _weightCtrl.text = widget.profile.weight.toString();
           _targetWeightCtrl.text =
@@ -519,6 +533,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               .toString();
           setState(() {
             _selectedGoal = widget.profile.goal;
+            _profileError = null;
             isEditing = true;
           });
         }
@@ -526,9 +541,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: AppTheme.surface,
           borderRadius: AppTheme.pillRadius,
-          border: Border.all(color: Colors.white),
+          border: Border.all(color: AppTheme.cardBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -680,6 +695,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 1.4,
             ),
           ),
+          if (_profileError != null) ...[
+            const SizedBox(height: 14),
+            _buildProfileErrorBanner(_profileError!),
+          ],
           const SizedBox(height: 20),
           GridView.count(
             shrinkWrap: true,
@@ -723,9 +742,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.42),
+        color: AppTheme.surface,
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +785,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: AppTheme.surface,
         borderRadius: AppTheme.innerRadius,
         border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
       ),
@@ -784,6 +803,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Spacer(),
           TextField(
             controller: ctrl,
+            onChanged: (_) {
+              if (_profileError != null) {
+                setState(() => _profileError = null);
+              }
+            },
             textAlign: TextAlign.left,
             keyboardType: TextInputType.numberWithOptions(
               decimal: allowDecimal,
@@ -803,6 +827,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: InputBorder.none,
               isDense: true,
               hintText: '0',
+              fillColor: Colors.transparent,
               contentPadding: EdgeInsets.zero,
             ),
           ),
@@ -816,7 +841,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
+          color: AppTheme.surface,
           borderRadius: AppTheme.innerRadius,
           border:
               Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.3)),
@@ -837,7 +862,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: _selectedGoal,
               isExpanded: true,
               underline: const SizedBox(),
-              icon: const Icon(LucideIcons.chevronDown, size: 16),
+              icon: const Icon(
+                LucideIcons.chevronDown,
+                size: 16,
+                color: AppTheme.mutedText,
+              ),
+              dropdownColor: AppTheme.surface,
               borderRadius: AppTheme.innerRadius,
               items: HealthGoal.values
                   .map((goal) => goal.value)
@@ -856,7 +886,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   )
                   .toList(),
               onChanged: (v) {
-                if (v != null) setState(() => _selectedGoal = v);
+                if (v != null) {
+                  setState(() {
+                    _selectedGoal = v;
+                    _profileError = null;
+                  });
+                }
               },
             ),
           ],
@@ -868,6 +903,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'เป้าหมาย',
       _getGoalLabel(widget.profile.goal),
       LucideIcons.target,
+    );
+  }
+
+  Widget _buildProfileErrorBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.error.withValues(alpha: 0.08),
+        borderRadius: AppTheme.innerRadius,
+        border: Border.all(color: AppTheme.error.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: AppTheme.iconBubble(AppTheme.error, opacity: 0.12),
+            child: const Icon(
+              LucideIcons.alertCircle,
+              color: AppTheme.error,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ยังบันทึกไม่ได้',
+                  style: TextStyle(
+                    color: AppTheme.error,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: AppTheme.ink,
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

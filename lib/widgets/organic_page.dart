@@ -22,7 +22,8 @@ class OrganicPage extends StatelessWidget {
       decoration: BoxDecoration(gradient: AppTheme.pageBackground()),
       child: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
+          constraints:
+              BoxConstraints(maxWidth: AppTheme.maxContentWidth(width)),
           child: SingleChildScrollView(
             clipBehavior: Clip.none,
             padding: AppTheme.pageInsetsForWidth(
@@ -134,7 +135,8 @@ class FoodGardenBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(minHeight: compact ? 92 : 126),
-      padding: EdgeInsets.fromLTRB(18, compact ? 14 : 18, 18, compact ? 14 : 18),
+      padding:
+          EdgeInsets.fromLTRB(18, compact ? 14 : 18, 18, compact ? 14 : 18),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: AppTheme.cardRadius,
@@ -147,11 +149,14 @@ class FoodGardenBanner extends StatelessWidget {
             width: compact ? 44 : 54,
             height: compact ? 44 : 54,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
               borderRadius: AppTheme.innerRadius,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+              border: Border.all(
+                color: AppTheme.primaryColor.withValues(alpha: 0.18),
+              ),
             ),
-            child: Icon(icon, color: Colors.white, size: compact ? 20 : 24),
+            child: Icon(icon,
+                color: AppTheme.primaryColor, size: compact ? 20 : 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -164,7 +169,7 @@ class FoodGardenBanner extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
+                        color: AppTheme.ink,
                         fontWeight: FontWeight.w900,
                       ),
                 ),
@@ -174,8 +179,8 @@ class FoodGardenBanner extends StatelessWidget {
                     subtitle!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
+                    style: const TextStyle(
+                      color: AppTheme.mutedText,
                       fontSize: AppTheme.body,
                       fontWeight: FontWeight.w700,
                     ),

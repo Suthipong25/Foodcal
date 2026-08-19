@@ -2,28 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF6EA8FF);
-  static const Color secondaryColor = Color(0xFF22C55E);
+  static const Color primaryColor = Color(0xFF2563EB);
+  static const Color secondaryColor = Color(0xFF16A34A);
   static const Color accentColor = Color(0xFFFF5A7A);
-  static const Color ink = Color(0xFFF8FAFC);
-  static const Color mutedText = Color(0xFF9AA4B2);
-  static const Color surface = Color(0xFF101216);
-  static const Color pageBg = Color(0xFF050505);
-  static const Color pageTint = Color(0xFF151922);
-  static const Color pageTintStrong = Color(0xFF1E2430);
+  static const Color ink = Color(0xFF111318);
+  static const Color mutedText = Color(0xFF667085);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color pageBg = Color(0xFFF7F8FB);
+  static const Color pageTint = Color(0xFFF1F5F9);
+  static const Color pageTintStrong = Color(0xFFE8EEF8);
 
-  static const Color proteinColor = Color(0xFF22C55E);
+  static const Color proteinColor = Color(0xFF16A34A);
   static const Color carbsColor = Color(0xFFFFB020);
-  static const Color fatColor = Color(0xFFA78BFA);
-  static const Color waterColor = Color(0xFF38BDF8);
+  static const Color fatColor = Color(0xFF7C3AED);
+  static const Color waterColor = Color(0xFF0284C7);
   static const Color calorieColor = Color(0xFFFF5A7A);
 
-  static const Color success = Color(0xFF22C55E);
+  static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFFFB020);
-  static const Color error = Color(0xFFFF4D67);
-  static const Color aiColor = Color(0xFFA78BFA);
-  static const Color aiBgColor = Color(0xFF1D1730);
-  static const Color cardBorder = Color(0xFF252A34);
+  static const Color error = Color(0xFFE23B52);
+  static const Color aiColor = Color(0xFF7C3AED);
+  static const Color aiBgColor = Color(0xFFF2EDFF);
+  static const Color cardBorder = Color(0xFFE2E8F0);
 
   static const Color warmPeach = Color(0xFFFFD8C7);
   static const Color warmMint = Color(0xFFDDF8EA);
@@ -33,7 +33,7 @@ class AppTheme {
   static const Color warmOrange = Color(0xFFFF922B);
 
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF0A0A0A), Color(0xFF1F2937)],
+    colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -55,7 +55,7 @@ class AppTheme {
   );
 
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF000000), Color(0xFF111827)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFEFF6FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -63,8 +63,8 @@ class AppTheme {
   static LinearGradient glassGradient({double opacity = 0.1}) {
     return LinearGradient(
       colors: [
-        const Color(0xFF15171C).withValues(alpha: 0.96),
-        const Color(0xFF0D0F13).withValues(alpha: 0.94),
+        Colors.white.withValues(alpha: 0.98),
+        const Color(0xFFF8FAFC).withValues(alpha: 0.96),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -78,7 +78,7 @@ class AppTheme {
     Color? borderColor,
   }) {
     return BoxDecoration(
-      color: surface.withValues(alpha: 0.94),
+      color: Colors.white.withValues(alpha: 0.96),
       borderRadius: borderRadius ?? cardRadius,
       border: Border.all(color: borderColor ?? cardBorder),
     );
@@ -133,10 +133,10 @@ class AppTheme {
 
   static List<BoxShadow> softShadow(Color color) => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.42),
-          blurRadius: 24,
-          spreadRadius: -12,
-          offset: const Offset(0, 18),
+          color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+          blurRadius: 22,
+          spreadRadius: -10,
+          offset: const Offset(0, 16),
         ),
       ];
 
@@ -185,9 +185,9 @@ class AppTheme {
   static LinearGradient pageBackground() {
     return const LinearGradient(
       colors: [
-        Color(0xFF050505),
-        Color(0xFF08090B),
-        Color(0xFF000000),
+        Color(0xFFF7F8FB),
+        Color(0xFFFFFFFF),
+        Color(0xFFF2F6FF),
       ],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -202,7 +202,7 @@ class AppTheme {
       secondary: secondaryColor,
       surface: surface,
       error: error,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
     );
 
     return ThemeData(
@@ -259,7 +259,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-          backgroundColor: pageBg,
+        backgroundColor: pageBg,
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -310,8 +310,8 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: pageTintStrong,
-          foregroundColor: ink,
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(buttonHeight),
           shape: const RoundedRectangleBorder(borderRadius: innerRadius),
           textStyle: GoogleFonts.ibmPlexSansThaiLooped(
@@ -346,8 +346,8 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: pageTint,
-        selectedColor: ink,
-        secondarySelectedColor: ink,
+        selectedColor: primaryColor,
+        secondarySelectedColor: primaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         labelStyle: GoogleFonts.ibmPlexSansThaiLooped(
           fontSize: 12,
@@ -358,7 +358,7 @@ class AppTheme {
         secondaryLabelStyle: GoogleFonts.ibmPlexSansThaiLooped(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: pageBg,
+          color: Colors.white,
           letterSpacing: 0,
         ),
         side: const BorderSide(color: cardBorder),
@@ -366,7 +366,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: surface,
+        backgroundColor: ink,
         contentTextStyle: GoogleFonts.ibmPlexSansThaiLooped(
           color: Colors.white,
           fontSize: 13,

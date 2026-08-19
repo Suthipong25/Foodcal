@@ -50,7 +50,7 @@ class GlassCard extends StatelessWidget {
                   const LinearGradient(
                     colors: [
                       AppTheme.surface,
-                      Color(0xFF0B0D11),
+                      Color(0xFFF8FAFC),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,

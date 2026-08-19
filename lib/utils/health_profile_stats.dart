@@ -121,10 +121,10 @@ class HealthProfileValidator {
     }
 
     if (targetWeight != null) {
-      if (goal == HealthGoal.lose.value && targetWeight > weight) {
+      if (goal == HealthGoal.lose.value && targetWeight >= weight) {
         return 'เป้าหมายลดน้ำหนักต้องน้อยกว่าน้ำหนักปัจจุบัน';
       }
-      if (goal == HealthGoal.gain.value && targetWeight < weight) {
+      if (goal == HealthGoal.gain.value && targetWeight <= weight) {
         return 'เป้าหมายเพิ่มน้ำหนักต้องมากกว่าน้ำหนักปัจจุบัน';
       }
     }

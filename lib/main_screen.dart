@@ -218,7 +218,7 @@ class _MainScreenState extends State<MainScreen> {
           decoration: BoxDecoration(
             color: AppTheme.surface,
             borderRadius: AppTheme.cardRadius,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppTheme.cardBorder),
             boxShadow: AppTheme.softShadow(AppTheme.ink),
           ),
           child: Row(
@@ -346,15 +346,13 @@ class _MainScreenState extends State<MainScreen> {
               height: compact ? 34 : 38,
               decoration: BoxDecoration(
                 color: active
-                    ? Colors.white.withValues(alpha: 0.12)
+                    ? AppTheme.primaryColor.withValues(alpha: 0.1)
                     : Colors.transparent,
                 borderRadius: AppTheme.innerRadius,
               ),
               child: Icon(
                 icon,
-                color: active
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.48),
+                color: active ? AppTheme.primaryColor : AppTheme.mutedText,
                 size: compact ? 19 : 21,
               ),
             ),
@@ -366,9 +364,7 @@ class _MainScreenState extends State<MainScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: active
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.52),
+                  color: active ? AppTheme.primaryColor : AppTheme.mutedText,
                 ),
               ),
             ],

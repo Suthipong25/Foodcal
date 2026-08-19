@@ -15,7 +15,6 @@ import '../utils/app_logger.dart';
 import '../utils/datetime_utils.dart';
 import 'article_detail_screen.dart';
 import '../widgets/animated_page_wrapper.dart';
-import '../widgets/decorative_elements.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/organic_page.dart';
 
@@ -179,18 +178,9 @@ class _ContentScreenState extends State<ContentScreen> {
             child: GlassCard(
               padding: EdgeInsets.zero,
               opacity: 0.1,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const LeafDecoration(
-                    alignment: Alignment.bottomRight,
-                    color: AppTheme.leafGreen,
-                    size: 36,
-                    opacity: 0.1,
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: Column(
+              child: SizedBox(
+                width: cardWidth,
+                child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
@@ -279,9 +269,7 @@ class _ContentScreenState extends State<ContentScreen> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );
@@ -513,30 +501,19 @@ class _ContentScreenState extends State<ContentScreen> {
     return GlassCard(
       padding: const EdgeInsets.all(24),
       opacity: 0.15,
-      child: Stack(
-        clipBehavior: Clip.none,
+      borderColor: AppTheme.primaryColor.withValues(alpha: 0.18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const OrganicCircleDecoration(
-            alignment: Alignment.topRight,
-            color: AppTheme.warmMint,
-            size: 110,
-            opacity: 0.38,
-          ),
-          const LeafDecoration(
-            alignment: Alignment.bottomRight,
-            color: AppTheme.leafGreen,
-            size: 62,
-            opacity: 0.12,
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
                   borderRadius: AppTheme.pillRadius,
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.22),
+                  ),
                 ),
                 child: const Text(
                   'Learn and Move',
@@ -586,8 +563,6 @@ class _ContentScreenState extends State<ContentScreen> {
                   ),
                 ],
               ),
-            ],
-          ),
         ],
       ),
     );
@@ -597,9 +572,9 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.4),
+        color: AppTheme.surface,
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,13 +632,14 @@ class _ContentScreenState extends State<ContentScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: AppTheme.surface,
         borderRadius: AppTheme.pillRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: DropdownButton<String>(
         value: filter,
         underline: const SizedBox(),
+        dropdownColor: AppTheme.surface,
         borderRadius: AppTheme.innerRadius,
         icon: const Icon(
           LucideIcons.chevronDown,
@@ -772,7 +748,7 @@ class _ContentScreenState extends State<ContentScreen> {
                   ? null
                   : AppTheme.primaryGradient,
           color: started && !canFinish
-              ? Colors.white.withValues(alpha: 0.4)
+              ? AppTheme.pageTintStrong
               : hasCompletedToday
                   ? AppTheme.success.withValues(alpha: 0.1)
                   : null,

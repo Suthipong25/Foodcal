@@ -4,7 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_theme.dart';
 import '../models/content_model.dart';
 
-const Color _articleSurface = Color(0xFFF8FAFC);
+const Color _articleSurface = Color(0xFFFFFFFF);
 const Color _articleInk = Color(0xFF111318);
 const Color _articleMuted = Color(0xFF566070);
 
@@ -67,7 +67,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           expandedHeight: heroHeight,
           pinned: true,
           elevation: 0,
-          backgroundColor: Colors.white.withValues(alpha: 0.92),
+          backgroundColor: Colors.white.withValues(alpha: 0.94),
           surfaceTintColor: Colors.transparent,
           leadingWidth: 160,
           leading: Padding(
@@ -160,8 +160,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white,
+            decoration: const BoxDecoration(
+              color: AppTheme.pageTint,
               borderRadius: AppTheme.pillRadius,
             ),
             child: Text(
@@ -315,7 +315,7 @@ class _MetaPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Colors.white,
         borderRadius: AppTheme.pillRadius,
         border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
@@ -391,7 +391,7 @@ class _BackLabelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.88),
+      color: Colors.white.withValues(alpha: 0.9),
       borderRadius: AppTheme.innerRadius,
       child: InkWell(
         onTap: onTap,

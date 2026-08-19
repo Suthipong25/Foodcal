@@ -163,9 +163,11 @@ class _TodayHero extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: AppTheme.heroGradient,
         borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: AppTheme.cardBorder),
+        boxShadow: AppTheme.softShadow(AppTheme.ink),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,8 +182,8 @@ class _TodayHero extends StatelessWidget {
                     Text(
                       DateFormat('EEEE d MMM', 'th')
                           .format(DateTimeUtils.now()),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.68),
+                      style: const TextStyle(
+                        color: AppTheme.mutedText,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -191,10 +193,11 @@ class _TodayHero extends StatelessWidget {
                       isOver
                           ? 'เกินเป้า ${remainingCalories.abs()} kcal'
                           : 'เหลืออีก $remainingCalories kcal',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                color: AppTheme.ink,
+                                fontWeight: FontWeight.w900,
+                              ),
                     ),
                   ],
                 ),
@@ -268,14 +271,14 @@ class _ProgressDial extends StatelessWidget {
             value: progress,
             strokeWidth: 9,
             strokeCap: StrokeCap.round,
-            backgroundColor: Colors.white.withValues(alpha: 0.13),
+            backgroundColor: AppTheme.pageTintStrong,
             color: color,
           ),
           Center(
             child: Text(
               '${(progress * 100).round()}%',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.ink,
                 fontWeight: FontWeight.w900,
                 fontSize: 17,
               ),
@@ -305,17 +308,17 @@ class _HeroMetric extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: AppTheme.surface,
         borderRadius: AppTheme.innerRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.62),
+            style: const TextStyle(
+              color: AppTheme.mutedText,
               fontSize: 11,
               fontWeight: FontWeight.w800,
             ),
@@ -340,8 +343,8 @@ class _HeroMetric extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   unit,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                  style: const TextStyle(
+                    color: AppTheme.mutedText,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -544,8 +547,8 @@ class _WeeklyChart extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: math.max(maxLog, profile.targetCalories.toDouble()) *
-                    1.25,
+                maxY:
+                    math.max(maxLog, profile.targetCalories.toDouble()) * 1.25,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
